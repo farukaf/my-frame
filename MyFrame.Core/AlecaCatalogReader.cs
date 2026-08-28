@@ -1,17 +1,24 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MyFrame.Core;
 
 public sealed class AlecaCatalogReader : IAlecaCatalogReader
 {
+    private readonly ILogger<AlecaCatalogReader> _logger;
     private static readonly HashSet<string> IgnoredFiles = new(StringComparer.OrdinalIgnoreCase)
     {
         "lang.json", "Node.json", "Quests.json", "Glyphs.json", "Sigils.json", "Skins.json"
     };
 
+    public AlecaCatalogReader(ILogger<AlecaCatalogReader>? logger = null) =>
+        _logger = logger ?? NullLogger<AlecaCatalogReader>.Instance;
+
     public async Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default)
     {
         var jsonDirectory = Path.Combine(alecaDirectory, "cachedData", "json");
+        _logger.LogInformation("Loading AlecaFrame catalogs");
         if (!Directory.Exists(jsonDirectory))
             throw new DirectoryNotFoundException($"Catálogo do AlecaFrame não encontrado: {jsonDirectory}");
 
@@ -41,6 +48,8 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
             .Select(x => x.First())
             .Select(x => Materialize(x, relicsByReward, market))
             .ToArray();
+        _logger.LogInformation("Catalog loaded with {ItemCount} items and {MarketMappingCount} market mappings",
+            items.Length, market.Count);
         return new CatalogSnapshot(items, items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal), market);
     }
 

@@ -4,35 +4,38 @@ using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using MyFrame.Core;
+using Microsoft.Extensions.Logging;
 
 namespace MyFrame.App;
 
 public partial class DashboardViewModel : ObservableObject
 {
     private readonly DashboardService _service;
+    private readonly ILogger<DashboardViewModel> _logger;
     private bool _initialized;
 
-    public DashboardViewModel(DashboardService service)
+    public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger)
     {
         _service = service;
+        _logger = logger;
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
         ShowSection("Dashboard");
     }
 
-    [ObservableProperty] private bool isBusy;
-    [ObservableProperty] private string statusMessage = "Aguardando leitura do AlecaFrame…";
-    [ObservableProperty] private string lastSyncText = "—";
-    [ObservableProperty] private string accountText = "Warframe.Market não conectado";
-    [ObservableProperty] private string totalPlatinum = "0p";
-    [ObservableProperty] private string totalDucats = "0 ducats";
-    [ObservableProperty] private string masteryProgress = "0%";
-    [ObservableProperty] private string inventorySummary = "0 itens";
-    [ObservableProperty] private double ducatsPerPlatinum = 10;
-    [ObservableProperty] private bool dashboardVisible;
-    [ObservableProperty] private bool collectionVisible;
-    [ObservableProperty] private bool farmVisible;
-    [ObservableProperty] private bool salesVisible;
-    [ObservableProperty] private bool settingsVisible;
+    [ObservableProperty] public partial bool IsBusy { get; set; }
+    [ObservableProperty] public partial string StatusMessage { get; set; } = "Aguardando leitura do AlecaFrame…";
+    [ObservableProperty] public partial string LastSyncText { get; set; } = "—";
+    [ObservableProperty] public partial string AccountText { get; set; } = "Warframe.Market não conectado";
+    [ObservableProperty] public partial string TotalPlatinum { get; set; } = "0p";
+    [ObservableProperty] public partial string TotalDucats { get; set; } = "0 ducats";
+    [ObservableProperty] public partial string MasteryProgress { get; set; } = "0%";
+    [ObservableProperty] public partial string InventorySummary { get; set; } = "0 itens";
+    [ObservableProperty] public partial double DucatsPerPlatinum { get; set; } = 10;
+    [ObservableProperty] public partial bool DashboardVisible { get; set; }
+    [ObservableProperty] public partial bool CollectionVisible { get; set; }
+    [ObservableProperty] public partial bool FarmVisible { get; set; }
+    [ObservableProperty] public partial bool SalesVisible { get; set; }
+    [ObservableProperty] public partial bool SettingsVisible { get; set; }
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -44,6 +47,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         if (_initialized) return;
         _initialized = true;
+        _logger.LogInformation("Dashboard view initialized");
         await RefreshAsync();
     }
 
@@ -54,13 +58,18 @@ public partial class DashboardViewModel : ObservableObject
         IsBusy = true;
         StatusMessage = "Lendo snapshot e atualizando cotações…";
         try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(Math.Max(.1, DucatsPerPlatinum)))); }
-        catch (Exception error) { StatusMessage = $"Falha na sincronização: {error.Message}"; }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Dashboard refresh failed");
+            StatusMessage = $"Falha na sincronização: {error.Message}";
+        }
         finally { IsBusy = false; }
     }
 
     [RelayCommand]
     private void ShowSection(string section)
     {
+        _logger.LogDebug("Navigating to dashboard section {Section}", section);
         DashboardVisible = section == "Dashboard";
         CollectionVisible = section == "Collection";
         FarmVisible = section == "Farm";

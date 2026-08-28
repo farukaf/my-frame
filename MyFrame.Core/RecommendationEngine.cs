@@ -51,12 +51,25 @@ public sealed class RecommendationEngine : IRecommendationEngine
             }
         }
 
-        var itemByMarketId = catalog.Items.Where(x => !string.IsNullOrWhiteSpace(x.MarketId))
-            .ToDictionary(x => x.MarketId!, StringComparer.Ordinal);
         foreach (var order in myOrders.Where(x => x.Type.Equals("sell", StringComparison.OrdinalIgnoreCase)))
         {
-            if (itemByMarketId.TryGetValue(order.ItemId, out var item))
-                reserved[item.UniqueName] = reserved.GetValueOrDefault(item.UniqueName) + order.Quantity;
+            var set = catalog.Items.FirstOrDefault(x => x.MarketId == order.ItemId);
+            if (set is not null)
+            {
+                foreach (var component in set.Components.Where(x => x.Tradable))
+                    reserved[component.UniqueName] = reserved.GetValueOrDefault(component.UniqueName) +
+                        (order.Quantity * component.Required);
+                continue;
+            }
+
+            foreach (var item in catalog.Items)
+            {
+                var component = item.Components.FirstOrDefault(candidate =>
+                    MarketForComponent(item, candidate, catalog)?.Id == order.ItemId);
+                if (component is null) continue;
+                reserved[component.UniqueName] = reserved.GetValueOrDefault(component.UniqueName) + order.Quantity;
+                break;
+            }
         }
         return reserved;
     }
@@ -73,7 +86,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
         foreach (var parent in catalog.Items.Where(x => x.Prime && x.Components.Any(c => c.Tradable) && !string.IsNullOrWhiteSpace(x.MarketSlug)))
         {
             var tradable = parent.Components.Where(x => x.Tradable).ToArray();
-            var setCount = tradable.Min(x => excess.GetValueOrDefault(x.UniqueName) / x.Required);
+            var setCount = tradable.Min(x =>
+                (excess.TryGetValue(x.UniqueName, out var amount) ? amount : 0) / x.Required);
             if (setCount <= 0 || !quotes.TryGetValue(parent.MarketSlug!, out var setQuote) || setQuote.LowestSell is null) continue;
             var partValue = tradable.Sum(component =>
             {
@@ -115,7 +129,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
     {
         var incomplete = collection.Where(x => !x.Owned).Select(x => x.ItemName).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var relicByName = catalog.Items.Where(x => x.Category.Contains("Relic", StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(x => x.Name, x => x.UniqueName, StringComparer.OrdinalIgnoreCase);
+            .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().UniqueName, StringComparer.OrdinalIgnoreCase);
         return catalog.Items.Where(x => incomplete.Contains(x.Name) && x.Components.Any(c => c.Tradable))
             .Select(item =>
             {

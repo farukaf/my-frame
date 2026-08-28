@@ -28,3 +28,11 @@ dotnet build MyFrame.slnx
 dotnet test MyFrame.Core.Tests/MyFrame.Core.Tests.csproj
 dotnet run --project MyFrame.App/MyFrame.App.csproj -f net10.0-windows10.0.19041.0
 ```
+
+## Logs
+
+O aplicativo grava eventos estruturados em JSON Lines em
+`%LOCALAPPDATA%\MyFrame\logs\my-frame-AAAAmmddHH.json`. Um novo arquivo é criado
+a cada hora, com retenção máxima de 168 arquivos e limite de 25 MB por arquivo.
+Os logs registram etapas de inicialização, contagens, resultados de sincronização
+e falhas, sem gravar JWT, cabeçalho Authorization ou o inventário completo.

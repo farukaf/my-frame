@@ -1,11 +1,14 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MyFrame.Core;
 
 public sealed class AlecaFrameReader : IAlecaFrameReader
 {
+    private readonly ILogger<AlecaFrameReader> _logger;
     private const string LastDataFile = "lastData.dat";
     private static readonly byte[] Key = Encoding.UTF8.GetBytes("LEO-ALEC\tEO-ALEC");
     private static readonly byte[] Iv = [49, 50, 70, 71, 66, 51, 54, 45, 76, 69, 51, 45, 113, 61, 57, 0];
@@ -23,12 +26,16 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
         "MechSuits", "Ships", "Scoops", "DrifterMelee", "OperatorSuits"
     ];
 
+    public AlecaFrameReader(ILogger<AlecaFrameReader>? logger = null) =>
+        _logger = logger ?? NullLogger<AlecaFrameReader>.Instance;
+
     public async Task<InventorySnapshot> ReadAsync(
         string alecaDirectory,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(alecaDirectory);
         var path = Path.Combine(alecaDirectory, LastDataFile);
+        _logger.LogInformation("Reading AlecaFrame inventory snapshot");
         if (!File.Exists(path))
         {
             throw new FileNotFoundException("O lastData.dat do AlecaFrame não foi encontrado.", path);
@@ -44,16 +51,18 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
             }
             catch (Exception error) when (error is IOException or CryptographicException or JsonException)
             {
+                _logger.LogWarning(error, "Transient snapshot read failure on attempt {Attempt}", attempt + 1);
                 lastError = error;
                 await Task.Delay(TimeSpan.FromMilliseconds(100 * (attempt + 1)), cancellationToken)
                     .ConfigureAwait(false);
             }
         }
 
+        _logger.LogError(lastError, "Inventory snapshot could not be read after retries");
         throw new InvalidDataException("O AlecaFrame ainda estava escrevendo o snapshot.", lastError);
     }
 
-    private static async Task<InventorySnapshot> ReadOnceAsync(string path, CancellationToken cancellationToken)
+    private async Task<InventorySnapshot> ReadOnceAsync(string path, CancellationToken cancellationToken)
     {
         byte[] encrypted;
         await using (var stream = new FileStream(
@@ -108,7 +117,11 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
 
             try
             {
-                return BuildSnapshot(root, path);
+                var snapshot = BuildSnapshot(root, path);
+                _logger.LogInformation(
+                    "Inventory snapshot loaded with {StackCount} stack types and {EquipmentCount} equipment entries",
+                    snapshot.Stackables.Count, snapshot.OwnedEquipment.Count);
+                return snapshot;
             }
             finally
             {

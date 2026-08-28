@@ -1,5 +1,8 @@
 namespace MyFrame.Core;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 public sealed class DashboardService : IDisposable
 {
     private readonly string _aleccaDirectory;
@@ -8,6 +11,7 @@ public sealed class DashboardService : IDisposable
     private readonly IWarframeMarketClient _market;
     private readonly IPriceCache _cache;
     private readonly IRecommendationEngine _engine;
+    private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private readonly FileSystemWatcher? _watcher;
     private CancellationTokenSource? _debounce;
@@ -16,7 +20,7 @@ public sealed class DashboardService : IDisposable
 
     public DashboardService(string alecaDirectory, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
-        IRecommendationEngine engine)
+        IRecommendationEngine engine, ILogger<DashboardService>? logger = null)
     {
         _aleccaDirectory = alecaDirectory;
         _inventoryReader = inventoryReader;
@@ -24,9 +28,10 @@ public sealed class DashboardService : IDisposable
         _market = market;
         _cache = cache;
         _engine = engine;
-        if (Directory.Exists(aleccaDirectory))
+        _logger = logger ?? NullLogger<DashboardService>.Instance;
+        if (Directory.Exists(alecaDirectory))
         {
-            _watcher = new FileSystemWatcher(aleccaDirectory)
+            _watcher = new FileSystemWatcher(alecaDirectory)
             {
                 Filter = "*.*", IncludeSubdirectories = true,
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
@@ -45,6 +50,7 @@ public sealed class DashboardService : IDisposable
         RecommendationSettings? settings = null, CancellationToken cancellationToken = default)
     {
         await _refreshGate.WaitAsync(cancellationToken);
+        _logger.LogInformation("Dashboard refresh started; refreshPrices={RefreshPrices}", refreshPrices);
         try
         {
             var inventory = await _inventoryReader.ReadAsync(_aleccaDirectory, cancellationToken);
@@ -79,6 +85,7 @@ public sealed class DashboardService : IDisposable
             }
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException)
             {
+                _logger.LogWarning(error, "Market unavailable during dashboard refresh; cached quotes will be used");
                 marketError = "Warframe.Market indisponível; usando cotações em cache.";
             }
 
@@ -88,6 +95,9 @@ public sealed class DashboardService : IDisposable
                 marketError ?? "Inventário e mercado sincronizados.", DateTimeOffset.Now, true,
                 quotes.Count > 0, marketError);
             _lastSnapshot = new DashboardSnapshot(inventory, _catalog, recommendations, account, orders, quotes, status);
+            _logger.LogInformation(
+                "Dashboard refresh completed with {QuoteCount} quotes, {OrderCount} orders, {SaleCount} sales and {FarmCount} farm recommendations",
+                quotes.Count, orders.Count, recommendations.Sales.Count, recommendations.Farm.Count);
             SnapshotUpdated?.Invoke(this, _lastSnapshot);
             return _lastSnapshot;
         }

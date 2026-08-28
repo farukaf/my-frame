@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MyFrame.Core;
 
@@ -10,12 +12,15 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
     private readonly HttpClient _http;
     private readonly string _tokenPath;
     private readonly SemaphoreSlim _rateGate = new(1, 1);
+    private readonly ILogger<WarframeMarketClient> _logger;
     private DateTimeOffset _lastRequest = DateTimeOffset.MinValue;
 
-    public WarframeMarketClient(HttpClient httpClient, string tokenPath)
+    public WarframeMarketClient(HttpClient httpClient, string tokenPath,
+        ILogger<WarframeMarketClient>? logger = null)
     {
         _http = httpClient;
         _tokenPath = tokenPath;
+        _logger = logger ?? NullLogger<WarframeMarketClient>.Instance;
         _http.BaseAddress ??= new Uri("https://api.warframe.market/");
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("my-frame/1.0 (+local desktop application)");
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -48,6 +53,7 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
 
     private async Task<JsonDocument?> GetAsync(string uri, bool authenticated, CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Market GET {MarketEndpoint}; authenticated={Authenticated}", uri, authenticated);
         for (var attempt = 0; attempt < 3; attempt++)
         {
             await ThrottleAsync(cancellationToken);
@@ -55,18 +61,28 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
             if (authenticated)
             {
                 var token = await ReadValidTokenAsync(cancellationToken);
-                if (token is null) return null;
+                if (token is null)
+                {
+                    _logger.LogWarning("Authenticated market request skipped because the token is absent or expired");
+                    return null;
+                }
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
             using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
+                _logger.LogWarning("Market rate limit reached on attempt {Attempt}", attempt + 1);
                 await Task.Delay(response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(attempt + 1), cancellationToken);
                 continue;
             }
-            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound) return null;
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Market GET {MarketEndpoint} returned status {StatusCode}", uri, (int)response.StatusCode);
+                return null;
+            }
             response.EnsureSuccessStatusCode();
+            _logger.LogInformation("Market GET {MarketEndpoint} completed with status {StatusCode}", uri, (int)response.StatusCode);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         }
@@ -94,7 +110,7 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
         try
         {
             var payload = parts[1].Replace('-', '+').Replace('_', '/');
-            payload += payload.Length % 4 switch { 2 => "==", 3 => "=", _ => "" };
+            payload += (payload.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
             using var json = JsonDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(payload)));
             return json.RootElement.TryGetProperty("exp", out var exp) && exp.TryGetInt64(out var seconds) &&
                    DateTimeOffset.FromUnixTimeSeconds(seconds) <= DateTimeOffset.UtcNow ? null : token;

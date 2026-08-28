@@ -16,7 +16,23 @@ public partial class App : MauiWinUIApplication
 	/// </summary>
 	public App()
 	{
+		global::MyFrame.App.AppLogging.Configure();
+		UnhandledException += OnUnhandledException;
+		global::MyFrame.App.StartupDiagnostics.Track("WinUI.App.Begin");
 		this.InitializeComponent();
+		global::MyFrame.App.StartupDiagnostics.Track("WinUI.App.End");
+	}
+
+	private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs args)
+	{
+		try
+		{
+			global::MyFrame.App.StartupDiagnostics.Track("WinUI.UnhandledException", args.Exception);
+		}
+		catch
+		{
+			// The original startup exception must remain the primary failure.
+		}
 	}
 
 	protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

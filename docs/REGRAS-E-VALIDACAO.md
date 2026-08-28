@@ -54,9 +54,14 @@ dotnet run --project MyFrame.App/MyFrame.App.csproj -f net10.0-windows10.0.19041
 - [ ] `git diff` é revisado antes do commit.
 - [ ] Push só ocorre mediante solicitação explícita.
 
-## Estado atual (26/08/2026)
+## Estado atual (28/08/2026)
 
-Já existem estrutura da solução, modelos/interfaces, leitores locais, cliente read-only, cache, motor inicial, serviço de dashboard, watcher, view model e composição inicial de dependências.
+A solução, leitores, cliente read-only, cache, motor de recomendações,
+dashboard, watcher, view model e interface desktop estão implementados. O app usa
+Serilog em JSON com rotação horária na pasta própria, sem registrar credenciais ou
+payloads privados. Há testes sintéticos para snapshots, catálogo, HTTP/JWT e regras
+de recomendação, incluindo regressão para nomes duplicados de relíquias.
 
-Ainda faltam finalizar `MainPage.xaml` e estilos, revisar a integração MAUI/LiveCharts, criar testes, restaurar/compilar, validar visualmente, revisar segurança e criar o primeiro commit funcional. A edição da página XAML foi interrompida; a próxima etapa deve conferir sua presença e consistência antes do build.
-
+Build, testes e sincronização com a instalação local foram validados. Ainda resta
+uma revisão visual humana completa em 1050×700 e 1440×900 antes da primeira entrega
+formal e do commit funcional.
