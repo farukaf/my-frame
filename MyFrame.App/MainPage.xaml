@@ -122,7 +122,7 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding PrimeStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Status}"
-                                Progress="{Binding Completion}" ShowProgress="True" />
+                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -164,7 +164,7 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
-                                Description="{Binding Reason}" />
+                                Description="{Binding Reason}" IsMastered="{Binding Mastered}" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

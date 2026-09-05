@@ -12,8 +12,13 @@
                 <Image Source="{Binding ImageUrl, Source={x:Reference CardRoot}}" Aspect="AspectFit" />
             </Border>
             <VerticalStackLayout Grid.Column="1" Spacing="2">
-                <Label Text="{Binding Title, Source={x:Reference CardRoot}}" TextColor="#F4F7FB"
-                       FontFamily="OpenSansSemibold" LineBreakMode="TailTruncation" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <Label Text="{Binding Title, Source={x:Reference CardRoot}}" TextColor="#F4F7FB"
+                           FontFamily="OpenSansSemibold" LineBreakMode="TailTruncation" />
+                    <Image Grid.Column="1" Source="mastery.svg" WidthRequest="19" HeightRequest="19"
+                           IsVisible="{Binding IsMastered, Source={x:Reference CardRoot}}"
+                           ToolTipProperties.Text="Mastered" />
+                </Grid>
                 <Label Text="{Binding Badge, Source={x:Reference CardRoot}}" TextColor="#F3C969" FontSize="11" />
                 <Label Text="{Binding Metadata, Source={x:Reference CardRoot}}" TextColor="#8995A8"
                        FontSize="12" LineBreakMode="TailTruncation" />

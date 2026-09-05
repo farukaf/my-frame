@@ -75,6 +75,21 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
+    public void SalesRecommendationReportsMasteredParentItem()
+    {
+        var (inventory, catalog) = Scenario(ownedParts: 2, ownedEquipment: false);
+        inventory = inventory with
+        {
+            Experience = new Dictionary<string, long> { [catalog.Items.Single().UniqueName] = 900_000 }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+
+        Assert.True(Assert.Single(result.Sales).Mastered);
+    }
+
+    [Fact]
     public void DoesNotMarkItemReadyWhenNonTradableComponentsAreMissing()
     {
         const string itemUnique = "/Items/AeolakLike";

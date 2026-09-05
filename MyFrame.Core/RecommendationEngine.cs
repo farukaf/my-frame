@@ -104,6 +104,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
                 setCount, 0, 0, 0, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
+                IsMastered(parent, inventory.Experience.GetValueOrDefault(parent.UniqueName)),
                 HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts.",
                 parent.ImageUrl));
         }
@@ -123,6 +124,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key),
                 breakdown.Craft, breakdown.FutureSale, breakdown.Orders, pair.Value,
                 info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
+                IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
                 HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
         }
 
@@ -140,7 +142,9 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 pair.Value, kept, Math.Min(kept, breakdown.Craft), Math.Min(kept, breakdown.FutureSale),
                 Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
-                RecommendationAction.Keep, info.Parent.Vaulted, HasOrder(identity?.Id, orders),
+                RecommendationAction.Keep, info.Parent.Vaulted,
+                IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
+                HasOrder(identity?.Id, orders),
                 "All owned copies are reserved for collection, crafting, or an existing market order.",
                 info.Parent.ImageUrl));
         }

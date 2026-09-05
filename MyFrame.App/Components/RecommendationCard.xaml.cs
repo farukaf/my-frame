@@ -10,6 +10,7 @@ public partial class RecommendationCard : ContentView
     public static readonly BindableProperty DescriptionProperty = Property(nameof(Description), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty ProgressProperty = Property(nameof(Progress), typeof(double), typeof(RecommendationCard), 0d);
     public static readonly BindableProperty ShowProgressProperty = Property(nameof(ShowProgress), typeof(bool), typeof(RecommendationCard), false);
+    public static readonly BindableProperty IsMasteredProperty = Property(nameof(IsMastered), typeof(bool), typeof(RecommendationCard), false);
 
     public RecommendationCard() => InitializeComponent();
 
@@ -21,6 +22,7 @@ public partial class RecommendationCard : ContentView
     public string Description { get => (string)GetValue(DescriptionProperty); set => SetValue(DescriptionProperty, value); }
     public double Progress { get => (double)GetValue(ProgressProperty); set => SetValue(ProgressProperty, value); }
     public bool ShowProgress { get => (bool)GetValue(ShowProgressProperty); set => SetValue(ShowProgressProperty, value); }
+    public bool IsMastered { get => (bool)GetValue(IsMasteredProperty); set => SetValue(IsMasteredProperty, value); }
 
     private static BindableProperty Property(string name, Type type, Type owner, object defaultValue) =>
         BindableProperty.Create(name, type, owner, defaultValue);

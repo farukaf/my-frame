@@ -142,6 +142,7 @@ public sealed record SaleRecommendation(
     int? HighestBuy,
     RecommendationAction Action,
     bool Vaulted,
+    bool Mastered,
     bool ExistingOrder,
     string Reason,
     string ImageUrl)
