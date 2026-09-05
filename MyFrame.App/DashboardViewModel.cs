@@ -71,6 +71,15 @@ public partial class DashboardViewModel : ObservableObject
         if (_initialized) return;
         _initialized = true;
         _logger.LogInformation("Dashboard view initialized");
+        var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
+        if (directoryError is not null)
+        {
+            _logger.LogInformation("AlecaFrame folder is not configured; opening Settings");
+            StatusMessage = "AlecaFrame data folder needs to be configured.";
+            AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
+            ShowSection("Settings");
+            return;
+        }
         await RefreshAsync();
     }
 
@@ -101,6 +110,8 @@ public partial class DashboardViewModel : ObservableObject
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         AlecaFrameDirectoryMessage = "Folder saved. Inventory, catalogs, token, and monitoring now use this location.";
+        StatusMessage = "AlecaFrame folder configured. Loading data…";
+        await RefreshAsync();
     }
 
     [RelayCommand]
@@ -109,7 +120,15 @@ public partial class DashboardViewModel : ObservableObject
         Preferences.Default.Remove(AlecaFrameDirectorySettings.PreferenceKey);
         _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
-        AlecaFrameDirectoryMessage = "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame).";
+        var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
+        AlecaFrameDirectoryMessage = error is null
+            ? "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame)."
+            : $"Automatic location restored, but it is not ready: {error}";
+        if (error is not null)
+        {
+            StatusMessage = "AlecaFrame data folder needs to be configured.";
+            ShowSection("Settings");
+        }
     }
 
     [RelayCommand]

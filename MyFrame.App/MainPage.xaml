@@ -176,6 +176,7 @@
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="AlecaFrame data folder" Style="{StaticResource SectionTitle}" />
                                 <Label Text="Choose the folder containing lastData.dat and cachedData/json. The automatic location works for standard installations." TextColor="#8995A8" />
+                                <Label Text="My Frame can start without this folder. Configure it here before loading inventory data." TextColor="#F3C969" FontSize="12" />
                                 <Entry Text="{Binding AlecaFrameDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
                                 <Label Text="{Binding AlecaFrameDirectoryMessage}" Style="{StaticResource Muted}" />
                                 <HorizontalStackLayout Spacing="10">
