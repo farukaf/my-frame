@@ -244,7 +244,19 @@ public sealed record SyncStatus(
     DateTimeOffset? LastSuccessfulSync,
     bool HasInventory,
     bool HasMarket,
-    string? Error = null);
+    string? Error = null,
+    int PricesLoaded = 0,
+    int PricesTracked = 0,
+    int PricesStale = 0)
+{
+    public double PriceProgress => PricesTracked <= 0 ? 0d
+        : Math.Clamp((double)PricesLoaded / PricesTracked, 0d, 1d);
+    public string PriceProgressText => PricesTracked <= 0
+        ? "Checking Warframe.Market…" : $"{PricesLoaded:N0} of {PricesTracked:N0} prices";
+    public string StaleWarning => PricesStale <= 0 ? "" : PricesTracked == PricesStale
+        ? "Prices are out of date. Showing inventory only."
+        : $"{PricesStale:N0} of {PricesTracked:N0} prices are out of date.";
+}
 
 public sealed record DashboardSnapshot(
     InventorySnapshot Inventory,

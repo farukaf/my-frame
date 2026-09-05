@@ -87,6 +87,21 @@
                     <Label Text="{Binding StatusMessage}" Style="{StaticResource Muted}" LineBreakMode="WordWrap" />
                     <Label Text="{Binding LastSyncText, StringFormat='MyFrame refreshed: {0}'}" Style="{StaticResource Muted}" />
                     <Label Text="{Binding AlecaDataUpdatedText, StringFormat='Aleca data: {0}'}" Style="{StaticResource Muted}" />
+
+                    <VerticalStackLayout Spacing="5" Margin="0,6,0,0" IsVisible="{Binding IsSyncingPrices}">
+                        <HorizontalStackLayout Spacing="7">
+                            <ActivityIndicator IsRunning="{Binding IsSyncingPrices}" Color="#7DE2D1"
+                                               WidthRequest="13" HeightRequest="13" VerticalOptions="Center" />
+                            <Label Text="{Binding SyncProgressText}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <ProgressBar Progress="{Binding SyncProgress}" ProgressColor="#7DE2D1"
+                                     BackgroundColor="#273149" HeightRequest="4" />
+                    </VerticalStackLayout>
+
+                    <Border IsVisible="{Binding PricesStale}" BackgroundColor="#3A2328" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 6" Padding="8,5" Margin="0,6,0,0">
+                        <Label Text="{Binding StaleWarningText}" TextColor="#FF9A9A" FontSize="11" LineBreakMode="WordWrap" />
+                    </Border>
                 </VerticalStackLayout>
             </Grid>
         </Border>
