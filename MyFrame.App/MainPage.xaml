@@ -122,7 +122,8 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding PrimeStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Status}"
-                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}" />
+                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}"
+                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -135,7 +136,7 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding CardAction}"
-                                Description="{Binding Reason}" />
+                                Description="{Binding Reason}" Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -151,7 +152,7 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding RelicName}"
                                 Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Action}"
-                                Description="{Binding Reason}" />
+                                Description="{Binding Reason}" Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -165,7 +166,7 @@
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
                                 Description="{Binding Reason}" IsMastered="{Binding Mastered}"
-                                Details="{Binding ItemDetails}" ShowDetailsButton="True" />
+                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

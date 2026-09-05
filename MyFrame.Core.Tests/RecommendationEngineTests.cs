@@ -141,7 +141,7 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
-    public void KeepsItemWhenBothMarketAndDucatValuesAreZero()
+    public void OmitsItemWhenBothMarketAndDucatValuesAreZero()
     {
         var (inventory, baseCatalog) = Scenario(ownedParts: 2, ownedEquipment: true);
         var item = baseCatalog.Items.Single();
@@ -156,12 +156,25 @@ public sealed class RecommendationEngineTests
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
 
-        var recommendation = Assert.Single(result.Sales);
-        Assert.Equal(RecommendationAction.Keep, recommendation.Action);
-        Assert.Equal(2, recommendation.KeepQuantity);
-        Assert.Equal("keep 2 · do not sell or exchange now", recommendation.ActionLabel);
+        Assert.Empty(result.Sales);
         Assert.Equal(0, result.TotalDucats);
         Assert.Equal(0, result.EstimatedPlatinum);
+    }
+
+    [Fact]
+    public void UsesRealBuyOrderWhenNoSellListingExists()
+    {
+        var (inventory, catalog) = Scenario(ownedParts: 2, ownedEquipment: true);
+        var quote = new MarketQuote("test_prime_blueprint", null, 7, DateTimeOffset.UtcNow);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote> { [quote.Slug] = quote }, [],
+            new RecommendationSettings(10, false));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(RecommendationAction.SellForPlatinum, recommendation.Action);
+        Assert.Equal(7, recommendation.LowestSell);
+        Assert.Equal(14, recommendation.TotalPlatinum);
     }
 
     [Fact]

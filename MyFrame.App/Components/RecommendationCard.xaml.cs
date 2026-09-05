@@ -13,6 +13,7 @@ public partial class RecommendationCard : ContentView
     public static readonly BindableProperty IsMasteredProperty = Property(nameof(IsMastered), typeof(bool), typeof(RecommendationCard), false);
     public static readonly BindableProperty DetailsProperty = Property(nameof(Details), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty ShowDetailsButtonProperty = Property(nameof(ShowDetailsButton), typeof(bool), typeof(RecommendationCard), false);
+    public static readonly BindableProperty MarketSlugProperty = Property(nameof(MarketSlug), typeof(string), typeof(RecommendationCard), "");
 
     public RecommendationCard() => InitializeComponent();
 
@@ -27,12 +28,52 @@ public partial class RecommendationCard : ContentView
     public bool IsMastered { get => (bool)GetValue(IsMasteredProperty); set => SetValue(IsMasteredProperty, value); }
     public string Details { get => (string)GetValue(DetailsProperty); set => SetValue(DetailsProperty, value); }
     public bool ShowDetailsButton { get => (bool)GetValue(ShowDetailsButtonProperty); set => SetValue(ShowDetailsButtonProperty, value); }
+    public string MarketSlug { get => (string)GetValue(MarketSlugProperty); set => SetValue(MarketSlugProperty, value); }
 
-    private void ToggleDetails(object? sender, EventArgs e)
+    private async void OpenDetails(object? sender, EventArgs e)
     {
-        DetailsPanel.IsVisible = !DetailsPanel.IsVisible;
-        if (sender is Button button) button.Text = DetailsPanel.IsVisible ? "−" : "+";
+        var page = new ContentPage
+        {
+            Title = Title,
+            BackgroundColor = Color.FromArgb("#0B0E14")
+        };
+        var close = new Button { Text = "Close", BackgroundColor = Color.FromArgb("#20283A"), TextColor = Colors.White };
+        close.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
+        var wiki = new Button { Text = "Open Wiki ↗", BackgroundColor = Color.FromArgb("#167C70"), TextColor = Colors.White };
+        wiki.Clicked += async (_, _) => await Browser.Default.OpenAsync(WikiUrl(Title), BrowserLaunchMode.SystemPreferred);
+        var market = new Button { Text = "Open Warframe.Market ↗", BackgroundColor = Color.FromArgb("#7D3CFF"), TextColor = Colors.White,
+            IsVisible = !string.IsNullOrWhiteSpace(MarketSlug) };
+        market.Clicked += async (_, _) => await Browser.Default.OpenAsync($"https://warframe.market/items/{Uri.EscapeDataString(MarketSlug)}", BrowserLaunchMode.SystemPreferred);
+
+        page.Content = new ScrollView
+        {
+            Content = new VerticalStackLayout
+            {
+                Padding = new Thickness(28), Spacing = 14, MaximumWidthRequest = 720,
+                HorizontalOptions = LayoutOptions.Center,
+                Children =
+                {
+                    new Label { Text = Title, TextColor = Color.FromArgb("#F4F7FB"), FontSize = 26, FontAttributes = FontAttributes.Bold },
+                    new Label { Text = Badge, TextColor = Color.FromArgb("#F3C969") },
+                    Section("Summary", Metadata),
+                    Section("Recommendation", Action),
+                    Section("Why", Description),
+                    Section("Inventory and mastery", string.IsNullOrWhiteSpace(Details) ? "No additional inventory or mastery information is available for this entry." : Details),
+                    new HorizontalStackLayout { Spacing = 10, Children = { wiki, market, close } }
+                }
+            }
+        };
+        await Navigation.PushModalAsync(page);
     }
+
+    private static Label Section(string heading, string value) => new()
+    {
+        Text = $"{heading}\n{(string.IsNullOrWhiteSpace(value) ? "—" : value)}",
+        TextColor = Color.FromArgb("#AEB8C8"), LineBreakMode = LineBreakMode.WordWrap
+    };
+
+    private static string WikiUrl(string title) =>
+        $"https://wiki.warframe.com/w/{Uri.EscapeDataString(title.Replace(' ', '_'))}";
 
     private static BindableProperty Property(string name, Type type, Type owner, object defaultValue) =>
         BindableProperty.Create(name, type, owner, defaultValue);

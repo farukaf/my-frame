@@ -32,7 +32,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 var status = owned && mastered ? "Collected + mastered" : owned ? "Mastery pending" :
                     mastered ? "Mastered; not owned" : required > 0 && have >= required ? "Ready to build" : "In progress";
                 return new CollectionGoal(item.Name, item.Category, owned, mastered, have, required, completion, status,
-                    item.Prime, item.Vaulted, item.ImageUrl);
+                    item.Prime, item.Vaulted, item.ImageUrl, item.MarketSlug);
             }).OrderBy(x => x.Category).ThenBy(x => x.ItemName).ToArray();
 
     private static Dictionary<string, int> BuildReservations(InventorySnapshot inventory, CatalogSnapshot catalog,
@@ -89,18 +89,20 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var tradable = parent.Components.Where(x => x.Tradable).ToArray();
             var setCount = tradable.Min(x =>
                 (excess.TryGetValue(x.UniqueName, out var amount) ? amount : 0) / x.Required);
-            if (setCount <= 0 || !quotes.TryGetValue(parent.MarketSlug!, out var setQuote) || setQuote.LowestSell is null) continue;
+            if (setCount <= 0 || !quotes.TryGetValue(parent.MarketSlug!, out var setQuote)) continue;
+            var setMarketPrice = MarketPrice(setQuote);
+            if (setMarketPrice is null) continue;
             var partValue = tradable.Sum(component =>
             {
                 var identity = MarketForComponent(parent, component, catalog);
                 return identity is not null && quotes.TryGetValue(identity.Slug, out var quote)
-                    ? (quote.LowestSell ?? 0) * component.Required : 0;
+                    ? (MarketPrice(quote) ?? 0) * component.Required : 0;
             });
-            if (setQuote.LowestSell < partValue) continue;
+            if (setMarketPrice < partValue) continue;
 
             foreach (var component in tradable) excess[component.UniqueName] -= setCount * component.Required;
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
-                setCount, 0, 0, 0, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
+                setCount, 0, 0, 0, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setMarketPrice,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
                 inventory.OwnedEquipment.Contains(parent.UniqueName),
                 IsMastered(parent, inventory.Experience.GetValueOrDefault(parent.UniqueName)),
@@ -113,10 +115,12 @@ public sealed class RecommendationEngine : IRecommendationEngine
             if (!componentInfo.TryGetValue(pair.Key, out var info) || !info.Component.Tradable) continue;
             var identity = MarketForComponent(info.Parent, info.Component, catalog);
             quotes.TryGetValue(identity?.Slug ?? "", out var quote);
-            var hasPlatinumValue = quote?.LowestSell is > 0;
+            var marketPrice = MarketPrice(quote);
+            var hasPlatinumValue = marketPrice is not null;
             var hasDucatValue = info.Component.Ducats > 0;
+            if (!hasPlatinumValue && !hasDucatValue) continue;
             var platinumWins = hasPlatinumValue &&
-                quote!.LowestSell!.Value * settings.DucatsPerPlatinum >= info.Component.Ducats;
+                marketPrice!.Value * settings.DucatsPerPlatinum >= info.Component.Ducats;
             var action = platinumWins ? RecommendationAction.SellForPlatinum : hasDucatValue
                 ? RecommendationAction.ExchangeForDucats : RecommendationAction.Keep;
             var reason = action switch
@@ -132,7 +136,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key),
                 breakdown.Craft, breakdown.FutureSale, breakdown.Orders, pair.Value,
-                info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
+                info.Component.Ducats, marketPrice, quote?.HighestBuy, action, info.Parent.Vaulted,
                 inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
                 HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
@@ -147,11 +151,13 @@ public sealed class RecommendationEngine : IRecommendationEngine
             if (!componentInfo.TryGetValue(pair.Key, out var info) || !info.Component.Tradable) continue;
             var identity = MarketForComponent(info.Parent, info.Component, catalog);
             quotes.TryGetValue(identity?.Slug ?? "", out var quote);
+            var marketPrice = MarketPrice(quote);
+            if (marketPrice is null && info.Component.Ducats <= 0) continue;
             var kept = Math.Min(pair.Value, reservations.GetValueOrDefault(pair.Key));
             var breakdown = ReservationBreakdown(info.Parent, info.Component, inventory, catalog, orders, settings);
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 pair.Value, kept, Math.Min(kept, breakdown.Craft), Math.Min(kept, breakdown.FutureSale),
-                Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
+                Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, marketPrice, quote?.HighestBuy,
                 RecommendationAction.Keep, info.Parent.Vaulted,
                 inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
@@ -198,7 +204,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 return new FarmRecommendation(item.Name, item.Category, missing.Length,
                     item.Components.Count, ownedRelics, item.Vaulted, quote?.LowestSell,
                     missing.Select(x => x.Name).ToArray(), $"Missing {missing.Length} parts; {ownedRelics} useful relics owned.",
-                    item.ImageUrl);
+                    item.ImageUrl, item.MarketSlug);
             }).OrderBy(x => x.MissingParts).ThenByDescending(x => x.OwnedRelics)
             .ThenByDescending(x => x.EstimatedPlatinum ?? 0).ToArray();
     }
@@ -233,7 +239,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 };
                 return new RelicRecommendation(item.Name, item.UniqueName,
                     inventory.Stackables[item.UniqueName], item.Vaulted, sell, expected, action, reason,
-                    item.ImageUrl);
+                    item.ImageUrl, item.MarketSlug);
             })
             .OrderBy(x => x.Action == "Hold")
             .ThenByDescending(x => Math.Max(x.SellPriceEach ?? 0, x.ExpectedOpenValueEach) * x.Owned)
@@ -264,6 +270,9 @@ public sealed class RecommendationEngine : IRecommendationEngine
         return xp >= (suitLike ? 900_000 : 450_000);
     }
     private static bool HasOrder(string? marketId, IReadOnlyList<MarketOrder> orders) => !string.IsNullOrWhiteSpace(marketId) && orders.Any(x => x.ItemId == marketId && x.Type == "sell");
+    private static int? MarketPrice(MarketQuote? quote) => quote?.LowestSell is > 0
+        ? quote.LowestSell
+        : quote?.HighestBuy is > 0 ? quote.HighestBuy : null;
     private sealed record ComponentDetails(CatalogItem Parent, CatalogComponent Component, string DisplayName);
     private sealed record ReservationParts(int Craft, int FutureSale, int Orders);
 }

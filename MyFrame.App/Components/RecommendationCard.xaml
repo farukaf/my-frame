@@ -19,7 +19,7 @@
                            IsVisible="{Binding IsMastered, Source={x:Reference CardRoot}}"
                            ToolTipProperties.Text="Mastered" />
                     <Button Grid.Column="2" Text="+" IsVisible="{Binding ShowDetailsButton, Source={x:Reference CardRoot}}"
-                            Clicked="ToggleDetails" ToolTipProperties.Text="Show item details"
+                            Clicked="OpenDetails" ToolTipProperties.Text="Show item details"
                             BackgroundColor="Transparent" TextColor="#7DE2D1" FontSize="18" Padding="5,0"
                             WidthRequest="28" HeightRequest="25" />
                 </Grid>
@@ -31,11 +31,6 @@
                    TextColor="#F3C969" FontFamily="OpenSansSemibold" LineBreakMode="WordWrap" />
             <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Description, Source={x:Reference CardRoot}}"
                    TextColor="#8995A8" FontSize="12" LineBreakMode="WordWrap" />
-            <Border x:Name="DetailsPanel" Grid.Row="3" Grid.ColumnSpan="2" IsVisible="False"
-                    BackgroundColor="#0D121C" Stroke="#303B50" StrokeShape="RoundRectangle 8" Padding="8">
-                <Label Text="{Binding Details, Source={x:Reference CardRoot}}" TextColor="#AEB8C8"
-                       FontSize="11" LineBreakMode="WordWrap" />
-            </Border>
             <ProgressBar Grid.Row="4" Grid.ColumnSpan="2"
                          IsVisible="{Binding ShowProgress, Source={x:Reference CardRoot}}"
                          Progress="{Binding Progress, Source={x:Reference CardRoot}}"

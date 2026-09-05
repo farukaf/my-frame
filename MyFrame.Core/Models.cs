@@ -87,10 +87,12 @@ public sealed record CollectionGoal(
     string Status,
     bool Prime,
     bool Vaulted,
-    string ImageUrl)
+    string ImageUrl,
+    string? MarketSlug)
 {
     public string PrimeStatus => !Prime ? "" : Vaulted ? "Prime · Vaulted" : "Prime · Unvaulted";
     public string CardMetadata => $"{OwnedComponents:N0}/{RequiredComponents:N0} parts";
+    public string ItemDetails => $"Built item: {(Owned ? "currently in inventory" : "not in inventory")} · Mastery: {(Mastered ? "completed" : "pending")}";
 }
 
 public sealed record FarmRecommendation(
@@ -103,11 +105,13 @@ public sealed record FarmRecommendation(
     int? EstimatedPlatinum,
     IReadOnlyList<string> MissingComponentNames,
     string Reason,
-    string ImageUrl)
+    string ImageUrl,
+    string? MarketSlug)
 {
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"{MissingParts:N0} missing · {OwnedRelics:N0} useful relics";
     public string CardAction => EstimatedPlatinum is null ? "Farm missing components" : $"Farm or buy for ~{EstimatedPlatinum:N0}p";
+    public string ItemDetails => $"Missing {MissingParts:N0} of {RequiredParts:N0} required components · {string.Join(", ", MissingComponentNames)}";
 }
 
 public sealed record RelicRecommendation(
@@ -119,12 +123,14 @@ public sealed record RelicRecommendation(
     double ExpectedOpenValueEach,
     string Action,
     string Reason,
-    string ImageUrl)
+    string ImageUrl,
+    string? MarketSlug)
 {
     public int? TotalSellPrice => SellPriceEach * Owned;
     public double TotalExpectedOpenValue => ExpectedOpenValueEach * Owned;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"Owned {Owned:N0} · sealed {(SellPriceEach is null ? "—" : $"{SellPriceEach:N0}p")} · open EV {ExpectedOpenValueEach:0.0}p";
+    public string ItemDetails => $"Currently in inventory: {Owned:N0} relic(s) · Mastery does not apply to relics";
 }
 
 public sealed record SaleRecommendation(
