@@ -54,7 +54,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
     [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
-    [ObservableProperty] public partial string ActiveSalesSettingsText { get; set; } = "Recommendations not loaded yet";
+    [ObservableProperty] public partial string ActiveConversionValue { get; set; } = "—";
+    [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
+    [ObservableProperty] public partial bool ActivePrimeSetReserveEnabled { get; set; }
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -151,8 +153,9 @@ public partial class DashboardViewModel : ObservableObject
         TotalPlatinum = $"{snapshot.Recommendations.EstimatedPlatinum:N0}p";
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
         var activeSettings = snapshot.Recommendations.Settings;
-        ActiveSalesSettingsText = $"Loaded with 1p = {activeSettings.DucatsPerPlatinum} ducats · " +
-            $"reserve unvaulted Prime set: {(activeSettings.ReserveUnvaultedPrimeWarframeSet ? "on" : "off")}";
+        ActiveConversionValue = activeSettings.DucatsPerPlatinum.ToString();
+        ActivePrimeSetReserveEnabled = activeSettings.ReserveUnvaultedPrimeWarframeSet;
+        ActivePrimeSetReserveText = ActivePrimeSetReserveEnabled ? "ON" : "OFF";
         var mastered = snapshot.Recommendations.Collection.Count(x => x.Mastered);
         var total = snapshot.Recommendations.Collection.Count;
         MasteryProgress = total == 0 ? "0%" : $"{(double)mastered / total:P0}";
