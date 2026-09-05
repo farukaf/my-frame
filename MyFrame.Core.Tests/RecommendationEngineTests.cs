@@ -90,6 +90,30 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
+    public void KeepsItemWhenBothMarketAndDucatValuesAreZero()
+    {
+        var (inventory, baseCatalog) = Scenario(ownedParts: 2, ownedEquipment: true);
+        var item = baseCatalog.Items.Single();
+        var zeroValueComponent = item.Components.Single() with { Ducats = 0 };
+        item = item with { Components = [zeroValueComponent] };
+        var catalog = baseCatalog with
+        {
+            Items = [item],
+            ByUniqueName = new Dictionary<string, CatalogItem> { [item.UniqueName] = item }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(RecommendationAction.Keep, recommendation.Action);
+        Assert.Equal(2, recommendation.KeepQuantity);
+        Assert.Equal("keep 2 · do not sell or exchange now", recommendation.ActionLabel);
+        Assert.Equal(0, result.TotalDucats);
+        Assert.Equal(0, result.EstimatedPlatinum);
+    }
+
+    [Fact]
     public void DoesNotMarkItemReadyWhenNonTradableComponentsAreMissing()
     {
         const string itemUnique = "/Items/AeolakLike";

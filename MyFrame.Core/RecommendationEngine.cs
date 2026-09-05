@@ -114,11 +114,21 @@ public sealed class RecommendationEngine : IRecommendationEngine
             if (!componentInfo.TryGetValue(pair.Key, out var info) || !info.Component.Tradable) continue;
             var identity = MarketForComponent(info.Parent, info.Component, catalog);
             quotes.TryGetValue(identity?.Slug ?? "", out var quote);
-            var platinumWins = quote?.LowestSell is > 0 && quote.LowestSell.Value * settings.DucatsPerPlatinum >= info.Component.Ducats;
-            var action = platinumWins ? RecommendationAction.SellForPlatinum : RecommendationAction.ExchangeForDucats;
-            var reason = platinumWins
-                ? $"Market price beats the 1p/{settings.DucatsPerPlatinum:0.#} ducat threshold."
-                : quote is null ? "No public price; ducat value is available." : "Ducats beat the configured threshold.";
+            var hasPlatinumValue = quote?.LowestSell is > 0;
+            var hasDucatValue = info.Component.Ducats > 0;
+            var platinumWins = hasPlatinumValue &&
+                quote!.LowestSell!.Value * settings.DucatsPerPlatinum >= info.Component.Ducats;
+            var action = platinumWins ? RecommendationAction.SellForPlatinum : hasDucatValue
+                ? RecommendationAction.ExchangeForDucats : RecommendationAction.Keep;
+            var reason = action switch
+            {
+                RecommendationAction.SellForPlatinum =>
+                    $"Market price beats the 1p/{settings.DucatsPerPlatinum} ducat threshold.",
+                RecommendationAction.ExchangeForDucats when !hasPlatinumValue =>
+                    "No public market price; the item still has ducat value.",
+                RecommendationAction.ExchangeForDucats => "Ducats beat the configured threshold.",
+                _ => "No public market price or ducat value; keep it instead of exchanging for zero."
+            };
             var breakdown = ReservationBreakdown(info.Parent, info.Component, inventory, catalog, orders, settings);
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key),

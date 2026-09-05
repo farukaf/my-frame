@@ -149,6 +149,7 @@ public sealed record SaleRecommendation(
 {
     public int TotalDucats => Excess * DucatsEach;
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
+    public int KeepQuantity => Action == RecommendationAction.Keep ? Reserved + Excess : Reserved;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"Owned {Owned:N0} · extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
     public string KeepLabel
@@ -159,7 +160,7 @@ public sealed record SaleRecommendation(
             if (ReservedForCraft > 0) reasons.Add($"keep {ReservedForCraft:N0} to craft");
             if (ReservedForFutureSale > 0) reasons.Add($"keep {ReservedForFutureSale:N0} to sell after vault");
             if (ReservedForOrders > 0) reasons.Add($"keep {ReservedForOrders:N0} for active orders");
-            return reasons.Count > 0 ? string.Join(" · ", reasons) : $"keep {Reserved:N0}";
+            return reasons.Count > 0 ? string.Join(" · ", reasons) : $"keep {KeepQuantity:N0}";
         }
     }
     public string ActionLabel => Action switch
