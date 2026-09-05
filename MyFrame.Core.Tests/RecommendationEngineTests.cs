@@ -53,7 +53,7 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
-    public void VaultedUncraftedItemKeepsOneForCraftAndOneForFutureSale()
+    public void VaultedUncraftedItemKeepsOnlyTheCopyNeededForCraft()
     {
         var (inventory, baseCatalog) = Scenario(ownedParts: 3, ownedEquipment: false);
         var vaulted = baseCatalog.Items.Single() with { Vaulted = true };
@@ -67,11 +67,32 @@ public sealed class RecommendationEngineTests
             new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
 
         var recommendation = Assert.Single(result.Sales);
-        Assert.Equal(2, recommendation.Reserved);
+        Assert.Equal(1, recommendation.Reserved);
         Assert.Equal(1, recommendation.ReservedForCraft);
-        Assert.Equal(1, recommendation.ReservedForFutureSale);
-        Assert.Equal(1, recommendation.Excess);
-        Assert.Contains("keep 1 to craft · keep 1 to sell after vault", recommendation.ActionLabel);
+        Assert.Equal(0, recommendation.ReservedForFutureSale);
+        Assert.Equal(2, recommendation.Excess);
+        Assert.Contains("keep 1 to craft", recommendation.ActionLabel);
+        Assert.DoesNotContain("to sell after vault", recommendation.ActionLabel);
+    }
+
+    [Fact]
+    public void VaultedCraftedItemReleasesEveryCopyForSaleOrDucats()
+    {
+        var (inventory, baseCatalog) = Scenario(ownedParts: 2, ownedEquipment: true);
+        var vaulted = baseCatalog.Items.Single() with { Vaulted = true };
+        var catalog = baseCatalog with
+        {
+            Items = [vaulted],
+            ByUniqueName = new Dictionary<string, CatalogItem> { [vaulted.UniqueName] = vaulted }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, true));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(0, recommendation.Reserved);
+        Assert.Equal(2, recommendation.Excess);
+        Assert.Equal(RecommendationAction.ExchangeForDucats, recommendation.Action);
     }
 
     [Fact]
