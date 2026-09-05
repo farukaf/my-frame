@@ -103,7 +103,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
                 setCount, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
-                HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts."));
+                HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts.",
+                parent.ImageUrl));
         }
 
         foreach (var pair in excess.Where(x => x.Value > 0))
@@ -119,7 +120,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key), pair.Value,
                 info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
-                HasOrder(identity?.Id, orders), reason));
+                HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
         }
 
         // Show fully reserved pieces as an explicit Keep recommendation so the sales screen
@@ -135,7 +136,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 pair.Value, kept, 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
                 RecommendationAction.Keep, info.Parent.Vaulted, HasOrder(identity?.Id, orders),
-                "All owned copies are reserved for collection, crafting, or an existing market order."));
+                "All owned copies are reserved for collection, crafting, or an existing market order.",
+                info.Parent.ImageUrl));
         }
 
         return results.OrderBy(x => x.Action).ThenByDescending(x => x.TotalPlatinum ?? 0)
@@ -158,7 +160,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 quotes.TryGetValue(item.MarketSlug ?? "", out var quote);
                 return new FarmRecommendation(item.Name, item.Category, missing.Length,
                     item.Components.Count(x => x.Tradable), ownedRelics, item.Vaulted, quote?.LowestSell,
-                    missing.Select(x => x.Name).ToArray(), $"Missing {missing.Length} parts; {ownedRelics} useful relics owned.");
+                    missing.Select(x => x.Name).ToArray(), $"Missing {missing.Length} parts; {ownedRelics} useful relics owned.",
+                    item.ImageUrl);
             }).OrderBy(x => x.MissingParts).ThenByDescending(x => x.OwnedRelics)
             .ThenByDescending(x => x.EstimatedPlatinum ?? 0).ToArray();
     }
@@ -192,7 +195,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
                     _ => "Not enough market data to compare selling and opening."
                 };
                 return new RelicRecommendation(item.Name, item.UniqueName,
-                    inventory.Stackables[item.UniqueName], item.Vaulted, sell, expected, action, reason);
+                    inventory.Stackables[item.UniqueName], item.Vaulted, sell, expected, action, reason,
+                    item.ImageUrl);
             })
             .OrderBy(x => x.Action == "Hold")
             .ThenByDescending(x => Math.Max(x.SellPriceEach ?? 0, x.ExpectedOpenValueEach) * x.Owned)

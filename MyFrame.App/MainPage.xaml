@@ -3,6 +3,7 @@
     x:Class="MyFrame.App.MainPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:MyFrame.App.Components"
     xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
     Shell.NavBarIsVisible="False"
     BackgroundColor="#0B0E14">
@@ -116,15 +117,9 @@
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="3" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No collection items loaded." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource Card}" Padding="12" MinimumHeightRequest="112">
-                                <Grid ColumnDefinitions="74,*" RowDefinitions="*,Auto" ColumnSpacing="10">
-                                    <Border WidthRequest="68" HeightRequest="68" BackgroundColor="#0D121C" Stroke="#303B50" StrokeShape="RoundRectangle 8" Padding="4">
-                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFit" />
-                                    </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold" LineBreakMode="TailTruncation"/><Label Text="{Binding Status}" TextColor="#AEB8C8" FontSize="12"/><Label Text="{Binding PrimeStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding OwnedComponents, StringFormat='{0} parts'}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Progress="{Binding Completion}" ProgressColor="#7D3CFF" BackgroundColor="#273149" HeightRequest="5" Margin="0,8,0,0" />
-                                </Grid>
-                            </Border>
+                            <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
+                                Badge="{Binding PrimeStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Status}"
+                                Progress="{Binding Completion}" ShowProgress="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -132,15 +127,12 @@
                 <Grid IsVisible="{Binding FarmVisible}" RowDefinitions="Auto,*" RowSpacing="12">
                     <Label Text="Farm plan" Style="{StaticResource Title}" />
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Farm}" SelectionMode="None">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No farming recommendations right now." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
-                                <Grid ColumnDefinitions="2*,Auto,Auto" ColumnSpacing="24">
-                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding VaultStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1"><Label Text="MISSING" Style="{StaticResource Muted}"/><Label Text="{Binding MissingParts}" TextColor="#F3C969" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="2"><Label Text="RELICS" Style="{StaticResource Muted}"/><Label Text="{Binding OwnedRelics}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                </Grid>
-                            </Border>
+                            <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
+                                Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding CardAction}"
+                                Description="{Binding Reason}" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -151,17 +143,12 @@
                         <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
                     </VerticalStackLayout>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Relics}" SelectionMode="None">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No owned relics with catalog data were found." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
-                                <Grid ColumnDefinitions="2*,Auto,Auto,Auto,Auto" ColumnSpacing="22">
-                                    <VerticalStackLayout><Label Text="{Binding RelicName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1"><Label Text="OWNED" Style="{StaticResource Muted}"/><Label Text="{Binding Owned}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="2"><Label Text="SEALED" Style="{StaticResource Muted}"/><Label Text="{Binding SellPriceEach, StringFormat='{0}p each', TargetNullValue='—'}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="3"><Label Text="OPEN EV" Style="{StaticResource Muted}"/><Label Text="{Binding ExpectedOpenValueEach, StringFormat='{0:F1}p each'}" TextColor="#B9A7FF" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="4"><Label Text="{Binding VaultStatus}" TextColor="#F3C969" HorizontalTextAlignment="Center"/><Label Text="{Binding Action}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/></VerticalStackLayout>
-                                </Grid>
-                            </Border>
+                            <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding RelicName}"
+                                Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Action}"
+                                Description="{Binding Reason}" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -169,19 +156,12 @@
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto"><Label Text="Sales and ducats" Style="{StaticResource Title}" /><Picker Grid.Column="1" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" /></Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
-                                <Grid ColumnDefinitions="2*,Auto,Auto,2*" ColumnSpacing="22">
-                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding VaultStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1"><Label Text="EXTRA" Style="{StaticResource Muted}"/><Label Text="{Binding Excess}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="2"><Label Text="PLATINUM" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum, TargetNullValue='—'}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="3" VerticalOptions="Center">
-                                        <Label Text="RECOMMENDATION" Style="{StaticResource Muted}" />
-                                        <Label Text="{Binding ActionLabel}" TextColor="#F3C969" LineBreakMode="WordWrap" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </Border>
+                            <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
+                                Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
+                                Description="{Binding Reason}" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
