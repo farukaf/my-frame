@@ -122,6 +122,22 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 HasOrder(identity?.Id, orders), reason));
         }
 
+        // Show fully reserved pieces as an explicit Keep recommendation so the sales screen
+        // also explains what must not be sold or exchanged.
+        foreach (var pair in inventory.Stackables.Where(x => x.Value > 0 &&
+                     reservations.GetValueOrDefault(x.Key) > 0 &&
+                     (!excess.TryGetValue(x.Key, out var available) || available == 0)))
+        {
+            if (!componentInfo.TryGetValue(pair.Key, out var info) || !info.Component.Tradable) continue;
+            var identity = MarketForComponent(info.Parent, info.Component, catalog);
+            quotes.TryGetValue(identity?.Slug ?? "", out var quote);
+            var kept = Math.Min(pair.Value, reservations.GetValueOrDefault(pair.Key));
+            results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
+                pair.Value, kept, 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
+                RecommendationAction.Keep, info.Parent.Vaulted, HasOrder(identity?.Id, orders),
+                "All owned copies are reserved for collection, crafting, or an existing market order."));
+        }
+
         return results.OrderBy(x => x.Action).ThenByDescending(x => x.TotalPlatinum ?? 0)
             .ThenByDescending(x => x.TotalDucats).ToArray();
     }

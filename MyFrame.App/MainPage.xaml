@@ -172,11 +172,14 @@
                         <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
-                                <Grid ColumnDefinitions="2*,Auto,Auto,Auto" ColumnSpacing="22">
+                                <Grid ColumnDefinitions="2*,Auto,Auto,2*" ColumnSpacing="22">
                                     <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding VaultStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="1"><Label Text="EXTRA" Style="{StaticResource Muted}"/><Label Text="{Binding Excess}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2"><Label Text="PLATINUM" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum, TargetNullValue='—'}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <Label Grid.Column="3" Text="{Binding ActionLabel}" TextColor="#F3C969" VerticalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="3" VerticalOptions="Center">
+                                        <Label Text="RECOMMENDATION" Style="{StaticResource Muted}" />
+                                        <Label Text="{Binding ActionLabel}" TextColor="#F3C969" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate></CollectionView.ItemTemplate>

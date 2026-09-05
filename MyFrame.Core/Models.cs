@@ -139,9 +139,15 @@ public sealed record SaleRecommendation(
     public int TotalDucats => Excess * DucatsEach;
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
-    public string ActionLabel => Action == RecommendationAction.ExchangeForDucats
-        ? $"Venda {Excess:N0}, guarde {Reserved:N0} · {TotalDucats:N0} ducats"
-        : Action == RecommendationAction.SellForPlatinum ? "Sell for platinum" : Action.ToString();
+    public string ActionLabel => Action switch
+    {
+        RecommendationAction.ExchangeForDucats =>
+            $"Exchange {Excess:N0}, keep {Reserved:N0} · {TotalDucats:N0} ducats",
+        RecommendationAction.SellForPlatinum =>
+            $"Sell {Excess:N0}, keep {Reserved:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}",
+        RecommendationAction.Keep => $"Keep {Reserved:N0} · do not sell or exchange",
+        _ => Action.ToString()
+    };
 }
 
 public sealed record RecommendationResult(

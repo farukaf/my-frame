@@ -56,7 +56,7 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<RelicRecommendation> Relics { get; } = [];
     public IReadOnlyList<string> CollectionFilters { get; } = ["In progress", "All", "Not owned", "Owned", "Mastered", "Prime only"];
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
-    public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
+    public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
     public ISeries[] ValueSeries { get; private set; } = [];
     public ISeries[] ProgressSeries { get; private set; } = [];
 
@@ -168,6 +168,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         sales = SelectedSalesFilter switch
         {
+            "Keep" => sales.Where(x => x.Action == RecommendationAction.Keep),
             "Platinum" => sales.Where(x => x.Action == RecommendationAction.SellForPlatinum),
             "Ducats" => sales.Where(x => x.Action == RecommendationAction.ExchangeForDucats),
             "Existing orders" => sales.Where(x => x.ExistingOrder),

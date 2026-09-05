@@ -34,7 +34,22 @@ public sealed class RecommendationEngineTests
         Assert.Equal(1, sale.Excess);
         Assert.Equal(RecommendationAction.ExchangeForDucats, sale.Action);
         Assert.Equal(45, result.TotalDucats);
-        Assert.Equal("Venda 1, guarde 1 · 45 ducats", sale.ActionLabel);
+        Assert.Equal("Exchange 1, keep 1 · 45 ducats", sale.ActionLabel);
+    }
+
+    [Fact]
+    public void FullyReservedPieceIsShownAsKeepRecommendation()
+    {
+        var (inventory, catalog) = Scenario(ownedParts: 1, ownedEquipment: false);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(RecommendationAction.Keep, recommendation.Action);
+        Assert.Equal(1, recommendation.Reserved);
+        Assert.Equal(0, recommendation.Excess);
+        Assert.Equal("Keep 1 · do not sell or exchange", recommendation.ActionLabel);
     }
 
     [Fact]
