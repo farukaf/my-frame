@@ -93,6 +93,7 @@ public sealed class RecommendationEngineTests
         Assert.Equal(0, recommendation.Reserved);
         Assert.Equal(2, recommendation.Excess);
         Assert.Equal(RecommendationAction.ExchangeForDucats, recommendation.Action);
+        Assert.DoesNotContain("keep 0", recommendation.ActionLabel);
     }
 
     [Fact]
