@@ -17,6 +17,9 @@ public partial class DashboardViewModel : ObservableObject
     private readonly LocalSettings _localSettings;
     private bool _initialized;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
+    private IReadOnlyList<FarmRecommendation> _allFarm = [];
+    private IReadOnlyList<SaleRecommendation> _allSales = [];
+    private IReadOnlyList<RelicRecommendation> _allRelics = [];
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings)
@@ -57,6 +60,11 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string ActiveConversionValue { get; set; } = "—";
     [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
     [ObservableProperty] public partial bool ActivePrimeSetReserveEnabled { get; set; }
+    [ObservableProperty] public partial string CollectionSearchText { get; set; } = "";
+    [ObservableProperty] public partial string FarmSearchText { get; set; } = "";
+    [ObservableProperty] public partial string SalesSearchText { get; set; } = "";
+    [ObservableProperty] public partial string RelicsSearchText { get; set; } = "";
+    [ObservableProperty] public partial string AlecaDataUpdatedText { get; set; } = "—";
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -149,6 +157,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         StatusMessage = snapshot.Status.Message;
         LastSyncText = snapshot.Status.LastSuccessfulSync?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—";
+        AlecaDataUpdatedText = snapshot.Inventory.CapturedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
         AccountText = snapshot.Account is null ? "Token missing or expired" : $"{snapshot.Account.IngameName} · {snapshot.Account.Platform}";
         TotalPlatinum = $"{snapshot.Recommendations.EstimatedPlatinum:N0}p";
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
@@ -161,10 +170,13 @@ public partial class DashboardViewModel : ObservableObject
         MasteryProgress = total == 0 ? "0%" : $"{(double)mastered / total:P0}";
         InventorySummary = $"{snapshot.Inventory.Stackables.Count:N0} stacks · {snapshot.Inventory.OwnedEquipment.Count:N0} equipment";
         _allCollection = snapshot.Recommendations.Collection;
+        _allFarm = snapshot.Recommendations.Farm;
+        _allSales = snapshot.Recommendations.Sales;
+        _allRelics = snapshot.Recommendations.Relics;
         ApplyCollectionView();
-        Replace(Farm, snapshot.Recommendations.Farm.Take(100));
-        ApplySalesView(snapshot.Recommendations.Sales);
-        Replace(Relics, snapshot.Recommendations.Relics.Take(200));
+        ApplyFarmView();
+        ApplySalesView();
+        ApplyRelicsView();
         ValueSeries =
         [
             new PieSeries<double> { Name = "Platinum", Values = [snapshot.Recommendations.EstimatedPlatinum] },
@@ -191,6 +203,10 @@ public partial class DashboardViewModel : ObservableObject
 
     partial void OnSelectedCollectionFilterChanged(string value) => ApplyCollectionView();
     partial void OnSelectedCollectionSortChanged(string value) => ApplyCollectionView();
+    partial void OnCollectionSearchTextChanged(string value) => ApplyCollectionView();
+    partial void OnFarmSearchTextChanged(string value) => ApplyFarmView();
+    partial void OnSalesSearchTextChanged(string value) => ApplySalesView();
+    partial void OnRelicsSearchTextChanged(string value) => ApplyRelicsView();
     partial void OnDucatsPerPlatinumChanged(double value)
     {
         var integerValue = Math.Clamp((int)Math.Round(value), 1, 50);
@@ -205,21 +221,37 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings.ReserveUnvaultedPrimeWarframeSet = value;
     partial void OnSelectedSalesFilterChanged(string value)
     {
-        if (_service.LastSnapshot is not null) ApplySalesView(_service.LastSnapshot.Recommendations.Sales);
+        ApplySalesView();
     }
 
-    private void ApplySalesView(IEnumerable<SaleRecommendation> sales)
+    private void ApplySalesView()
     {
-        sales = SelectedSalesFilter switch
+        IEnumerable<SaleRecommendation> sales = SelectedSalesFilter switch
         {
-            "Keep" => sales.Where(x => x.Action == RecommendationAction.Keep),
-            "Platinum" => sales.Where(x => x.Action == RecommendationAction.SellForPlatinum),
-            "Ducats" => sales.Where(x => x.Action == RecommendationAction.ExchangeForDucats),
-            "Existing orders" => sales.Where(x => x.ExistingOrder),
-            "Vaulted items" => sales.Where(x => x.Vaulted),
-            _ => sales
+            "Keep" => _allSales.Where(x => x.Action == RecommendationAction.Keep),
+            "Platinum" => _allSales.Where(x => x.Action == RecommendationAction.SellForPlatinum),
+            "Ducats" => _allSales.Where(x => x.Action == RecommendationAction.ExchangeForDucats),
+            "Existing orders" => _allSales.Where(x => x.ExistingOrder),
+            "Vaulted items" => _allSales.Where(x => x.Vaulted),
+            _ => _allSales
         };
+        if (!string.IsNullOrWhiteSpace(SalesSearchText))
+            sales = sales.Where(x => Matches(SalesSearchText, x.ItemName, x.Reason, x.ActionLabel, x.VaultStatus));
         Replace(Sales, sales.Take(200));
+    }
+
+    private void ApplyFarmView()
+    {
+        IEnumerable<FarmRecommendation> values = string.IsNullOrWhiteSpace(FarmSearchText) ? _allFarm : _allFarm.Where(x =>
+            Matches(FarmSearchText, x.ItemName, x.Category, x.Reason, string.Join(' ', x.MissingComponentNames)));
+        Replace(Farm, values.Take(100));
+    }
+
+    private void ApplyRelicsView()
+    {
+        IEnumerable<RelicRecommendation> values = string.IsNullOrWhiteSpace(RelicsSearchText) ? _allRelics : _allRelics.Where(x =>
+            Matches(RelicsSearchText, x.RelicName, x.Reason, x.Action, x.VaultStatus));
+        Replace(Relics, values.Take(200));
     }
 
     private void ApplyCollectionView()
@@ -240,6 +272,11 @@ public partial class DashboardViewModel : ObservableObject
             "Least progress" => values.OrderBy(x => x.Completion).ThenBy(x => x.ItemName),
             _ => values.OrderByDescending(x => x.Completion).ThenBy(x => x.ItemName)
         };
+        if (!string.IsNullOrWhiteSpace(CollectionSearchText))
+            values = values.Where(x => Matches(CollectionSearchText, x.ItemName, x.Category, x.Status, x.PrimeStatus));
         Replace(Collection, values);
     }
+
+    private static bool Matches(string query, params string?[] values) => values.Any(value =>
+        value?.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) == true);
 }

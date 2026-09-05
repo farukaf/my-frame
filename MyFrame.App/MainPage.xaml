@@ -59,7 +59,8 @@
                 <VerticalStackLayout Grid.Row="3" Spacing="4">
                     <Label Text="{Binding AccountText}" TextColor="#D6DCE6" FontSize="12" LineBreakMode="TailTruncation" />
                     <Label Text="{Binding StatusMessage}" Style="{StaticResource Muted}" LineBreakMode="WordWrap" />
-                    <Label Text="{Binding LastSyncText, StringFormat='Updated {0}'}" Style="{StaticResource Muted}" />
+                    <Label Text="{Binding LastSyncText, StringFormat='MyFrame refreshed: {0}'}" Style="{StaticResource Muted}" />
+                    <Label Text="{Binding AlecaDataUpdatedText, StringFormat='Aleca data: {0}'}" Style="{StaticResource Muted}" />
                 </VerticalStackLayout>
             </Grid>
         </Border>
@@ -147,6 +148,8 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <VerticalStackLayout><Label Text="Collection and mastery" Style="{StaticResource Title}"/><Label Text="Items with active progress are shown by default." TextColor="#8995A8"/></VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                            <Entry Placeholder="Search collection…" Text="{Binding CollectionSearchText}" WidthRequest="190"
+                                   TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
                             <Picker Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="145" />
                             <Picker Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
                         </HorizontalStackLayout>
@@ -164,7 +167,11 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding FarmVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Label Text="Farm plan" Style="{StaticResource Title}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <Label Text="Farm plan" Style="{StaticResource Title}" />
+                        <Entry Grid.Column="1" Placeholder="Search farm…" Text="{Binding FarmSearchText}" WidthRequest="220"
+                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                    </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Farm}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No farming recommendations right now." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
@@ -177,10 +184,14 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding RelicsVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <VerticalStackLayout>
-                        <Label Text="Relic advisor" Style="{StaticResource Title}" />
-                        <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
-                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <VerticalStackLayout>
+                            <Label Text="Relic advisor" Style="{StaticResource Title}" />
+                            <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
+                        </VerticalStackLayout>
+                        <Entry Grid.Column="1" Placeholder="Search relics…" Text="{Binding RelicsSearchText}" WidthRequest="220"
+                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                    </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Relics}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No owned relics with catalog data were found." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
@@ -193,7 +204,12 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,Auto"><Label Text="Sales and ducats" Style="{StaticResource Title}" /><Picker Grid.Column="1" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" /></Grid>
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <Label Text="Sales and ducats" Style="{StaticResource Title}" />
+                        <Entry Grid.Column="1" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220"
+                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                        <Picker Grid.Column="2" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                    </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
