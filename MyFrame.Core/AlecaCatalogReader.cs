@@ -20,10 +20,11 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
         var jsonDirectory = Path.Combine(alecaDirectory, "cachedData", "json");
         _logger.LogInformation("Loading AlecaFrame catalogs");
         if (!Directory.Exists(jsonDirectory))
-            throw new DirectoryNotFoundException($"Catálogo do AlecaFrame não encontrado: {jsonDirectory}");
+            throw new DirectoryNotFoundException($"AlecaFrame catalog not found: {jsonDirectory}");
 
         var market = new Dictionary<string, MarketIdentity>(StringComparer.Ordinal);
         var relicsByReward = new Dictionary<string, List<RelicSource>>(StringComparer.Ordinal);
+        var rewardsByRelic = new Dictionary<string, List<RelicSource>>(StringComparer.OrdinalIgnoreCase);
         var rawItems = new List<RawCatalogItem>();
 
         foreach (var file in Directory.EnumerateFiles(jsonDirectory, "*.json"))
@@ -37,7 +38,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
             foreach (var element in document.RootElement.EnumerateArray())
             {
                 if (element.TryGetProperty("rewards", out var rewards) && rewards.ValueKind == JsonValueKind.Array)
-                    ParseRelic(element, rewards, relicsByReward, market);
+                    ParseRelic(element, rewards, relicsByReward, rewardsByRelic, market);
                 var item = ParseItem(element);
                 if (item is not null) rawItems.Add(item);
                 ParseMarketIdentity(element, market);
@@ -46,7 +47,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
         var items = rawItems.GroupBy(x => x.UniqueName, StringComparer.Ordinal)
             .Select(x => x.First())
-            .Select(x => Materialize(x, relicsByReward, market))
+            .Select(x => Materialize(x, relicsByReward, rewardsByRelic, market))
             .ToArray();
         _logger.LogInformation("Catalog loaded with {ItemCount} items and {MarketMappingCount} market mappings",
             items.Length, market.Count);
@@ -86,6 +87,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
     private static CatalogItem Materialize(RawCatalogItem item,
         IReadOnlyDictionary<string, List<RelicSource>> relicsByReward,
+        IReadOnlyDictionary<string, List<RelicSource>> rewardsByRelic,
         IDictionary<string, MarketIdentity> market)
     {
         var normalizedItem = ItemNameNormalizer.Normalize(item.Name);
@@ -105,6 +107,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
             if (relicsByReward.TryGetValue(ItemNameNormalizer.Normalize(fullName), out var sources))
                 relicSources.AddRange(sources);
         }
+        if (rewardsByRelic.TryGetValue(item.Name, out var rewards)) relicSources.AddRange(rewards);
 
         return new CatalogItem(item.UniqueName, item.Name, item.Category, item.ProductCategory, item.ImageName,
             item.Masterable, item.Prime, item.Tradable, item.Vaulted, item.EstimatedVaultDate,
@@ -113,9 +116,10 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
     private static void ParseRelic(JsonElement relic, JsonElement rewards,
         IDictionary<string, List<RelicSource>> relicsByReward,
+        IDictionary<string, List<RelicSource>> rewardsByRelic,
         IDictionary<string, MarketIdentity> market)
     {
-        var relicName = GetString(relic, "name") ?? "Relíquia";
+        var relicName = GetString(relic, "name") ?? "Relic";
         var vaulted = GetBool(relic, "vaulted");
         foreach (var reward in rewards.EnumerateArray())
         {
@@ -124,7 +128,11 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
             if (string.IsNullOrWhiteSpace(rewardName)) continue;
             var normalized = ItemNameNormalizer.Normalize(rewardName);
             if (!relicsByReward.TryGetValue(normalized, out var list)) relicsByReward[normalized] = list = [];
-            list.Add(new RelicSource(relicName, GetString(reward, "rarity") ?? "", GetDouble(reward, "chance"), vaulted, rewardName));
+            var source = new RelicSource(relicName, GetString(reward, "rarity") ?? "", GetDouble(reward, "chance"), vaulted, rewardName);
+            list.Add(source);
+            if (!rewardsByRelic.TryGetValue(relicName, out var relicRewards))
+                rewardsByRelic[relicName] = relicRewards = [];
+            relicRewards.Add(source);
             if (item.TryGetProperty("warframeMarket", out var marketElement)) AddMarket(normalized, marketElement, market);
         }
     }

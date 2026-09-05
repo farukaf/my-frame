@@ -48,16 +48,17 @@
 
                 <VerticalStackLayout Grid.Row="1" Spacing="5">
                     <Button Text="⌂  Dashboard" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" />
-                    <Button Text="◉  Coleção" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Collection" />
-                    <Button Text="◇  Plano de farm" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Farm" />
-                    <Button Text="⇄  Vendas e ducats" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Sales" />
-                    <Button Text="⚙  Configurações" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Settings" />
+                    <Button Text="◉  Collection" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Collection" />
+                    <Button Text="◇  Farm plan" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Farm" />
+                    <Button Text="⬡  Relic advisor" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Relics" />
+                    <Button Text="⇄  Sales and ducats" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Sales" />
+                    <Button Text="⚙  Settings" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Settings" />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="3" Spacing="4">
                     <Label Text="{Binding AccountText}" TextColor="#D6DCE6" FontSize="12" LineBreakMode="TailTruncation" />
                     <Label Text="{Binding StatusMessage}" Style="{StaticResource Muted}" LineBreakMode="WordWrap" />
-                    <Label Text="{Binding LastSyncText, StringFormat='Atualizado em {0}'}" Style="{StaticResource Muted}" />
+                    <Label Text="{Binding LastSyncText, StringFormat='Updated {0}'}" Style="{StaticResource Muted}" />
                 </VerticalStackLayout>
             </Grid>
         </Border>
@@ -65,12 +66,15 @@
         <Grid Grid.Column="1" RowDefinitions="Auto,*" Padding="28,22" RowSpacing="18">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <VerticalStackLayout Spacing="2">
-                    <Label Text="Inventário inteligente" Style="{StaticResource Title}" />
-                    <Label Text="Coleção, farm e valor dos seus excedentes em um só lugar." TextColor="#8995A8" />
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="Smart inventory" Style="{StaticResource Title}" />
+                        <Button Text="↗" Command="{Binding OpenWikiCommand}" ToolTipProperties.Text="Open Warframe Wiki" BackgroundColor="Transparent" TextColor="#7DE2D1" FontSize="19" Padding="4,0" />
+                    </HorizontalStackLayout>
+                    <Label Text="Collection, farming, relics, and the value of your extras in one place." TextColor="#8995A8" />
                 </VerticalStackLayout>
                 <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">
                     <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#7DE2D1" />
-                    <Button Grid.Column="1" Text="Atualizar agora" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
+                    <Button Grid.Column="1" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
                 </Grid>
             </Grid>
 
@@ -78,21 +82,21 @@
                 <ScrollView IsVisible="{Binding DashboardVisible}">
                     <VerticalStackLayout Spacing="18">
                         <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
-                            <Border Style="{StaticResource Card}"><VerticalStackLayout><Label Text="PLATINUM ESTIMADO" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum}" TextColor="#7DE2D1" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
-                            <Border Grid.Column="1" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="DUCATS DISPONÍVEIS" Style="{StaticResource Muted}"/><Label Text="{Binding TotalDucats}" TextColor="#F3C969" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
-                            <Border Grid.Column="2" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="MAESTRIA" Style="{StaticResource Muted}"/><Label Text="{Binding MasteryProgress}" TextColor="#B9A7FF" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
-                            <Border Grid.Column="3" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="INVENTÁRIO" Style="{StaticResource Muted}"/><Label Text="{Binding InventorySummary}" TextColor="#F4F7FB" FontSize="16" FontFamily="OpenSansSemibold" LineBreakMode="WordWrap"/></VerticalStackLayout></Border>
+                            <Border Style="{StaticResource Card}"><VerticalStackLayout><Label Text="ESTIMATED PLATINUM" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum}" TextColor="#7DE2D1" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                            <Border Grid.Column="1" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="AVAILABLE DUCATS" Style="{StaticResource Muted}"/><Label Text="{Binding TotalDucats}" TextColor="#F3C969" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                            <Border Grid.Column="2" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="MASTERY" Style="{StaticResource Muted}"/><Label Text="{Binding MasteryProgress}" TextColor="#B9A7FF" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                            <Border Grid.Column="3" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="INVENTORY" Style="{StaticResource Muted}"/><Label Text="{Binding InventorySummary}" TextColor="#F4F7FB" FontSize="16" FontFamily="OpenSansSemibold" LineBreakMode="WordWrap"/></VerticalStackLayout></Border>
                         </Grid>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <Border Style="{StaticResource Card}">
                                 <Grid RowDefinitions="Auto,260">
-                                    <Label Text="Valor dos excedentes" Style="{StaticResource SectionTitle}" />
+                                    <Label Text="Extra inventory value" Style="{StaticResource SectionTitle}" />
                                     <lvc:PieChart Grid.Row="1" Series="{Binding ValueSeries}" LegendPosition="Bottom" />
                                 </Grid>
                             </Border>
                             <Border Grid.Column="1" Style="{StaticResource Card}">
                                 <Grid RowDefinitions="Auto,260">
-                                    <Label Text="Progresso de maestria" Style="{StaticResource SectionTitle}" />
+                                    <Label Text="Mastery progress" Style="{StaticResource SectionTitle}" />
                                     <lvc:CartesianChart Grid.Row="1" Series="{Binding ProgressSeries}" LegendPosition="Bottom" />
                                 </Grid>
                             </Border>
@@ -100,17 +104,25 @@
                     </VerticalStackLayout>
                 </ScrollView>
 
-                <Grid IsVisible="{Binding CollectionVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Label Text="Coleção e maestria" Style="{StaticResource Title}" />
-                    <CollectionView Grid.Row="1" ItemsSource="{Binding Collection}" SelectionMode="None">
-                        <CollectionView.EmptyView><Label Text="Nenhum item de coleção carregado." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                <Grid IsVisible="{Binding CollectionVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <VerticalStackLayout><Label Text="Collection and mastery" Style="{StaticResource Title}"/><Label Text="Items with active progress are shown by default." TextColor="#8995A8"/></VerticalStackLayout>
+                        <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                            <Picker Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="145" />
+                            <Picker Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                        </HorizontalStackLayout>
+                    </Grid>
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding Collection}" SelectionMode="None">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="3" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
+                        <CollectionView.EmptyView><Label Text="No collection items loaded." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
-                                <Grid ColumnDefinitions="2*,*,*,140" ColumnSpacing="14">
-                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding Category}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="{Binding Status}" TextColor="#AEB8C8" VerticalOptions="Center" />
-                                    <ProgressBar Grid.Column="2" Progress="{Binding Completion}" ProgressColor="#7DE2D1" VerticalOptions="Center" />
-                                    <Label Grid.Column="3" Text="{Binding OwnedComponents, StringFormat='{0} peças'}" TextColor="#8995A8" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                            <Border Style="{StaticResource Card}" Padding="12" MinimumHeightRequest="112">
+                                <Grid ColumnDefinitions="74,*" RowDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Border WidthRequest="68" HeightRequest="68" BackgroundColor="#0D121C" Stroke="#303B50" StrokeShape="RoundRectangle 8" Padding="4">
+                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFit" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold" LineBreakMode="TailTruncation"/><Label Text="{Binding Status}" TextColor="#AEB8C8" FontSize="12"/><Label Text="{Binding PrimeStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding OwnedComponents, StringFormat='{0} parts'}" Style="{StaticResource Muted}"/></VerticalStackLayout>
+                                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Progress="{Binding Completion}" ProgressColor="#7D3CFF" BackgroundColor="#273149" HeightRequest="5" Margin="0,8,0,0" />
                                 </Grid>
                             </Border>
                         </DataTemplate></CollectionView.ItemTemplate>
@@ -118,15 +130,36 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding FarmVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Label Text="Plano de farm" Style="{StaticResource Title}" />
+                    <Label Text="Farm plan" Style="{StaticResource Title}" />
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Farm}" SelectionMode="None">
-                        <CollectionView.EmptyView><Label Text="Nenhuma recomendação de farm no momento." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.EmptyView><Label Text="No farming recommendations right now." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
                                 <Grid ColumnDefinitions="2*,Auto,Auto" ColumnSpacing="24">
-                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1"><Label Text="FALTANDO" Style="{StaticResource Muted}"/><Label Text="{Binding MissingParts}" TextColor="#F3C969" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="2"><Label Text="RELÍQUIAS" Style="{StaticResource Muted}"/><Label Text="{Binding OwnedRelics}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding VaultStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1"><Label Text="MISSING" Style="{StaticResource Muted}"/><Label Text="{Binding MissingParts}" TextColor="#F3C969" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2"><Label Text="RELICS" Style="{StaticResource Muted}"/><Label Text="{Binding OwnedRelics}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate></CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+
+                <Grid IsVisible="{Binding RelicsVisible}" RowDefinitions="Auto,*" RowSpacing="12">
+                    <VerticalStackLayout>
+                        <Label Text="Relic advisor" Style="{StaticResource Title}" />
+                        <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
+                    </VerticalStackLayout>
+                    <CollectionView Grid.Row="1" ItemsSource="{Binding Relics}" SelectionMode="None">
+                        <CollectionView.EmptyView><Label Text="No owned relics with catalog data were found." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate><DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
+                                <Grid ColumnDefinitions="2*,Auto,Auto,Auto,Auto" ColumnSpacing="22">
+                                    <VerticalStackLayout><Label Text="{Binding RelicName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1"><Label Text="OWNED" Style="{StaticResource Muted}"/><Label Text="{Binding Owned}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2"><Label Text="SEALED" Style="{StaticResource Muted}"/><Label Text="{Binding SellPriceEach, StringFormat='{0}p each', TargetNullValue='—'}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="3"><Label Text="OPEN EV" Style="{StaticResource Muted}"/><Label Text="{Binding ExpectedOpenValueEach, StringFormat='{0:F1}p each'}" TextColor="#B9A7FF" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="4"><Label Text="{Binding VaultStatus}" TextColor="#F3C969" HorizontalTextAlignment="Center"/><Label Text="{Binding Action}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/></VerticalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate></CollectionView.ItemTemplate>
@@ -134,16 +167,16 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Label Text="Vendas e ducats" Style="{StaticResource Title}" />
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="Sales and ducats" Style="{StaticResource Title}" /><Picker Grid.Column="1" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" /></Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
-                        <CollectionView.EmptyView><Label Text="Nenhum excedente disponível." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
                                 <Grid ColumnDefinitions="2*,Auto,Auto,Auto" ColumnSpacing="22">
-                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1"><Label Text="EXCEDENTE" Style="{StaticResource Muted}"/><Label Text="{Binding Excess}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
+                                    <VerticalStackLayout><Label Text="{Binding ItemName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"/><Label Text="{Binding VaultStatus}" TextColor="#F3C969" FontSize="11"/><Label Text="{Binding Reason}" Style="{StaticResource Muted}"/></VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1"><Label Text="EXTRA" Style="{StaticResource Muted}"/><Label Text="{Binding Excess}" TextColor="#F4F7FB" HorizontalTextAlignment="Center"/></VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2"><Label Text="PLATINUM" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum, TargetNullValue='—'}" TextColor="#7DE2D1" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-                                    <Label Grid.Column="3" Text="{Binding Action}" TextColor="#F3C969" VerticalOptions="Center" />
+                                    <Label Grid.Column="3" Text="{Binding ActionLabel}" TextColor="#F3C969" VerticalOptions="Center" />
                                 </Grid>
                             </Border>
                         </DataTemplate></CollectionView.ItemTemplate>
@@ -152,11 +185,23 @@
 
                 <ScrollView IsVisible="{Binding SettingsVisible}">
                     <VerticalStackLayout Spacing="16" MaximumWidthRequest="700" HorizontalOptions="Start">
-                        <Label Text="Configurações" Style="{StaticResource Title}" />
+                        <Label Text="Settings" Style="{StaticResource Title}" />
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="AlecaFrame data folder" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Choose the folder containing lastData.dat and cachedData/json. The automatic location works for standard installations." TextColor="#8995A8" />
+                                <Entry Text="{Binding AlecaFrameDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                <Label Text="{Binding AlecaFrameDirectoryMessage}" Style="{StaticResource Muted}" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Choose folder" Command="{Binding SelectAlecaFrameDirectoryCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                    <Button Text="Use automatic location" Command="{Binding ResetAlecaFrameDirectoryCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
                         <Border Style="{StaticResource Card}">
                             <VerticalStackLayout Spacing="14">
-                                <Label Text="Conversão ducats / platinum" Style="{StaticResource SectionTitle}" />
-                                <Label Text="Define o ponto de corte usado nas recomendações. A alteração entra em vigor na próxima atualização." TextColor="#8995A8" />
+                                <Label Text="Ducats / platinum conversion" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Sets the threshold used by recommendations. Changes take effect on the next refresh." TextColor="#8995A8" />
                                 <Grid ColumnDefinitions="*,90" ColumnSpacing="18">
                                     <Slider Minimum="1" Maximum="50" Value="{Binding DucatsPerPlatinum}" MinimumTrackColor="#7DE2D1" />
                                     <Label Grid.Column="1" Text="{Binding DucatsPerPlatinum, StringFormat='1p = {0:F0}'}" TextColor="#F4F7FB" VerticalOptions="Center" HorizontalTextAlignment="End" />

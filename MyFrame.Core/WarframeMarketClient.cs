@@ -10,7 +10,7 @@ namespace MyFrame.Core;
 public sealed class WarframeMarketClient : IWarframeMarketClient
 {
     private readonly HttpClient _http;
-    private readonly string _tokenPath;
+    private readonly Func<string> _tokenPath;
     private readonly SemaphoreSlim _rateGate = new(1, 1);
     private readonly ILogger<WarframeMarketClient> _logger;
     private DateTimeOffset _lastRequest = DateTimeOffset.MinValue;
@@ -19,12 +19,19 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
         ILogger<WarframeMarketClient>? logger = null)
     {
         _http = httpClient;
-        _tokenPath = tokenPath;
+        _tokenPath = () => tokenPath;
         _logger = logger ?? NullLogger<WarframeMarketClient>.Instance;
         _http.BaseAddress ??= new Uri("https://api.warframe.market/");
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("my-frame/1.0 (+local desktop application)");
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _http.Timeout = TimeSpan.FromSeconds(15);
+    }
+
+    public WarframeMarketClient(HttpClient httpClient, IAlecaFramePath alecaPath,
+        ILogger<WarframeMarketClient>? logger = null) : this(httpClient,
+            Path.Combine(alecaPath.DirectoryPath, "WFMarketToken.tk"), logger)
+    {
+        _tokenPath = () => Path.Combine(alecaPath.DirectoryPath, "WFMarketToken.tk");
     }
 
     public async Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default)
@@ -103,8 +110,9 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
 
     private async Task<string?> ReadValidTokenAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_tokenPath)) return null;
-        var token = (await File.ReadAllTextAsync(_tokenPath, cancellationToken)).Trim();
+        var tokenPath = _tokenPath();
+        if (!File.Exists(tokenPath)) return null;
+        var token = (await File.ReadAllTextAsync(tokenPath, cancellationToken)).Trim();
         var parts = token.Split('.');
         if (parts.Length != 3) return null;
         try

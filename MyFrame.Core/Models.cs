@@ -37,7 +37,11 @@ public sealed record CatalogItem(
     string? MarketId,
     string? MarketSlug,
     IReadOnlyList<CatalogComponent> Components,
-    IReadOnlyList<RelicSource> Relics);
+    IReadOnlyList<RelicSource> Relics)
+{
+    public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
+        $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";
+}
 
 public sealed record CatalogSnapshot(
     IReadOnlyList<CatalogItem> Items,
@@ -80,7 +84,13 @@ public sealed record CollectionGoal(
     int OwnedComponents,
     int RequiredComponents,
     double Completion,
-    string Status);
+    string Status,
+    bool Prime,
+    bool Vaulted,
+    string ImageUrl)
+{
+    public string PrimeStatus => !Prime ? "" : Vaulted ? "Prime · Vaulted" : "Prime · Unvaulted";
+}
 
 public sealed record FarmRecommendation(
     string ItemName,
@@ -91,7 +101,25 @@ public sealed record FarmRecommendation(
     bool Vaulted,
     int? EstimatedPlatinum,
     IReadOnlyList<string> MissingComponentNames,
-    string Reason);
+    string Reason)
+{
+    public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
+}
+
+public sealed record RelicRecommendation(
+    string RelicName,
+    string UniqueName,
+    int Owned,
+    bool Vaulted,
+    int? SellPriceEach,
+    double ExpectedOpenValueEach,
+    string Action,
+    string Reason)
+{
+    public int? TotalSellPrice => SellPriceEach * Owned;
+    public double TotalExpectedOpenValue => ExpectedOpenValueEach * Owned;
+    public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
+}
 
 public sealed record SaleRecommendation(
     string ItemName,
@@ -110,12 +138,17 @@ public sealed record SaleRecommendation(
 {
     public int TotalDucats => Excess * DucatsEach;
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
+    public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
+    public string ActionLabel => Action == RecommendationAction.ExchangeForDucats
+        ? $"Venda {Excess:N0}, guarde {Reserved:N0} · {TotalDucats:N0} ducats"
+        : Action == RecommendationAction.SellForPlatinum ? "Sell for platinum" : Action.ToString();
 }
 
 public sealed record RecommendationResult(
     IReadOnlyList<CollectionGoal> Collection,
     IReadOnlyList<FarmRecommendation> Farm,
     IReadOnlyList<SaleRecommendation> Sales,
+    IReadOnlyList<RelicRecommendation> Relics,
     int TotalDucats,
     int EstimatedPlatinum,
     DateTimeOffset GeneratedAt);

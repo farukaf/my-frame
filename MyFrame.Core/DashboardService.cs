@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 public sealed class DashboardService : IDisposable
 {
-    private readonly string _aleccaDirectory;
+    private readonly IAlecaFramePath _alecaPath;
     private readonly IAlecaFrameReader _inventoryReader;
     private readonly IAlecaCatalogReader _catalogReader;
     private readonly IWarframeMarketClient _market;
@@ -13,22 +13,30 @@ public sealed class DashboardService : IDisposable
     private readonly IRecommendationEngine _engine;
     private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
-    private readonly FileSystemWatcher? _watcher;
+    private FileSystemWatcher? _watcher;
     private CancellationTokenSource? _debounce;
     private CatalogSnapshot? _catalog;
     private DashboardSnapshot? _lastSnapshot;
 
-    public DashboardService(string alecaDirectory, IAlecaFrameReader inventoryReader,
+    public DashboardService(IAlecaFramePath alecaPath, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
         IRecommendationEngine engine, ILogger<DashboardService>? logger = null)
     {
-        _aleccaDirectory = alecaDirectory;
+        _alecaPath = alecaPath;
         _inventoryReader = inventoryReader;
         _catalogReader = catalogReader;
         _market = market;
         _cache = cache;
         _engine = engine;
         _logger = logger ?? NullLogger<DashboardService>.Instance;
+        _alecaPath.Changed += OnAlecaDirectoryChanged;
+        ConfigureWatcher(alecaPath.DirectoryPath);
+    }
+
+    private void ConfigureWatcher(string alecaDirectory)
+    {
+        _watcher?.Dispose();
+        _watcher = null;
         if (Directory.Exists(alecaDirectory))
         {
             _watcher = new FileSystemWatcher(alecaDirectory)
@@ -53,10 +61,11 @@ public sealed class DashboardService : IDisposable
         _logger.LogInformation("Dashboard refresh started; refreshPrices={RefreshPrices}", refreshPrices);
         try
         {
-            var inventory = await _inventoryReader.ReadAsync(_aleccaDirectory, cancellationToken);
-            _catalog ??= await _catalogReader.LoadAsync(_aleccaDirectory, cancellationToken);
+            var alecaDirectory = _alecaPath.DirectoryPath;
+            var inventory = await _inventoryReader.ReadAsync(alecaDirectory, cancellationToken);
+            _catalog ??= await _catalogReader.LoadAsync(alecaDirectory, cancellationToken);
             var quotes = new Dictionary<string, MarketQuote>(StringComparer.Ordinal);
-            var quoteSlugs = GetRelevantSlugs(inventory, _catalog).Take(36).ToArray();
+            var quoteSlugs = GetRelevantSlugs(inventory, _catalog).Distinct(StringComparer.Ordinal).Take(100).ToArray();
             foreach (var slug in quoteSlugs)
             {
                 var cached = await _cache.GetAsync(slug, cancellationToken);
@@ -86,13 +95,13 @@ public sealed class DashboardService : IDisposable
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException)
             {
                 _logger.LogWarning(error, "Market unavailable during dashboard refresh; cached quotes will be used");
-                marketError = "Warframe.Market indisponível; usando cotações em cache.";
+                marketError = "Warframe.Market is unavailable; using cached prices.";
             }
 
             var recommendations = _engine.Evaluate(inventory, _catalog, quotes, orders,
                 settings ?? new RecommendationSettings());
             var status = new SyncStatus(false,
-                marketError ?? "Inventário e mercado sincronizados.", DateTimeOffset.Now, true,
+                marketError ?? "Inventory and market synchronized.", DateTimeOffset.Now, true,
                 quotes.Count > 0, marketError);
             _lastSnapshot = new DashboardSnapshot(inventory, _catalog, recommendations, account, orders, quotes, status);
             _logger.LogInformation(
@@ -106,6 +115,15 @@ public sealed class DashboardService : IDisposable
 
     private static IEnumerable<string> GetRelevantSlugs(InventorySnapshot inventory, CatalogSnapshot catalog)
     {
+        foreach (var relic in catalog.Items.Where(x => x.Category.Contains("Relic", StringComparison.OrdinalIgnoreCase) &&
+                                                       inventory.Stackables.GetValueOrDefault(x.UniqueName) > 0))
+        {
+            if (!string.IsNullOrWhiteSpace(relic.MarketSlug)) yield return relic.MarketSlug;
+            foreach (var reward in relic.Relics)
+                if (catalog.MarketByNormalizedName.TryGetValue(ItemNameNormalizer.Normalize(reward.RewardName), out var identity))
+                    yield return identity.Slug;
+        }
+
         foreach (var item in catalog.Items.Where(x => x.Components.Any(c => inventory.Stackables.GetValueOrDefault(c.UniqueName) > 0)))
         {
             if (!string.IsNullOrWhiteSpace(item.MarketSlug)) yield return item.MarketSlug;
@@ -131,6 +149,16 @@ public sealed class DashboardService : IDisposable
         _ = DebouncedRefreshAsync(_debounce.Token);
     }
 
+    private void OnAlecaDirectoryChanged(object? sender, string directory)
+    {
+        _catalog = null;
+        ConfigureWatcher(directory);
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+        _debounce = new CancellationTokenSource();
+        _ = DebouncedRefreshAsync(_debounce.Token);
+    }
+
     private async Task DebouncedRefreshAsync(CancellationToken cancellationToken)
     {
         try
@@ -144,6 +172,7 @@ public sealed class DashboardService : IDisposable
 
     public void Dispose()
     {
+        _alecaPath.Changed -= OnAlecaDirectoryChanged;
         _watcher?.Dispose();
         _debounce?.Cancel();
         _debounce?.Dispose();

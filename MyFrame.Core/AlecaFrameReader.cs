@@ -38,7 +38,7 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
         _logger.LogInformation("Reading AlecaFrame inventory snapshot");
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException("O lastData.dat do AlecaFrame não foi encontrado.", path);
+            throw new FileNotFoundException("AlecaFrame lastData.dat was not found.", path);
         }
 
         Exception? lastError = null;
@@ -59,7 +59,7 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
         }
 
         _logger.LogError(lastError, "Inventory snapshot could not be read after retries");
-        throw new InvalidDataException("O AlecaFrame ainda estava escrevendo o snapshot.", lastError);
+        throw new InvalidDataException("AlecaFrame was still writing the inventory snapshot.", lastError);
     }
 
     private async Task<InventorySnapshot> ReadOnceAsync(string path, CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ public sealed class AlecaFrameReader : IAlecaFrameReader
         {
             if (stream.Length <= 0 || stream.Length > 100 * 1024 * 1024)
             {
-                throw new InvalidDataException("Tamanho inválido para lastData.dat.");
+                throw new InvalidDataException("Invalid lastData.dat size.");
             }
 
             encrypted = new byte[stream.Length];

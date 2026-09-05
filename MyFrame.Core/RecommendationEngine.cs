@@ -12,7 +12,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             x => Math.Max(0, x.Value - reservations.GetValueOrDefault(x.Key)), StringComparer.Ordinal);
         var sales = BuildSales(inventory, catalog, quotes, myOrders, reservations, excess, settings);
         var farm = BuildFarm(inventory, catalog, collection, quotes);
-        return new RecommendationResult(collection, farm, sales,
+        var relics = BuildRelics(inventory, catalog, quotes);
+        return new RecommendationResult(collection, farm, sales, relics,
             sales.Where(x => x.Action == RecommendationAction.ExchangeForDucats).Sum(x => x.TotalDucats),
             sales.Where(x => x.Action == RecommendationAction.SellForPlatinum).Sum(x => x.TotalPlatinum ?? 0),
             DateTimeOffset.UtcNow);
@@ -28,9 +29,10 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 var have = item.Components.Where(x => x.Tradable)
                     .Sum(x => Math.Min(x.Required, inventory.Stackables.GetValueOrDefault(x.UniqueName)));
                 var completion = owned || required == 0 ? (owned ? 1d : 0d) : (double)have / required;
-                var status = owned && mastered ? "Coleção + mastery" : owned ? "Mastery pendente" :
-                    mastered ? "Já dominado; falta possuir" : required > 0 && have >= required ? "Pronto para construir" : "Em progresso";
-                return new CollectionGoal(item.Name, item.Category, owned, mastered, have, required, completion, status);
+                var status = owned && mastered ? "Collected + mastered" : owned ? "Mastery pending" :
+                    mastered ? "Mastered; not owned" : required > 0 && have >= required ? "Ready to build" : "In progress";
+                return new CollectionGoal(item.Name, item.Category, owned, mastered, have, required, completion, status,
+                    item.Prime, item.Vaulted, item.ImageUrl);
             }).OrderBy(x => x.Category).ThenBy(x => x.ItemName).ToArray();
 
     private static Dictionary<string, int> BuildReservations(InventorySnapshot inventory, CatalogSnapshot catalog,
@@ -101,7 +103,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
                 setCount, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
-                HasOrder(parent.MarketId, orders), "Set completo vale mais ou igual à soma das peças."));
+                HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts."));
         }
 
         foreach (var pair in excess.Where(x => x.Value > 0))
@@ -112,8 +114,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var platinumWins = quote?.LowestSell is > 0 && quote.LowestSell.Value * settings.DucatsPerPlatinum >= info.Component.Ducats;
             var action = platinumWins ? RecommendationAction.SellForPlatinum : RecommendationAction.ExchangeForDucats;
             var reason = platinumWins
-                ? $"Cotação supera o corte de 1p/{settings.DucatsPerPlatinum:0.#} ducats."
-                : quote is null ? "Sem cotação pública; valor disponível em ducats." : "Ducats superam o corte configurado.";
+                ? $"Market price beats the 1p/{settings.DucatsPerPlatinum:0.#} ducat threshold."
+                : quote is null ? "No public price; ducat value is available." : "Ducats beat the configured threshold.";
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key), pair.Value,
                 info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
@@ -140,9 +142,45 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 quotes.TryGetValue(item.MarketSlug ?? "", out var quote);
                 return new FarmRecommendation(item.Name, item.Category, missing.Length,
                     item.Components.Count(x => x.Tradable), ownedRelics, item.Vaulted, quote?.LowestSell,
-                    missing.Select(x => x.Name).ToArray(), $"Faltam {missing.Length} peças; {ownedRelics} relíquias úteis possuídas.");
+                    missing.Select(x => x.Name).ToArray(), $"Missing {missing.Length} parts; {ownedRelics} useful relics owned.");
             }).OrderBy(x => x.MissingParts).ThenByDescending(x => x.OwnedRelics)
             .ThenByDescending(x => x.EstimatedPlatinum ?? 0).ToArray();
+    }
+
+    private static IReadOnlyList<RelicRecommendation> BuildRelics(InventorySnapshot inventory,
+        CatalogSnapshot catalog, IReadOnlyDictionary<string, MarketQuote> quotes)
+    {
+        return catalog.Items
+            .Where(item => item.Category.Contains("Relic", StringComparison.OrdinalIgnoreCase) &&
+                           inventory.Stackables.GetValueOrDefault(item.UniqueName) > 0)
+            .Select(item =>
+            {
+                quotes.TryGetValue(item.MarketSlug ?? "", out var relicQuote);
+                var expected = item.Relics.Sum(reward =>
+                {
+                    var identity = catalog.MarketByNormalizedName.GetValueOrDefault(
+                        ItemNameNormalizer.Normalize(reward.RewardName));
+                    return identity is not null && quotes.TryGetValue(identity.Slug, out var rewardQuote)
+                        ? (reward.Chance / 100d) * (rewardQuote.LowestSell ?? rewardQuote.HighestBuy ?? 0)
+                        : 0;
+                });
+                var sell = relicQuote?.LowestSell ?? relicQuote?.HighestBuy;
+                var hasRewardPrices = expected > 0;
+                var action = sell is not null && (!hasRewardPrices || sell.Value >= expected) ? "Sell sealed" :
+                    hasRewardPrices ? "Open" : "Hold";
+                var reason = action switch
+                {
+                    "Sell sealed" when hasRewardPrices => $"Sealed price {sell}p is above the {expected:0.0}p expected opening value.",
+                    "Sell sealed" => $"Sealed relic is priced at {sell}p; reward prices are unavailable.",
+                    "Open" => $"Expected opening value {expected:0.0}p is above the {sell?.ToString() ?? "unknown"}p sealed price.",
+                    _ => "Not enough market data to compare selling and opening."
+                };
+                return new RelicRecommendation(item.Name, item.UniqueName,
+                    inventory.Stackables[item.UniqueName], item.Vaulted, sell, expected, action, reason);
+            })
+            .OrderBy(x => x.Action == "Hold")
+            .ThenByDescending(x => Math.Max(x.SellPriceEach ?? 0, x.ExpectedOpenValueEach) * x.Owned)
+            .ToArray();
     }
 
     private static Dictionary<string, ComponentDetails> ComponentInfo(CatalogSnapshot catalog)

@@ -34,6 +34,7 @@ public sealed class RecommendationEngineTests
         Assert.Equal(1, sale.Excess);
         Assert.Equal(RecommendationAction.ExchangeForDucats, sale.Action);
         Assert.Equal(45, result.TotalDucats);
+        Assert.Equal("Venda 1, guarde 1 · 45 ducats", sale.ActionLabel);
     }
 
     [Fact]
@@ -68,6 +69,36 @@ public sealed class RecommendationEngineTests
             new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
 
         Assert.Single(result.Farm);
+    }
+
+    [Fact]
+    public void RecommendsOpeningRelicWhenExpectedRewardsBeatSealedPrice()
+    {
+        const string relicUnique = "/Relics/LithT1";
+        var relic = new CatalogItem(relicUnique, "Lith T1 Relic", "Relics", "", "lith.png",
+            false, false, true, true, null, "relic-id", "lith_t1_relic", [],
+            [new RelicSource("Lith T1 Relic", "Rare", 10, true, "Valuable Prime Blueprint")]);
+        var catalog = new CatalogSnapshot([relic],
+            new Dictionary<string, CatalogItem> { [relicUnique] = relic },
+            new Dictionary<string, MarketIdentity>
+            {
+                [ItemNameNormalizer.Normalize("Valuable Prime Blueprint")] = new("reward-id", "valuable_prime_blueprint")
+            });
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [relicUnique] = 3 }, new HashSet<string>(),
+            new Dictionary<string, long>(), 0, 0, "synthetic");
+        var quotes = new Dictionary<string, MarketQuote>
+        {
+            ["lith_t1_relic"] = new("lith_t1_relic", 4, 3, DateTimeOffset.UtcNow),
+            ["valuable_prime_blueprint"] = new("valuable_prime_blueprint", 100, 90, DateTimeOffset.UtcNow)
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog, quotes, [], new());
+
+        var recommendation = Assert.Single(result.Relics);
+        Assert.Equal("Open", recommendation.Action);
+        Assert.Equal(10, recommendation.ExpectedOpenValueEach);
+        Assert.Equal(30, recommendation.TotalExpectedOpenValue);
     }
 
     private static (InventorySnapshot Inventory, CatalogSnapshot Catalog) Scenario(int ownedParts, bool ownedEquipment)
