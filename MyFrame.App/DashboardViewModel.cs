@@ -90,7 +90,7 @@ public partial class DashboardViewModel : ObservableObject
         IsBusy = true;
         StatusMessage = "Reading inventory and updating prices…";
         try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(
-            Math.Max(.1, DucatsPerPlatinum), ReserveUnvaultedPrimeWarframeSet))); }
+            Math.Clamp((int)Math.Round(DucatsPerPlatinum), 1, 50), ReserveUnvaultedPrimeWarframeSet))); }
         catch (Exception error)
         {
             _logger.LogError(error, "Dashboard refresh failed");
@@ -151,7 +151,7 @@ public partial class DashboardViewModel : ObservableObject
         TotalPlatinum = $"{snapshot.Recommendations.EstimatedPlatinum:N0}p";
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
         var activeSettings = snapshot.Recommendations.Settings;
-        ActiveSalesSettingsText = $"Loaded with 1p = {activeSettings.DucatsPerPlatinum:0.#} ducats · " +
+        ActiveSalesSettingsText = $"Loaded with 1p = {activeSettings.DucatsPerPlatinum} ducats · " +
             $"reserve unvaulted Prime Warframe set: {(activeSettings.ReserveUnvaultedPrimeWarframeSet ? "on" : "off")}";
         var mastered = snapshot.Recommendations.Collection.Count(x => x.Mastered);
         var total = snapshot.Recommendations.Collection.Count;
@@ -188,7 +188,16 @@ public partial class DashboardViewModel : ObservableObject
 
     partial void OnSelectedCollectionFilterChanged(string value) => ApplyCollectionView();
     partial void OnSelectedCollectionSortChanged(string value) => ApplyCollectionView();
-    partial void OnDucatsPerPlatinumChanged(double value) => _localSettings.DucatsPerPlatinum = value;
+    partial void OnDucatsPerPlatinumChanged(double value)
+    {
+        var integerValue = Math.Clamp((int)Math.Round(value), 1, 50);
+        if (Math.Abs(value - integerValue) > double.Epsilon)
+        {
+            DucatsPerPlatinum = integerValue;
+            return;
+        }
+        _localSettings.DucatsPerPlatinum = integerValue;
+    }
     partial void OnReserveUnvaultedPrimeWarframeSetChanged(bool value) =>
         _localSettings.ReserveUnvaultedPrimeWarframeSet = value;
     partial void OnSelectedSalesFilterChanged(string value)

@@ -189,9 +189,12 @@
                             <VerticalStackLayout Spacing="14">
                                 <Label Text="Ducats / platinum conversion" Style="{StaticResource SectionTitle}" />
                                 <Label Text="Sets the threshold used by recommendations. Changes take effect on the next refresh." TextColor="#8995A8" />
-                                <Grid ColumnDefinitions="*,90" ColumnSpacing="18">
+                                <Grid ColumnDefinitions="*,Auto,64" ColumnSpacing="10">
                                     <Slider Minimum="1" Maximum="50" Value="{Binding DucatsPerPlatinum}" MinimumTrackColor="#7DE2D1" />
-                                    <Label Grid.Column="1" Text="{Binding DucatsPerPlatinum, StringFormat='1p = {0:F0}'}" TextColor="#F4F7FB" VerticalOptions="Center" HorizontalTextAlignment="End" />
+                                    <Label Grid.Column="1" Text="1p =" TextColor="#F4F7FB" VerticalOptions="Center" />
+                                    <Entry Grid.Column="2" Text="{Binding DucatsPerPlatinum, Mode=TwoWay}" Keyboard="Numeric"
+                                           MaxLength="2" HorizontalTextAlignment="Center" TextColor="#F4F7FB"
+                                           BackgroundColor="#20283A" />
                                 </Grid>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                                     <VerticalStackLayout Spacing="2">

@@ -169,7 +169,7 @@ public sealed record RecommendationResult(
     RecommendationSettings Settings);
 
 public sealed record RecommendationSettings(
-    double DucatsPerPlatinum = 10,
+    int DucatsPerPlatinum = 10,
     bool ReserveUnvaultedPrimeWarframeSet = true);
 
 public sealed record SyncStatus(
