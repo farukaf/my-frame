@@ -3,11 +3,13 @@ namespace MyFrame.App;
 public partial class App : Application
 {
     private readonly MainPage _mainPage;
-    public App(MainPage mainPage)
+    private readonly WindowPlacementService _windowPlacement;
+    public App(MainPage mainPage, WindowPlacementService windowPlacement)
     {
         StartupDiagnostics.Track("App.Begin");
         InitializeComponent();
         _mainPage = mainPage;
+        _windowPlacement = windowPlacement;
         StartupDiagnostics.Track("App.End");
     }
 
@@ -23,6 +25,8 @@ public partial class App : Application
             window.Height = 900;
             window.MinimumWidth = 1050;
             window.MinimumHeight = 700;
+            window.Created += (_, _) => _windowPlacement.Attach(window);
+            window.Destroying += (_, _) => _windowPlacement.Save();
             StartupDiagnostics.Track("App.CreateWindow.End");
             return window;
         }

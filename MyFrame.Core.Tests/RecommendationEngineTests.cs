@@ -132,7 +132,12 @@ public sealed class RecommendationEngineTests
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
 
-        Assert.True(Assert.Single(result.Sales).Mastered);
+        var recommendation = Assert.Single(result.Sales);
+        Assert.True(recommendation.Mastered);
+        Assert.False(recommendation.CurrentlyOwned);
+        Assert.Equal(0, recommendation.ReservedForCraft);
+        Assert.Equal(2, recommendation.Excess);
+        Assert.Contains("mastered previously, no longer in inventory", recommendation.ItemDetails);
     }
 
     [Fact]

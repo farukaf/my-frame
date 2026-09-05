@@ -164,7 +164,8 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
-                                Description="{Binding Reason}" IsMastered="{Binding Mastered}" />
+                                Description="{Binding Reason}" IsMastered="{Binding Mastered}"
+                                Details="{Binding ItemDetails}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

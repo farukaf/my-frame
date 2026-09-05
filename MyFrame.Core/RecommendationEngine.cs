@@ -43,8 +43,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
         {
             var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
             var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
-            var keepBuilt = IsPermanentCollectionItem(item);
-            var needBuild = !owned && (keepBuilt || !mastered);
+            var needBuild = !owned && !mastered;
             var speculate = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted;
             foreach (var component in item.Components.Where(x => x.Tradable))
             {
@@ -103,6 +102,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
                 setCount, 0, 0, 0, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
+                inventory.OwnedEquipment.Contains(parent.UniqueName),
                 IsMastered(parent, inventory.Experience.GetValueOrDefault(parent.UniqueName)),
                 HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts.",
                 parent.ImageUrl));
@@ -133,6 +133,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key),
                 breakdown.Craft, breakdown.FutureSale, breakdown.Orders, pair.Value,
                 info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
+                inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
                 HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
         }
@@ -152,6 +153,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 pair.Value, kept, Math.Min(kept, breakdown.Craft), Math.Min(kept, breakdown.FutureSale),
                 Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
                 RecommendationAction.Keep, info.Parent.Vaulted,
+                inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
                 HasOrder(identity?.Id, orders),
                 "All owned copies are reserved for collection, crafting, or an existing market order.",
@@ -168,7 +170,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
     {
         var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
         var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
-        var craft = !owned && (IsPermanentCollectionItem(item) || !mastered) ? component.Required : 0;
+        var craft = !owned && !mastered ? component.Required : 0;
         var futureSale = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted
             ? component.Required : 0;
         var identity = MarketForComponent(item, component, catalog);
@@ -255,9 +257,6 @@ public sealed class RecommendationEngine : IRecommendationEngine
     }
 
     private static bool IsRelevantGoal(CatalogItem item) => !item.Category.Contains("Skin", StringComparison.OrdinalIgnoreCase);
-    private static bool IsPermanentCollectionItem(CatalogItem item) => IsWarframe(item) ||
-        item.ProductCategory is "Sentinels" or "KubrowPets" or "SpaceSuits" or "MechSuits" ||
-        item.Prime || (item.Tradable && (item.Vaulted || item.EstimatedVaultDate is not null));
     private static bool IsWarframe(CatalogItem item) => item.ProductCategory == "Suits" || item.Category == "Warframes";
     private static bool IsMastered(CatalogItem item, long xp)
     {

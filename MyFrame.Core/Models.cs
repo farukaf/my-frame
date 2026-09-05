@@ -142,6 +142,7 @@ public sealed record SaleRecommendation(
     int? HighestBuy,
     RecommendationAction Action,
     bool Vaulted,
+    bool CurrentlyOwned,
     bool Mastered,
     bool ExistingOrder,
     string Reason,
@@ -152,6 +153,21 @@ public sealed record SaleRecommendation(
     public int KeepQuantity => Action == RecommendationAction.Keep ? Reserved + Excess : Reserved;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"Owned {Owned:N0} · extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
+    public string ItemDetails
+    {
+        get
+        {
+            var ownership = CurrentlyOwned ? "Built item: currently in inventory" : Mastered
+                ? "Built item: mastered previously, no longer in inventory"
+                : "Built item: not found and not mastered";
+            var reservations = new List<string>();
+            if (ReservedForCraft > 0) reservations.Add($"{ReservedForCraft:N0} reserved for crafting");
+            if (ReservedForFutureSale > 0) reservations.Add($"{ReservedForFutureSale:N0} reserved until vault");
+            if (ReservedForOrders > 0) reservations.Add($"{ReservedForOrders:N0} reserved for active orders");
+            var reservationText = reservations.Count == 0 ? "No copies reserved" : string.Join(" · ", reservations);
+            return $"{ownership} · Mastery: {(Mastered ? "completed" : "pending")} · Vault: {(Vaulted ? "vaulted" : "unvaulted")} · {reservationText}";
+        }
+    }
     public string KeepLabel
     {
         get
