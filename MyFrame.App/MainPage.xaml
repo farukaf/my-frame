@@ -13,7 +13,6 @@
             <Setter Property="BackgroundColor" Value="Transparent" />
             <Setter Property="TextColor" Value="#AEB8C8" />
             <Setter Property="HorizontalOptions" Value="Fill" />
-            <Setter Property="HorizontalTextAlignment" Value="Start" />
             <Setter Property="Padding" Value="16,12" />
             <Setter Property="CornerRadius" Value="10" />
         </Style>
