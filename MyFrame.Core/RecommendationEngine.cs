@@ -25,8 +25,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             {
                 var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
                 var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
-                var required = item.Components.Where(x => x.Tradable).Sum(x => x.Required);
-                var have = item.Components.Where(x => x.Tradable)
+                var required = item.Components.Sum(x => x.Required);
+                var have = item.Components
                     .Sum(x => Math.Min(x.Required, inventory.Stackables.GetValueOrDefault(x.UniqueName)));
                 var completion = owned || required == 0 ? (owned ? 1d : 0d) : (double)have / required;
                 var status = owned && mastered ? "Collected + mastered" : owned ? "Mastery pending" :
@@ -154,12 +154,13 @@ public sealed class RecommendationEngine : IRecommendationEngine
         return catalog.Items.Where(x => incomplete.Contains(x.Name) && x.Components.Any(c => c.Tradable))
             .Select(item =>
             {
-                var missing = item.Components.Where(x => x.Tradable && inventory.Stackables.GetValueOrDefault(x.UniqueName) < x.Required).ToArray();
+                var missing = item.Components.Where(x =>
+                    inventory.Stackables.GetValueOrDefault(x.UniqueName) < x.Required).ToArray();
                 var ownedRelics = item.Relics.Select(x => x.RelicName).Distinct(StringComparer.OrdinalIgnoreCase)
                     .Count(name => relicByName.TryGetValue(name, out var unique) && inventory.Stackables.GetValueOrDefault(unique) > 0);
                 quotes.TryGetValue(item.MarketSlug ?? "", out var quote);
                 return new FarmRecommendation(item.Name, item.Category, missing.Length,
-                    item.Components.Count(x => x.Tradable), ownedRelics, item.Vaulted, quote?.LowestSell,
+                    item.Components.Count, ownedRelics, item.Vaulted, quote?.LowestSell,
                     missing.Select(x => x.Name).ToArray(), $"Missing {missing.Length} parts; {ownedRelics} useful relics owned.",
                     item.ImageUrl);
             }).OrderBy(x => x.MissingParts).ThenByDescending(x => x.OwnedRelics)

@@ -53,6 +53,35 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
+    public void DoesNotMarkItemReadyWhenNonTradableComponentsAreMissing()
+    {
+        const string itemUnique = "/Items/AeolakLike";
+        const string resourceUnique = "/Resources/TradableResource";
+        var item = new CatalogItem(itemUnique, "Aeolak-like", "Primary", "LongGuns", "",
+            true, false, false, false, null, null, null,
+            [
+                new(resourceUnique, "Resource", 50, 0, true),
+                new("/Parts/Barrel", "Barrel", 1, 0, false),
+                new("/Parts/Blueprint", "Blueprint", 1, 0, false),
+                new("/Parts/Receiver", "Receiver", 1, 0, false),
+                new("/Parts/Stock", "Stock", 1, 0, false)
+            ], []);
+        var catalog = new CatalogSnapshot([item],
+            new Dictionary<string, CatalogItem> { [itemUnique] = item },
+            new Dictionary<string, MarketIdentity>());
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [resourceUnique] = 50 }, new HashSet<string>(),
+            new Dictionary<string, long>(), 0, 0, "synthetic");
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        var goal = Assert.Single(result.Collection);
+        Assert.Equal("In progress", goal.Status);
+        Assert.Equal(4, Assert.Single(result.Farm).MissingParts);
+    }
+
+    [Fact]
     public void ExistingSellOrderAddsToReservation()
     {
         var (inventory, catalog) = Scenario(ownedParts: 4, ownedEquipment: true);
