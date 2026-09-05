@@ -75,6 +75,31 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
+    public void UnvaultedPrimeWeaponAlsoKeepsASetForFutureSale()
+    {
+        var (inventory, baseCatalog) = Scenario(ownedParts: 3, ownedEquipment: false);
+        var weapon = baseCatalog.Items.Single() with
+        {
+            Category = "Primary",
+            ProductCategory = "LongGuns",
+            Vaulted = false
+        };
+        var catalog = baseCatalog with
+        {
+            Items = [weapon],
+            ByUniqueName = new Dictionary<string, CatalogItem> { [weapon.UniqueName] = weapon }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, true));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(1, recommendation.ReservedForCraft);
+        Assert.Equal(1, recommendation.ReservedForFutureSale);
+        Assert.Equal(1, recommendation.Excess);
+    }
+
+    [Fact]
     public void SalesRecommendationReportsMasteredParentItem()
     {
         var (inventory, catalog) = Scenario(ownedParts: 2, ownedEquipment: false);

@@ -152,7 +152,7 @@ public partial class DashboardViewModel : ObservableObject
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
         var activeSettings = snapshot.Recommendations.Settings;
         ActiveSalesSettingsText = $"Loaded with 1p = {activeSettings.DucatsPerPlatinum} ducats · " +
-            $"reserve unvaulted Prime Warframe set: {(activeSettings.ReserveUnvaultedPrimeWarframeSet ? "on" : "off")}";
+            $"reserve unvaulted Prime set: {(activeSettings.ReserveUnvaultedPrimeWarframeSet ? "on" : "off")}";
         var mastered = snapshot.Recommendations.Collection.Count(x => x.Mastered);
         var total = snapshot.Recommendations.Collection.Count;
         MasteryProgress = total == 0 ? "0%" : $"{(double)mastered / total:P0}";
@@ -223,7 +223,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         IEnumerable<CollectionGoal> values = SelectedCollectionFilter switch
         {
-            "In progress" => _allCollection.Where(x => !x.Owned && (x.OwnedComponents > 0 || x.Mastered)),
+            "In progress" => _allCollection.Where(x => !x.Owned && !x.Mastered && x.OwnedComponents > 0),
             "Not owned" => _allCollection.Where(x => !x.Owned),
             "Owned" => _allCollection.Where(x => x.Owned),
             "Mastered" => _allCollection.Where(x => x.Mastered),

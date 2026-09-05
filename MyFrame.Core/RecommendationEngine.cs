@@ -46,7 +46,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var keepBuilt = IsPermanentCollectionItem(item);
             var needBuild = !owned && (keepBuilt || !mastered);
             var speculate = item.Vaulted ||
-                (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && IsWarframe(item) && !item.Vaulted);
+                (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted);
             foreach (var component in item.Components.Where(x => x.Tradable))
             {
                 var amount = (needBuild ? component.Required : 0) + (speculate ? component.Required : 0);
@@ -171,7 +171,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
         var craft = !owned && (IsPermanentCollectionItem(item) || !mastered) ? component.Required : 0;
         var futureSale = item.Vaulted ||
-            (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && IsWarframe(item) && !item.Vaulted)
+            (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted)
             ? component.Required : 0;
         var identity = MarketForComponent(item, component, catalog);
         var orderQuantity = orders.Where(x => x.Type.Equals("sell", StringComparison.OrdinalIgnoreCase))

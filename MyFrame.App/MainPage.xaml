@@ -202,8 +202,8 @@
                                 </Grid>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                                     <VerticalStackLayout Spacing="2">
-                                        <Label Text="Reserve an unvaulted Prime Warframe set" TextColor="#F4F7FB" />
-                                        <Label Text="Keeps one additional complete set out of sales recommendations." Style="{StaticResource Muted}" />
+                                        <Label Text="Reserve an unvaulted Prime set" TextColor="#F4F7FB" />
+                                        <Label Text="Keeps one additional weapon or Warframe set to sell after it enters the vault." Style="{StaticResource Muted}" />
                                     </VerticalStackLayout>
                                     <Switch Grid.Column="1" IsToggled="{Binding ReserveUnvaultedPrimeWarframeSet}" OnColor="#167C70" />
                                 </Grid>
