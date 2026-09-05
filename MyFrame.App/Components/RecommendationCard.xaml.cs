@@ -8,6 +8,7 @@ public partial class RecommendationCard : ContentView
     public static readonly BindableProperty ImageUrlProperty = Property(nameof(ImageUrl), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty TitleProperty = Property(nameof(Title), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty BadgeProperty = Property(nameof(Badge), typeof(string), typeof(RecommendationCard), "");
+    public static readonly BindableProperty OwnedBadgeProperty = Property(nameof(OwnedBadge), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty MetadataProperty = Property(nameof(Metadata), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty ActionProperty = Property(nameof(Action), typeof(string), typeof(RecommendationCard), "");
     public static readonly BindableProperty DescriptionProperty = Property(nameof(Description), typeof(string), typeof(RecommendationCard), "");
@@ -25,6 +26,7 @@ public partial class RecommendationCard : ContentView
     public string ImageUrl { get => (string)GetValue(ImageUrlProperty); set => SetValue(ImageUrlProperty, value); }
     public string Title { get => (string)GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
     public string Badge { get => (string)GetValue(BadgeProperty); set => SetValue(BadgeProperty, value); }
+    public string OwnedBadge { get => (string)GetValue(OwnedBadgeProperty); set => SetValue(OwnedBadgeProperty, value); }
     public string Metadata { get => (string)GetValue(MetadataProperty); set => SetValue(MetadataProperty, value); }
     public string Action { get => (string)GetValue(ActionProperty); set => SetValue(ActionProperty, value); }
     public string Description { get => (string)GetValue(DescriptionProperty); set => SetValue(DescriptionProperty, value); }
@@ -90,7 +92,11 @@ public partial class RecommendationCard : ContentView
             {
                 new Label { Text = Title, TextColor = Color.FromArgb("#F4F7FB"), FontSize = 26, FontAttributes = FontAttributes.Bold },
                 new Label { Text = Badge, TextColor = Color.FromArgb("#F3C969") },
-                new Label { Text = Metadata, TextColor = Color.FromArgb("#AEB8C8") },
+                new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(OwnedBadge) ? Metadata : $"{OwnedBadge} · {Metadata}",
+                    TextColor = Color.FromArgb("#AEB8C8")
+                },
                 new Label
                 {
                     Text = Components is { Count: > 0 }

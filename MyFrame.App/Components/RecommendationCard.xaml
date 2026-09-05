@@ -24,8 +24,21 @@
                             WidthRequest="28" HeightRequest="25" />
                 </Grid>
                 <Label Text="{Binding Badge, Source={x:Reference CardRoot}}" TextColor="#F3C969" FontSize="11" />
-                <Label Text="{Binding Metadata, Source={x:Reference CardRoot}}" TextColor="#8995A8"
-                       FontSize="12" LineBreakMode="TailTruncation" />
+                <HorizontalStackLayout Spacing="6">
+                    <Border Padding="6,2" BackgroundColor="#273149" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 6" VerticalOptions="Center">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Value=""
+                                         Binding="{Binding OwnedBadge, Source={x:Reference CardRoot}}">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Label Text="{Binding OwnedBadge, Source={x:Reference CardRoot}}" TextColor="#D6DCE6"
+                               FontFamily="OpenSansSemibold" FontSize="10" />
+                    </Border>
+                    <Label Text="{Binding Metadata, Source={x:Reference CardRoot}}" TextColor="#8995A8"
+                           FontSize="12" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                </HorizontalStackLayout>
             </VerticalStackLayout>
             <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Action, Source={x:Reference CardRoot}}"
                    TextColor="#F3C969" FontFamily="OpenSansSemibold" LineBreakMode="WordWrap" />

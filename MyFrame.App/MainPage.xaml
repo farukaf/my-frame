@@ -221,7 +221,7 @@
                         <CollectionView.EmptyView><Label Text="No owned relics with catalog data were found." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding RelicName}"
-                                Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Action}"
+                                Badge="{Binding VaultStatus}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding Action}"
                                 Description="{Binding Reason}" Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
@@ -243,7 +243,7 @@
                         <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
-                                Badge="{Binding VaultStatus}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
+                                Badge="{Binding VaultStatus}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
                                 Description="{Binding Reason}" IsMastered="{Binding Mastered}"
                                 Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>

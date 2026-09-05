@@ -149,7 +149,8 @@ public sealed record RelicRecommendation(
     public int? TotalSellPrice => SellPriceEach * Owned;
     public double TotalExpectedOpenValue => ExpectedOpenValueEach * Owned;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
-    public string CardMetadata => $"Owned {Owned:N0} · sealed {(SellPriceEach is null ? "—" : $"{SellPriceEach:N0}p")} · open EV {ExpectedOpenValueEach:0.0}p";
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => $"sealed {(SellPriceEach is null ? "—" : $"{SellPriceEach:N0}p")} · open EV {ExpectedOpenValueEach:0.0}p";
     public string ItemDetails => $"Currently in inventory: {Owned:N0} relic(s) · Mastery does not apply to relics";
 }
 
@@ -178,7 +179,8 @@ public sealed record SaleRecommendation(
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
     public int KeepQuantity => Action == RecommendationAction.Keep ? Reserved + Excess : Reserved;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
-    public string CardMetadata => $"Owned {Owned:N0} · extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => $"extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
     public string ItemDetails
     {
         get
