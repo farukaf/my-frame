@@ -31,8 +31,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 var completion = owned || required == 0 ? (owned ? 1d : 0d) : (double)have / required;
                 var status = owned && mastered ? "Collected + mastered" : owned ? "Mastery pending" :
                     mastered ? "Mastered; not owned" : required > 0 && have >= required ? "Ready to build" : "In progress";
+                var components = item.Components.Select(component => new CollectionComponentDetail(
+                    component.Name, inventory.Stackables.GetValueOrDefault(component.UniqueName),
+                    component.Required, component.Tradable, component.ImageUrl)).ToArray();
                 return new CollectionGoal(item.Name, item.Category, owned, mastered, have, required, completion, status,
-                    item.Prime, item.Vaulted, item.ImageUrl, item.MarketSlug);
+                    item.Prime, item.Vaulted, item.ImageUrl, item.MarketSlug, components);
             }).OrderBy(x => x.Category).ThenBy(x => x.ItemName).ToArray();
 
     private static Dictionary<string, int> BuildReservations(InventorySnapshot inventory, CatalogSnapshot catalog,

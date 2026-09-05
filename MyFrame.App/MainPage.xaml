@@ -160,8 +160,9 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding PrimeStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Status}"
-                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}"
-                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
+                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}" IsOwned="{Binding Owned}"
+                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}"
+                                Components="{Binding Components}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

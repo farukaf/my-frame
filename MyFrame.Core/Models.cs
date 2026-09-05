@@ -14,7 +14,22 @@ public sealed record CatalogComponent(
     string Name,
     int Required,
     int Ducats,
-    bool Tradable);
+    bool Tradable,
+    string ImageName = "")
+{
+    public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
+        $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";
+}
+
+public sealed record CollectionComponentDetail(
+    string Name,
+    int Owned,
+    int Required,
+    bool Tradable,
+    string ImageUrl)
+{
+    public bool Complete => Owned >= Required;
+}
 
 public sealed record RelicSource(
     string RelicName,
@@ -88,7 +103,8 @@ public sealed record CollectionGoal(
     bool Prime,
     bool Vaulted,
     string ImageUrl,
-    string? MarketSlug)
+    string? MarketSlug,
+    IReadOnlyList<CollectionComponentDetail> Components)
 {
     public string PrimeStatus => !Prime ? "" : Vaulted ? "Prime · Vaulted" : "Prime · Unvaulted";
     public string CardMetadata => $"{OwnedComponents:N0}/{RequiredComponents:N0} parts";
