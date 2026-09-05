@@ -63,7 +63,7 @@ public sealed class DashboardServiceTests
     [Fact]
     public async Task QuotesInsideTheFreshnessWindowAreNotRequestedAgain()
     {
-        using var scenario = new Scenario(chassisOwned: 2,
+        using var scenario = new Scenario(chassisOwned: 2, null,
             ("oberon_prime_set", TimeSpan.FromMinutes(2)),
             ("lith_a1_relic", TimeSpan.FromMinutes(2)));
 
@@ -75,7 +75,7 @@ public sealed class DashboardServiceTests
     [Fact]
     public async Task QuotesOlderThanTheFreshnessWindowAreRefreshed()
     {
-        using var scenario = new Scenario(chassisOwned: 2,
+        using var scenario = new Scenario(chassisOwned: 2, null,
             ("oberon_prime_set", TimeSpan.FromMinutes(20)),
             ("lith_a1_relic", TimeSpan.FromMinutes(2)));
 
@@ -88,7 +88,7 @@ public sealed class DashboardServiceTests
     [Fact]
     public async Task AFullyFreshCacheCostsNoRequestsAndReportsNoStalePrices()
     {
-        using var scenario = new Scenario(chassisOwned: 2,
+        using var scenario = new Scenario(chassisOwned: 2, null,
             ("oberon_prime_set", TimeSpan.FromMinutes(1)),
             ("oberon_prime_chassis_blueprint", TimeSpan.FromMinutes(1)),
             ("lith_a1_relic", TimeSpan.FromMinutes(1)),
@@ -105,7 +105,7 @@ public sealed class DashboardServiceTests
     [Fact]
     public async Task ProgressRunsFromTheCachedCountUpToEveryTrackedPrice()
     {
-        using var scenario = new Scenario(chassisOwned: 2, ("oberon_prime_set", TimeSpan.FromMinutes(1)));
+        using var scenario = new Scenario(chassisOwned: 2, null, ("oberon_prime_set", TimeSpan.FromMinutes(1)));
 
         var snapshot = await scenario.Service.RefreshAsync();
 
@@ -142,19 +142,81 @@ public sealed class DashboardServiceTests
         Assert.Equal("Prices are out of date. Showing inventory only.", snapshot.Status.StaleWarning);
     }
 
+    [Fact]
+    public async Task StoredOrdersAreAppliedBeforeTheMarketAnswers()
+    {
+        var order = new MarketOrder("order-1", "chassis-id", "oberon_prime_chassis_blueprint", "sell", 14, 1, true);
+        using var scenario = new Scenario(chassisOwned: 2,
+            new MarketState(new MarketAccount("me", "Heynthor", "pc"), [order], DateTimeOffset.UtcNow));
+
+        await scenario.Service.RefreshAsync();
+
+        var first = scenario.Published[0];
+        Assert.Equal("Heynthor", first.Account!.IngameName);
+        Assert.Equal(order, Assert.Single(first.Orders));
+    }
+
+    [Fact]
+    public async Task AnAnsweredMarketCallIsWrittenBackToTheStore()
+    {
+        using var scenario = new Scenario(chassisOwned: 2);
+        var order = new MarketOrder("order-1", "chassis-id", null, "sell", 14, 1, true);
+        scenario.Market.Account = new MarketAccount("me", "Heynthor", "pc");
+        scenario.Market.Orders = [order];
+
+        await scenario.Service.RefreshAsync();
+
+        var saved = Assert.Single(scenario.MarketState.Saved);
+        Assert.Equal("Heynthor", saved.Account!.IngameName);
+        Assert.Equal(order, Assert.Single(saved.Orders));
+    }
+
+    [Fact]
+    public async Task AnExpiredTokenWalksTheOptimisticOrdersBackAndKeepsTheStoredFile()
+    {
+        var order = new MarketOrder("order-1", "chassis-id", null, "sell", 14, 1, true);
+        using var scenario = new Scenario(chassisOwned: 2,
+            new MarketState(new MarketAccount("me", "Heynthor", "pc"), [order], DateTimeOffset.UtcNow));
+
+        var snapshot = await scenario.Service.RefreshAsync();
+
+        Assert.Single(scenario.Published[0].Orders);
+        Assert.Empty(snapshot.Orders);
+        Assert.Null(snapshot.Account);
+        Assert.Empty(scenario.MarketState.Saved);
+    }
+
+    [Fact]
+    public async Task StoredOrdersSurviveAnUnreachableMarket()
+    {
+        var order = new MarketOrder("order-1", "chassis-id", null, "sell", 14, 1, true);
+        using var scenario = new Scenario(chassisOwned: 2,
+            new MarketState(new MarketAccount("me", "Heynthor", "pc"), [order], DateTimeOffset.UtcNow));
+        scenario.Market.Unreachable = true;
+
+        var snapshot = await scenario.Service.RefreshAsync();
+
+        Assert.Equal(order, Assert.Single(snapshot.Orders));
+        Assert.Equal("Heynthor", snapshot.Account!.IngameName);
+        Assert.Empty(scenario.MarketState.Saved);
+        Assert.Equal("Warframe.Market is unavailable; using stored prices and orders.", snapshot.Status.Message);
+    }
+
     private sealed class Scenario : IDisposable
     {
         private readonly TemporaryDirectory _directory = new();
 
-        public Scenario(int chassisOwned, params (string Slug, TimeSpan Age)[] cached)
+        public Scenario(int chassisOwned, MarketState? storedMarketState = null,
+            params (string Slug, TimeSpan Age)[] cached)
         {
+            MarketState = new RecordingMarketState(storedMarketState);
             var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
                 new Dictionary<string, int> { [ChassisRecipe] = chassisOwned, [RelicUnique] = 3 },
                 new HashSet<string>(), new Dictionary<string, long>(), 0, 0, "synthetic");
             Market = new RecordingMarket(Timeline);
             Cache = new SeededCache(cached);
             Service = new DashboardService(new StaticPath(_directory.Path), new StubInventory(inventory),
-                new StubCatalog(Catalog()), Market, Cache, Engine);
+                new StubCatalog(Catalog()), Market, Cache, MarketState, Engine);
             Service.SnapshotUpdated += (_, snapshot) =>
             {
                 Timeline.Add("publish");
@@ -168,6 +230,7 @@ public sealed class DashboardServiceTests
         public List<SyncStatus> Progress { get; } = [];
         public RecordingMarket Market { get; }
         public SeededCache Cache { get; }
+        public RecordingMarketState MarketState { get; }
         public RecordingEngine Engine { get; } = new();
         public DashboardService Service { get; }
 
@@ -226,17 +289,21 @@ public sealed class DashboardServiceTests
     {
         public List<string> Requested { get; } = [];
         public HashSet<string> Unanswered { get; } = new(StringComparer.Ordinal);
+        public MarketAccount? Account { get; set; }
+        public IReadOnlyList<MarketOrder> Orders { get; set; } = [];
+        public bool Unreachable { get; set; }
 
         public Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default)
         {
             timeline.Add("account");
-            return Task.FromResult<MarketAccount?>(null);
+            if (Unreachable) throw new HttpRequestException("offline");
+            return Task.FromResult(Account);
         }
 
         public Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default)
         {
             timeline.Add("orders");
-            return Task.FromResult<IReadOnlyList<MarketOrder>>([]);
+            return Task.FromResult(Orders);
         }
 
         public Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default)
@@ -248,6 +315,18 @@ public sealed class DashboardServiceTests
             }
             return Task.FromResult(Unanswered.Contains(slug)
                 ? null : new MarketQuote(slug, 12, 9, DateTimeOffset.UtcNow));
+        }
+    }
+
+    private sealed class RecordingMarketState(MarketState? stored) : IMarketStateStore
+    {
+        public List<MarketState> Saved { get; } = [];
+        public Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(stored);
+        public Task SaveAsync(MarketState state, CancellationToken cancellationToken = default)
+        {
+            Saved.Add(state);
+            return Task.CompletedTask;
         }
     }
 

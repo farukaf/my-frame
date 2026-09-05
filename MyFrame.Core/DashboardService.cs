@@ -10,6 +10,7 @@ public sealed class DashboardService : IDisposable
     private readonly IAlecaCatalogReader _catalogReader;
     private readonly IWarframeMarketClient _market;
     private readonly IPriceCache _cache;
+    private readonly IMarketStateStore _marketState;
     private readonly IRecommendationEngine _engine;
     private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -23,8 +24,10 @@ public sealed class DashboardService : IDisposable
 
     public DashboardService(IAlecaFramePath alecaPath, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
-        IRecommendationEngine engine, ILogger<DashboardService>? logger = null)
+        IMarketStateStore marketState, IRecommendationEngine engine,
+        ILogger<DashboardService>? logger = null)
     {
+        _marketState = marketState;
         _alecaPath = alecaPath;
         _inventoryReader = inventoryReader;
         _catalogReader = catalogReader;
@@ -83,21 +86,39 @@ public sealed class DashboardService : IDisposable
             var outdated = quoteSlugs.Where(x => !quotes.TryGetValue(x, out var quote) || quote.IsStale).ToArray();
             var priced = quoteSlugs.Length - outdated.Length;
 
+            // Last session's account and orders stand in until the live ones arrive, so the first
+            // paint already reserves against open orders instead of revising itself a second later.
+            var stored = await _marketState.LoadAsync(cancellationToken);
+            var account = stored?.Account;
+            var orders = stored?.Orders ?? [];
+
             // Inventory, catalog and every recommendation are ready before a single request is sent,
             // so they go on screen now; the market pass below refines the same view in place.
-            Publish(inventory, quotes, null, [], new SyncStatus(true,
+            Publish(inventory, quotes, account, orders, new SyncStatus(true,
                 refreshPrices && outdated.Length > 0
                     ? $"Inventory ready. Updating {outdated.Length:N0} price(s)…"
                     : "Inventory ready. Checking Warframe.Market…",
                 _lastSuccessfulSync, true, quotes.Count > 0, null, priced, quoteSlugs.Length, outdated.Length));
 
-            MarketAccount? account = null;
-            IReadOnlyList<MarketOrder> orders = [];
             string? marketError = null;
             try
             {
-                account = await _market.GetAccountAsync(cancellationToken);
-                orders = await _market.GetMyOrdersAsync(cancellationToken);
+                var liveAccount = await _market.GetAccountAsync(cancellationToken);
+                if (liveAccount is not null)
+                {
+                    account = liveAccount;
+                    orders = await _market.GetMyOrdersAsync(cancellationToken);
+                    await _marketState.SaveAsync(
+                        new MarketState(account, orders, DateTimeOffset.UtcNow), cancellationToken);
+                }
+                else
+                {
+                    // The token is gone or expired, so nothing can be confirmed this session. The
+                    // optimistic first paint is walked back rather than left reserving against
+                    // orders that may no longer exist; the stored file is kept for a later sign-in.
+                    account = null;
+                    orders = [];
+                }
                 // Quotes still inside the freshness window are reused; only the rest cost a request.
                 if (refreshPrices)
                 {
@@ -119,8 +140,8 @@ public sealed class DashboardService : IDisposable
             }
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException)
             {
-                _logger.LogWarning(error, "Market unavailable during dashboard refresh; cached quotes will be used");
-                marketError = "Warframe.Market is unavailable; using cached prices.";
+                _logger.LogWarning(error, "Market unavailable during dashboard refresh; the stored account, orders and quotes will be used");
+                marketError = "Warframe.Market is unavailable; using stored prices and orders.";
             }
 
             // Counted from the quotes actually held, so a slug the market never answered still reads stale.

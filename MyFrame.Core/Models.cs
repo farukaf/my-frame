@@ -87,6 +87,16 @@ public sealed record MarketOrder(
 
 public sealed record MarketAccount(string Id, string IngameName, string Platform);
 
+/// <summary>
+/// The account and open orders from the last successful Warframe.Market call. Persisted so a
+/// launch can price and reserve against them before the network answers. It never carries the
+/// authentication token.
+/// </summary>
+public sealed record MarketState(
+    MarketAccount? Account,
+    IReadOnlyList<MarketOrder> Orders,
+    DateTimeOffset RetrievedAt);
+
 public enum RecommendationAction
 {
     Keep,
