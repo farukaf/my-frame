@@ -155,9 +155,10 @@ public sealed class RecommendationEngine : IRecommendationEngine
             if (marketPrice is null && info.Component.Ducats <= 0) continue;
             var kept = Math.Min(pair.Value, reservations.GetValueOrDefault(pair.Key));
             var breakdown = ReservationBreakdown(info.Parent, info.Component, inventory, catalog, orders, settings);
+            var allocated = AllocateOwnedReservations(kept, breakdown);
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
-                pair.Value, kept, Math.Min(kept, breakdown.Craft), Math.Min(kept, breakdown.FutureSale),
-                Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, marketPrice, quote?.HighestBuy,
+                pair.Value, kept, allocated.Craft, allocated.FutureSale, allocated.Orders,
+                0, info.Component.Ducats, marketPrice, quote?.HighestBuy,
                 RecommendationAction.Keep, info.Parent.Vaulted,
                 inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
@@ -184,6 +185,16 @@ public sealed class RecommendationEngine : IRecommendationEngine
             .Sum(order => order.ItemId == item.MarketId ? order.Quantity * component.Required :
                 identity is not null && order.ItemId == identity.Id ? order.Quantity : 0);
         return new ReservationParts(craft, futureSale, orderQuantity);
+    }
+
+    private static ReservationParts AllocateOwnedReservations(int owned, ReservationParts requested)
+    {
+        var craft = Math.Min(owned, requested.Craft);
+        var remaining = owned - craft;
+        var futureSale = Math.Min(remaining, requested.FutureSale);
+        remaining -= futureSale;
+        var orders = Math.Min(remaining, requested.Orders);
+        return new ReservationParts(craft, futureSale, orders);
     }
 
     private static IReadOnlyList<FarmRecommendation> BuildFarm(InventorySnapshot inventory, CatalogSnapshot catalog,
