@@ -67,6 +67,7 @@ public sealed class DashboardService : IDisposable
             var alecaDirectory = _alecaPath.DirectoryPath;
             var inventory = await _inventoryReader.ReadAsync(alecaDirectory, cancellationToken);
             _catalog ??= await _catalogReader.LoadAsync(alecaDirectory, cancellationToken);
+            inventory = InventoryCatalogAlignment.AlignToCatalog(inventory, _catalog);
             var quotes = new Dictionary<string, MarketQuote>(StringComparer.Ordinal);
             var quoteSlugs = GetRelevantSlugs(inventory, _catalog).Distinct(StringComparer.Ordinal).Take(100).ToArray();
             foreach (var slug in quoteSlugs)
@@ -116,28 +117,50 @@ public sealed class DashboardService : IDisposable
         finally { _refreshGate.Release(); }
     }
 
+    // A full inventory needs far more slugs than the quote budget allows, so they are ordered by how
+    // much a price changes a decision: first the pieces that already have a spare copy to sell, then
+    // the sealed relics being held, and only then the reward tables behind those relics.
     private static IEnumerable<string> GetRelevantSlugs(InventorySnapshot inventory, CatalogSnapshot catalog)
     {
-        foreach (var relic in catalog.Items.Where(x => x.Category.Contains("Relic", StringComparison.OrdinalIgnoreCase) &&
-                                                       inventory.Stackables.GetValueOrDefault(x.UniqueName) > 0))
+        List<string> sellable = [], sealedRelics = [], remaining = [];
+        foreach (var item in catalog.Items)
         {
-            if (!string.IsNullOrWhiteSpace(relic.MarketSlug)) yield return relic.MarketSlug;
-            foreach (var reward in relic.Relics)
-                if (catalog.MarketByNormalizedName.TryGetValue(ItemNameNormalizer.Normalize(reward.RewardName), out var identity))
-                    yield return identity.Slug;
-        }
+            if (item.Category.Contains("Relic", StringComparison.OrdinalIgnoreCase) &&
+                inventory.Stackables.GetValueOrDefault(item.UniqueName) > 0)
+            {
+                if (!string.IsNullOrWhiteSpace(item.MarketSlug)) sealedRelics.Add(item.MarketSlug);
+                foreach (var reward in item.Relics)
+                    if (catalog.MarketByNormalizedName.TryGetValue(ItemNameNormalizer.Normalize(reward.RewardName), out var identity))
+                        remaining.Add(identity.Slug);
+                continue;
+            }
 
-        foreach (var item in catalog.Items.Where(x => x.Components.Any(c => inventory.Stackables.GetValueOrDefault(c.UniqueName) > 0)))
-        {
-            if (!string.IsNullOrWhiteSpace(item.MarketSlug)) yield return item.MarketSlug;
-            foreach (var component in item.Components.Where(x => inventory.Stackables.GetValueOrDefault(x.UniqueName) > 0))
+            var held = item.Components
+                .Where(x => inventory.Stackables.GetValueOrDefault(x.UniqueName) > 0).ToArray();
+            if (held.Length == 0) continue;
+
+            var target = HasSpareCopy(item, held, inventory) ? sellable : remaining;
+            if (!string.IsNullOrWhiteSpace(item.MarketSlug)) target.Add(item.MarketSlug);
+            foreach (var component in held)
             {
                 var name = component.Name.Equals("Blueprint", StringComparison.OrdinalIgnoreCase)
                     ? $"{item.Name} Blueprint" : $"{item.Name} {component.Name}";
                 if (catalog.MarketByNormalizedName.TryGetValue(ItemNameNormalizer.Normalize(name), out var identity))
-                    yield return identity.Slug;
+                    target.Add(identity.Slug);
             }
         }
+
+        return sellable.Concat(sealedRelics).Concat(remaining);
+    }
+
+    // Conservative stand-in for the engine's reservation pass: a piece is worth pricing when at least
+    // one copy survives the single build the collection still needs.
+    private static bool HasSpareCopy(CatalogItem item, IEnumerable<CatalogComponent> held, InventorySnapshot inventory)
+    {
+        var built = inventory.OwnedEquipment.Contains(item.UniqueName) ||
+                    item.IsMasteredWith(inventory.Experience.GetValueOrDefault(item.UniqueName));
+        return held.Any(x => x.Tradable &&
+            inventory.Stackables.GetValueOrDefault(x.UniqueName) > (built ? 0 : x.Required));
     }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)

@@ -275,11 +275,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
 
     private static bool IsRelevantGoal(CatalogItem item) => !item.Category.Contains("Skin", StringComparison.OrdinalIgnoreCase);
     private static bool IsWarframe(CatalogItem item) => item.ProductCategory == "Suits" || item.Category == "Warframes";
-    private static bool IsMastered(CatalogItem item, long xp)
-    {
-        var suitLike = item.ProductCategory is "Suits" or "Sentinels" or "KubrowPets" or "SpaceSuits" or "MechSuits";
-        return xp >= (suitLike ? 900_000 : 450_000);
-    }
+    private static bool IsMastered(CatalogItem item, long xp) => item.IsMasteredWith(xp);
     private static bool HasOrder(string? marketId, IReadOnlyList<MarketOrder> orders) => !string.IsNullOrWhiteSpace(marketId) && orders.Any(x => x.ItemId == marketId && x.Type == "sell");
     private static int? MarketPrice(MarketQuote? quote) => quote?.LowestSell is > 0
         ? quote.LowestSell

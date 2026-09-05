@@ -41,6 +41,10 @@ public sealed record CatalogItem(
 {
     public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
         $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";
+
+    public bool IsMasteredWith(long experience) => experience >=
+        (ProductCategory is "Suits" or "Sentinels" or "KubrowPets" or "SpaceSuits" or "MechSuits"
+            ? 900_000 : 450_000);
 }
 
 public sealed record CatalogSnapshot(
