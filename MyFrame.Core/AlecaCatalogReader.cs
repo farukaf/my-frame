@@ -17,6 +17,27 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
     public async Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default)
     {
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                return await LoadOnceAsync(alecaDirectory, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception error) when (error is IOException or JsonException)
+            {
+                lastError = error;
+                _logger.LogWarning(error, "Transient catalog read failure on attempt {Attempt}", attempt + 1);
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * (attempt + 1)), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        throw new InvalidDataException("AlecaFrame was still updating its catalogs.", lastError);
+    }
+
+    private async Task<CatalogSnapshot> LoadOnceAsync(string alecaDirectory, CancellationToken cancellationToken)
+    {
         var jsonDirectory = Path.Combine(alecaDirectory, "cachedData", "json");
         _logger.LogInformation("Loading AlecaFrame catalogs");
         if (!Directory.Exists(jsonDirectory))

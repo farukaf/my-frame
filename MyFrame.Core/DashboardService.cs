@@ -17,6 +17,7 @@ public sealed class DashboardService : IDisposable
     private CancellationTokenSource? _debounce;
     private CatalogSnapshot? _catalog;
     private DashboardSnapshot? _lastSnapshot;
+    private RecommendationSettings _lastSettings = new();
 
     public DashboardService(IAlecaFramePath alecaPath, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
@@ -48,6 +49,8 @@ public sealed class DashboardService : IDisposable
             _watcher.Changed += OnFileChanged;
             _watcher.Created += OnFileChanged;
             _watcher.Renamed += OnFileChanged;
+            _watcher.Deleted += OnFileChanged;
+            _watcher.Error += OnWatcherError;
         }
     }
 
@@ -98,8 +101,8 @@ public sealed class DashboardService : IDisposable
                 marketError = "Warframe.Market is unavailable; using cached prices.";
             }
 
-            var recommendations = _engine.Evaluate(inventory, _catalog, quotes, orders,
-                settings ?? new RecommendationSettings());
+            _lastSettings = settings ?? _lastSettings;
+            var recommendations = _engine.Evaluate(inventory, _catalog, quotes, orders, _lastSettings);
             var status = new SyncStatus(false,
                 marketError ?? "Inventory and market synchronized.", DateTimeOffset.Now, true,
                 quotes.Count > 0, marketError);
@@ -143,20 +146,30 @@ public sealed class DashboardService : IDisposable
         if (!name.Equals("lastData.dat", StringComparison.OrdinalIgnoreCase) &&
             !name.Equals("WFMarketToken.tk", StringComparison.OrdinalIgnoreCase) &&
             !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) return;
+        if (name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) _catalog = null;
+        ScheduleRefresh();
+    }
+
+    private void ScheduleRefresh()
+    {
         _debounce?.Cancel();
         _debounce?.Dispose();
         _debounce = new CancellationTokenSource();
         _ = DebouncedRefreshAsync(_debounce.Token);
     }
 
+    private void OnWatcherError(object sender, ErrorEventArgs e)
+    {
+        _logger.LogWarning(e.GetException(), "AlecaFrame file watcher failed; recreating it");
+        ConfigureWatcher(_alecaPath.DirectoryPath);
+        ScheduleRefresh();
+    }
+
     private void OnAlecaDirectoryChanged(object? sender, string directory)
     {
         _catalog = null;
         ConfigureWatcher(directory);
-        _debounce?.Cancel();
-        _debounce?.Dispose();
-        _debounce = new CancellationTokenSource();
-        _ = DebouncedRefreshAsync(_debounce.Token);
+        ScheduleRefresh();
     }
 
     private async Task DebouncedRefreshAsync(CancellationToken cancellationToken)

@@ -14,17 +14,21 @@ public partial class DashboardViewModel : ObservableObject
     private readonly ILogger<DashboardViewModel> _logger;
     private readonly IAlecaFramePath _alecaPath;
     private readonly AlecaFrameDirectorySettings _directorySettings;
+    private readonly LocalSettings _localSettings;
     private bool _initialized;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
-        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings)
+        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings)
     {
         _service = service;
         _logger = logger;
         _alecaPath = alecaPath;
         _directorySettings = directorySettings;
+        _localSettings = localSettings;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
+        DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
+        ReserveUnvaultedPrimeWarframeSet = localSettings.ReserveUnvaultedPrimeWarframeSet;
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
         ShowSection("Dashboard");
     }
@@ -38,6 +42,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string MasteryProgress { get; set; } = "0%";
     [ObservableProperty] public partial string InventorySummary { get; set; } = "0 items";
     [ObservableProperty] public partial double DucatsPerPlatinum { get; set; } = 10;
+    [ObservableProperty] public partial bool ReserveUnvaultedPrimeWarframeSet { get; set; } = true;
     [ObservableProperty] public partial bool DashboardVisible { get; set; }
     [ObservableProperty] public partial bool CollectionVisible { get; set; }
     [ObservableProperty] public partial bool FarmVisible { get; set; }
@@ -49,6 +54,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
     [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
+    [ObservableProperty] public partial string ActiveSalesSettingsText { get; set; } = "Recommendations not loaded yet";
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -74,7 +80,8 @@ public partial class DashboardViewModel : ObservableObject
         if (IsBusy) return;
         IsBusy = true;
         StatusMessage = "Reading inventory and updating prices…";
-        try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(Math.Max(.1, DucatsPerPlatinum)))); }
+        try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(
+            Math.Max(.1, DucatsPerPlatinum), ReserveUnvaultedPrimeWarframeSet))); }
         catch (Exception error)
         {
             _logger.LogError(error, "Dashboard refresh failed");
@@ -124,6 +131,9 @@ public partial class DashboardViewModel : ObservableObject
         AccountText = snapshot.Account is null ? "Token missing or expired" : $"{snapshot.Account.IngameName} · {snapshot.Account.Platform}";
         TotalPlatinum = $"{snapshot.Recommendations.EstimatedPlatinum:N0}p";
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
+        var activeSettings = snapshot.Recommendations.Settings;
+        ActiveSalesSettingsText = $"Loaded with 1p = {activeSettings.DucatsPerPlatinum:0.#} ducats · " +
+            $"reserve unvaulted Prime Warframe set: {(activeSettings.ReserveUnvaultedPrimeWarframeSet ? "on" : "off")}";
         var mastered = snapshot.Recommendations.Collection.Count(x => x.Mastered);
         var total = snapshot.Recommendations.Collection.Count;
         MasteryProgress = total == 0 ? "0%" : $"{(double)mastered / total:P0}";
@@ -159,6 +169,9 @@ public partial class DashboardViewModel : ObservableObject
 
     partial void OnSelectedCollectionFilterChanged(string value) => ApplyCollectionView();
     partial void OnSelectedCollectionSortChanged(string value) => ApplyCollectionView();
+    partial void OnDucatsPerPlatinumChanged(double value) => _localSettings.DucatsPerPlatinum = value;
+    partial void OnReserveUnvaultedPrimeWarframeSetChanged(bool value) =>
+        _localSettings.ReserveUnvaultedPrimeWarframeSet = value;
     partial void OnSelectedSalesFilterChanged(string value)
     {
         if (_service.LastSnapshot is not null) ApplySalesView(_service.LastSnapshot.Recommendations.Sales);

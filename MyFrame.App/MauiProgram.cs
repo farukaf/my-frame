@@ -25,6 +25,7 @@ public static class MauiProgram
         var alecaDirectory = Preferences.Default.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
+        builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();

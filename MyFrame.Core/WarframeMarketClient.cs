@@ -112,7 +112,12 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
     {
         var tokenPath = _tokenPath();
         if (!File.Exists(tokenPath)) return null;
-        var token = (await File.ReadAllTextAsync(tokenPath, cancellationToken)).Trim();
+        string token;
+        await using (var stream = new FileStream(tokenPath, FileMode.Open, FileAccess.Read,
+                         FileShare.ReadWrite | FileShare.Delete, 4096,
+                         FileOptions.Asynchronous | FileOptions.SequentialScan))
+        using (var reader = new StreamReader(stream, Encoding.UTF8, true, 4096, leaveOpen: false))
+            token = (await reader.ReadToEndAsync(cancellationToken)).Trim();
         var parts = token.Split('.');
         if (parts.Length != 3) return null;
         try

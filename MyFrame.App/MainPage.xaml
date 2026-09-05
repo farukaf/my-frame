@@ -73,9 +73,12 @@
                     </HorizontalStackLayout>
                     <Label Text="Collection, farming, relics, and the value of your extras in one place." TextColor="#8995A8" />
                 </VerticalStackLayout>
-                <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">
-                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#7DE2D1" />
-                    <Button Grid.Column="1" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                    <Border IsVisible="{Binding SalesVisible}" Padding="10,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding ActiveSalesSettingsText}" TextColor="#AEB8C8" FontSize="11" />
+                    </Border>
+                    <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#7DE2D1" />
+                    <Button Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
                 </Grid>
             </Grid>
 
@@ -188,6 +191,13 @@
                                 <Grid ColumnDefinitions="*,90" ColumnSpacing="18">
                                     <Slider Minimum="1" Maximum="50" Value="{Binding DucatsPerPlatinum}" MinimumTrackColor="#7DE2D1" />
                                     <Label Grid.Column="1" Text="{Binding DucatsPerPlatinum, StringFormat='1p = {0:F0}'}" TextColor="#F4F7FB" VerticalOptions="Center" HorizontalTextAlignment="End" />
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Reserve an unvaulted Prime Warframe set" TextColor="#F4F7FB" />
+                                        <Label Text="Keeps one additional complete set out of sales recommendations." Style="{StaticResource Muted}" />
+                                    </VerticalStackLayout>
+                                    <Switch Grid.Column="1" IsToggled="{Binding ReserveUnvaultedPrimeWarframeSet}" OnColor="#167C70" />
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>

@@ -165,7 +165,8 @@ public sealed record RecommendationResult(
     IReadOnlyList<RelicRecommendation> Relics,
     int TotalDucats,
     int EstimatedPlatinum,
-    DateTimeOffset GeneratedAt);
+    DateTimeOffset GeneratedAt,
+    RecommendationSettings Settings);
 
 public sealed record RecommendationSettings(
     double DucatsPerPlatinum = 10,

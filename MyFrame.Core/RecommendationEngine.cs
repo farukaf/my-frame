@@ -16,7 +16,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
         return new RecommendationResult(collection, farm, sales, relics,
             sales.Where(x => x.Action == RecommendationAction.ExchangeForDucats).Sum(x => x.TotalDucats),
             sales.Where(x => x.Action == RecommendationAction.SellForPlatinum).Sum(x => x.TotalPlatinum ?? 0),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow, settings);
     }
 
     private static IReadOnlyList<CollectionGoal> BuildCollection(InventorySnapshot inventory, CatalogSnapshot catalog) =>
