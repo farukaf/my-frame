@@ -31,7 +31,7 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings = localSettings;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
-        ReserveUnvaultedPrimeWarframeSet = localSettings.ReserveUnvaultedPrimeWarframeSet;
+        UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
         ShowSection("Dashboard");
     }
@@ -45,7 +45,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string MasteryProgress { get; set; } = "0%";
     [ObservableProperty] public partial string InventorySummary { get; set; } = "0 items";
     [ObservableProperty] public partial double DucatsPerPlatinum { get; set; } = 10;
-    [ObservableProperty] public partial bool ReserveUnvaultedPrimeWarframeSet { get; set; } = true;
+    [ObservableProperty] public partial int UnvaultedPrimeSetsToReserve { get; set; } = 1;
     [ObservableProperty] public partial bool DashboardVisible { get; set; }
     [ObservableProperty] public partial bool CollectionVisible { get; set; }
     [ObservableProperty] public partial bool FarmVisible { get; set; }
@@ -57,6 +57,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
     [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
+    [ObservableProperty] public partial string SelectedSalesSort { get; set; } = "Name";
     [ObservableProperty] public partial string ActiveConversionValue { get; set; } = "—";
     [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
     [ObservableProperty] public partial bool ActivePrimeSetReserveEnabled { get; set; }
@@ -73,6 +74,7 @@ public partial class DashboardViewModel : ObservableObject
     public IReadOnlyList<string> CollectionFilters { get; } = ["In progress", "All", "Not owned", "Owned", "Mastered", "Prime only"];
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
     public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
+    public IReadOnlyList<string> SalesSorts { get; } = ["Name", "Action", "Highest value"];
     public ISeries[] ValueSeries { get; private set; } = [];
     public ISeries[] ProgressSeries { get; private set; } = [];
 
@@ -100,7 +102,7 @@ public partial class DashboardViewModel : ObservableObject
         IsBusy = true;
         StatusMessage = "Reading inventory and updating prices…";
         try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(
-            Math.Clamp((int)Math.Round(DucatsPerPlatinum), 1, 50), ReserveUnvaultedPrimeWarframeSet))); }
+            Math.Clamp((int)Math.Round(DucatsPerPlatinum), 1, 50), Math.Clamp(UnvaultedPrimeSetsToReserve, 0, 10)))); }
         catch (Exception error)
         {
             _logger.LogError(error, "Dashboard refresh failed");
@@ -163,8 +165,10 @@ public partial class DashboardViewModel : ObservableObject
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
         var activeSettings = snapshot.Recommendations.Settings;
         ActiveConversionValue = activeSettings.DucatsPerPlatinum.ToString();
-        ActivePrimeSetReserveEnabled = activeSettings.ReserveUnvaultedPrimeWarframeSet;
-        ActivePrimeSetReserveText = ActivePrimeSetReserveEnabled ? "ON" : "OFF";
+        ActivePrimeSetReserveEnabled = activeSettings.UnvaultedPrimeSetsToReserve > 0;
+        ActivePrimeSetReserveText = ActivePrimeSetReserveEnabled
+            ? $"{activeSettings.UnvaultedPrimeSetsToReserve} SET{(activeSettings.UnvaultedPrimeSetsToReserve == 1 ? "" : "S")}"
+            : "OFF";
         var mastered = snapshot.Recommendations.Collection.Count(x => x.Mastered);
         var total = snapshot.Recommendations.Collection.Count;
         MasteryProgress = total == 0 ? "0%" : $"{(double)mastered / total:P0}";
@@ -217,12 +221,13 @@ public partial class DashboardViewModel : ObservableObject
         }
         _localSettings.DucatsPerPlatinum = integerValue;
     }
-    partial void OnReserveUnvaultedPrimeWarframeSetChanged(bool value) =>
-        _localSettings.ReserveUnvaultedPrimeWarframeSet = value;
+    partial void OnUnvaultedPrimeSetsToReserveChanged(int value) =>
+        _localSettings.UnvaultedPrimeSetsToReserve = value;
     partial void OnSelectedSalesFilterChanged(string value)
     {
         ApplySalesView();
     }
+    partial void OnSelectedSalesSortChanged(string value) => ApplySalesView();
 
     private void ApplySalesView()
     {
@@ -237,6 +242,12 @@ public partial class DashboardViewModel : ObservableObject
         };
         if (!string.IsNullOrWhiteSpace(SalesSearchText))
             sales = sales.Where(x => Matches(SalesSearchText, x.ItemName, x.Reason, x.ActionLabel, x.VaultStatus));
+        sales = SelectedSalesSort switch
+        {
+            "Action" => sales.OrderBy(x => x.ActionLabel).ThenBy(x => x.ItemName),
+            "Highest value" => sales.OrderByDescending(x => x.TotalPlatinum).ThenBy(x => x.ItemName),
+            _ => sales.OrderBy(x => x.ItemName)
+        };
         Replace(Sales, sales.Take(200));
     }
 

@@ -31,8 +31,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 var completion = owned || required == 0 ? (owned ? 1d : 0d) : (double)have / required;
                 var status = owned && mastered ? "Collected + mastered" : owned ? "Mastery pending" :
                     mastered ? "Mastered; not owned" : required > 0 && have >= required ? "Ready to build" : "In progress";
+                var components = item.Components.Select(component => new CollectionComponentDetail(
+                    component.Name, inventory.Stackables.GetValueOrDefault(component.UniqueName),
+                    component.Required, component.Tradable, component.ImageUrl)).ToArray();
                 return new CollectionGoal(item.Name, item.Category, owned, mastered, have, required, completion, status,
-                    item.Prime, item.Vaulted, item.ImageUrl, item.MarketSlug);
+                    item.Prime, item.Vaulted, item.ImageUrl, item.MarketSlug, components);
             }).OrderBy(x => x.Category).ThenBy(x => x.ItemName).ToArray();
 
     private static Dictionary<string, int> BuildReservations(InventorySnapshot inventory, CatalogSnapshot catalog,
@@ -44,10 +47,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
             var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
             var needBuild = !owned && !mastered;
-            var speculate = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted;
+            var speculate = settings.UnvaultedPrimeSetsToReserve > 0 && item.Prime && !item.Vaulted;
             foreach (var component in item.Components.Where(x => x.Tradable))
             {
-                var amount = (needBuild ? component.Required : 0) + (speculate ? component.Required : 0);
+                var amount = (needBuild ? component.Required : 0) +
+                    (speculate ? settings.UnvaultedPrimeSetsToReserve * component.Required : 0);
                 reserved[component.UniqueName] = Math.Max(reserved.GetValueOrDefault(component.UniqueName), amount);
             }
         }
@@ -178,8 +182,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
         var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
         var craft = !owned && !mastered ? component.Required : 0;
-        var futureSale = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted
-            ? component.Required : 0;
+        var futureSale = settings.UnvaultedPrimeSetsToReserve > 0 && item.Prime && !item.Vaulted
+            ? settings.UnvaultedPrimeSetsToReserve * component.Required : 0;
         var identity = MarketForComponent(item, component, catalog);
         var orderQuantity = orders.Where(x => x.Type.Equals("sell", StringComparison.OrdinalIgnoreCase))
             .Sum(order => order.ItemId == item.MarketId ? order.Quantity * component.Required :

@@ -16,6 +16,12 @@
             <Setter Property="Padding" Value="16,12" />
             <Setter Property="CornerRadius" Value="10" />
         </Style>
+        <Style x:Key="NavItem" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="HorizontalOptions" Value="Fill" />
+        </Style>
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="BackgroundColor" Value="#151A23" />
             <Setter Property="Stroke" Value="#252D3A" />
@@ -37,6 +43,26 @@
             <Setter Property="TextColor" Value="#8995A8" />
             <Setter Property="FontSize" Value="12" />
         </Style>
+        <Style x:Key="SearchField" TargetType="Entry">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="#20283A" />
+            <Setter Property="TextColor" Value="#F4F7FB" />
+            <Setter Property="PlaceholderColor" Value="#8995A8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style x:Key="SelectField" TargetType="Picker">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="#20283A" />
+            <Setter Property="TextColor" Value="#F4F7FB" />
+            <Setter Property="TitleColor" Value="#8995A8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
     </ContentPage.Resources>
 
     <Grid ColumnDefinitions="220,*" RowDefinitions="*">
@@ -48,12 +74,12 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="1" Spacing="5">
-                    <Button Text="⌂  Dashboard" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" />
-                    <Button Text="◉  Collection" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Collection" />
-                    <Button Text="◇  Farm plan" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Farm" />
-                    <Button Text="⬡  Relic advisor" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Relics" />
-                    <Button Text="⇄  Sales and ducats" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Sales" />
-                    <Button Text="⚙  Settings" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Settings" />
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" /></Border.GestureRecognizers><Label Text="⌂  Dashboard" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Collection" /></Border.GestureRecognizers><Label Text="◉  Collection" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="3" Spacing="4">
@@ -89,7 +115,7 @@
                         </Border>
                         <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8">
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                <Label Text="KEEP 1 PRIME SET" TextColor="#AEB8C8" FontSize="10" VerticalOptions="Center" />
+                                <Label Text="KEEP PRIME SETS" TextColor="#AEB8C8" FontSize="10" VerticalOptions="Center" />
                                 <Border Padding="6,2" StrokeThickness="0" StrokeShape="RoundRectangle 6">
                                     <Border.Triggers>
                                         <DataTrigger TargetType="Border" Binding="{Binding ActivePrimeSetReserveEnabled}" Value="True">
@@ -148,10 +174,9 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <VerticalStackLayout><Label Text="Collection and mastery" Style="{StaticResource Title}"/><Label Text="Items with active progress are shown by default." TextColor="#8995A8"/></VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1" Spacing="8">
-                            <Entry Placeholder="Search collection…" Text="{Binding CollectionSearchText}" WidthRequest="190"
-                                   TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
-                            <Picker Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="145" />
-                            <Picker Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                            <Entry Style="{StaticResource SearchField}" Placeholder="Search collection…" Text="{Binding CollectionSearchText}" WidthRequest="190" />
+                            <Picker Style="{StaticResource SelectField}" Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" WidthRequest="145" />
+                            <Picker Style="{StaticResource SelectField}" Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" WidthRequest="190" />
                         </HorizontalStackLayout>
                     </Grid>
                     <CollectionView Grid.Row="2" ItemsSource="{Binding Collection}" SelectionMode="None">
@@ -160,8 +185,9 @@
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding PrimeStatus}" Metadata="{Binding CardMetadata}" Action="{Binding Status}"
-                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}"
-                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
+                                Progress="{Binding Completion}" ShowProgress="True" IsMastered="{Binding Mastered}" IsOwned="{Binding Owned}"
+                                Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}"
+                                Components="{Binding Components}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>
@@ -169,8 +195,7 @@
                 <Grid IsVisible="{Binding FarmVisible}" RowDefinitions="Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <Label Text="Farm plan" Style="{StaticResource Title}" />
-                        <Entry Grid.Column="1" Placeholder="Search farm…" Text="{Binding FarmSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search farm…" Text="{Binding FarmSearchText}" WidthRequest="220" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Farm}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -189,8 +214,7 @@
                             <Label Text="Relic advisor" Style="{StaticResource Title}" />
                             <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
                         </VerticalStackLayout>
-                        <Entry Grid.Column="1" Placeholder="Search relics…" Text="{Binding RelicsSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search relics…" Text="{Binding RelicsSearchText}" WidthRequest="220" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Relics}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -204,11 +228,15 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <Label Text="Sales and ducats" Style="{StaticResource Title}" />
-                        <Entry Grid.Column="1" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
-                        <Picker Grid.Column="2" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220" />
+                        <Border Grid.Column="2" HeightRequest="40" BackgroundColor="#20283A" StrokeThickness="0" StrokeShape="RoundRectangle 4" Padding="0">
+                            <Picker Style="{StaticResource SelectField}" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" WidthRequest="190" BackgroundColor="Transparent" />
+                        </Border>
+                        <Border Grid.Column="3" HeightRequest="40" BackgroundColor="#20283A" StrokeThickness="0" StrokeShape="RoundRectangle 4" Padding="0">
+                            <Picker Style="{StaticResource SelectField}" Title="Sort" ItemsSource="{Binding SalesSorts}" SelectedItem="{Binding SelectedSalesSort}" WidthRequest="150" BackgroundColor="Transparent" />
+                        </Border>
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -255,10 +283,15 @@
                                 </Grid>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                                     <VerticalStackLayout Spacing="2">
-                                        <Label Text="Reserve an unvaulted Prime set" TextColor="#F4F7FB" />
-                                        <Label Text="Keeps one additional weapon or Warframe set to sell after it enters the vault." Style="{StaticResource Muted}" />
+                                        <Label Text="Reserve unvaulted Prime sets" TextColor="#F4F7FB" />
+                                        <Label Text="Choose how many weapon or Warframe sets to hold for sale after they enter the vault. Use 0 to disable." Style="{StaticResource Muted}" />
                                     </VerticalStackLayout>
-                                    <Switch Grid.Column="1" IsToggled="{Binding ReserveUnvaultedPrimeWarframeSet}" OnColor="#167C70" />
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                        <Entry Text="{Binding UnvaultedPrimeSetsToReserve, Mode=TwoWay}" Keyboard="Numeric" MaxLength="2"
+                                               WidthRequest="52" HeightRequest="40" HorizontalTextAlignment="Center"
+                                               TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                        <Label Text="sets" TextColor="#AEB8C8" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>

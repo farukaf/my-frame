@@ -79,7 +79,7 @@ public sealed class InventoryCatalogAlignmentTests
         {
             ["oberon_prime_chassis"] = new("oberon_prime_chassis", 12, 9, DateTimeOffset.UtcNow)
         };
-        var settings = new RecommendationSettings(10, false);
+        var settings = new RecommendationSettings(10, 0);
 
         Assert.Empty(new RecommendationEngine().Evaluate(inventory, catalog, quotes, [], settings).Sales);
 

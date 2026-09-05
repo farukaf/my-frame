@@ -95,7 +95,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
                 if (string.IsNullOrWhiteSpace(componentUniqueName) || string.IsNullOrWhiteSpace(componentName)) continue;
                 components.Add(new CatalogComponent(componentUniqueName, componentName,
                     Math.Max(1, GetInt(component, "itemCount", 1)), Math.Max(0, GetInt(component, "ducats")),
-                    GetBool(component, "tradable")));
+                    GetBool(component, "tradable"), GetString(component, "imageName") ?? ""));
             }
         }
 
