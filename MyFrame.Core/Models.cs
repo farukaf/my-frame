@@ -208,12 +208,18 @@ public sealed record SaleRecommendation(
     public string ActionLabel => Action switch
     {
         RecommendationAction.ExchangeForDucats =>
-            $"Exchange {Excess:N0} · {KeepLabel} · {TotalDucats:N0} ducats",
+            HasReservations
+                ? $"Exchange {Excess:N0} · {KeepLabel} · {TotalDucats:N0} ducats"
+                : $"Exchange {Excess:N0} · {TotalDucats:N0} ducats",
         RecommendationAction.SellForPlatinum =>
-            $"Sell {Excess:N0} · {KeepLabel} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}",
+            HasReservations
+                ? $"Sell {Excess:N0} · {KeepLabel} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}"
+                : $"Sell {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}",
         RecommendationAction.Keep => $"{KeepLabel} · do not sell or exchange now",
         _ => Action.ToString()
     };
+
+    private bool HasReservations => Reserved > 0;
 }
 
 public sealed record RecommendationResult(
