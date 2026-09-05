@@ -34,7 +34,7 @@ public sealed class RecommendationEngineTests
         Assert.Equal(1, sale.Excess);
         Assert.Equal(RecommendationAction.ExchangeForDucats, sale.Action);
         Assert.Equal(45, result.TotalDucats);
-        Assert.Equal("Exchange 1, keep 1 · 45 ducats", sale.ActionLabel);
+        Assert.Equal("Exchange 1 · keep 1 to craft · 45 ducats", sale.ActionLabel);
     }
 
     [Fact]
@@ -49,7 +49,29 @@ public sealed class RecommendationEngineTests
         Assert.Equal(RecommendationAction.Keep, recommendation.Action);
         Assert.Equal(1, recommendation.Reserved);
         Assert.Equal(0, recommendation.Excess);
-        Assert.Equal("Keep 1 · do not sell or exchange", recommendation.ActionLabel);
+        Assert.Equal("keep 1 to craft · do not sell or exchange now", recommendation.ActionLabel);
+    }
+
+    [Fact]
+    public void VaultedUncraftedItemKeepsOneForCraftAndOneForFutureSale()
+    {
+        var (inventory, baseCatalog) = Scenario(ownedParts: 3, ownedEquipment: false);
+        var vaulted = baseCatalog.Items.Single() with { Vaulted = true };
+        var catalog = baseCatalog with
+        {
+            Items = [vaulted],
+            ByUniqueName = new Dictionary<string, CatalogItem> { [vaulted.UniqueName] = vaulted }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(2, recommendation.Reserved);
+        Assert.Equal(1, recommendation.ReservedForCraft);
+        Assert.Equal(1, recommendation.ReservedForFutureSale);
+        Assert.Equal(1, recommendation.Excess);
+        Assert.Contains("keep 1 to craft · keep 1 to sell after vault", recommendation.ActionLabel);
     }
 
     [Fact]
@@ -151,7 +173,7 @@ public sealed class RecommendationEngineTests
         const string itemUnique = "/Items/TestPrime";
         var component = new CatalogComponent(partUnique, "Blueprint", 1, 45, true);
         var item = new CatalogItem(itemUnique, "Test Prime", "Warframes", "Suits", "", true, true,
-            true, true, null, "set-id", "test_prime_set", [component], []);
+            true, false, null, "set-id", "test_prime_set", [component], []);
         var market = new Dictionary<string, MarketIdentity>
         {
             [ItemNameNormalizer.Normalize("Test Prime Blueprint")] = new("part-id", "test_prime_blueprint")

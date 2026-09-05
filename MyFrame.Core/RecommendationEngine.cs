@@ -45,7 +45,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
             var keepBuilt = IsPermanentCollectionItem(item);
             var needBuild = !owned && (keepBuilt || !mastered);
-            var speculate = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && IsWarframe(item) && !item.Vaulted;
+            var speculate = item.Vaulted ||
+                (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && IsWarframe(item) && !item.Vaulted);
             foreach (var component in item.Components.Where(x => x.Tradable))
             {
                 var amount = (needBuild ? component.Required : 0) + (speculate ? component.Required : 0);
@@ -101,7 +102,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
 
             foreach (var component in tradable) excess[component.UniqueName] -= setCount * component.Required;
             results.Add(new SaleRecommendation(parent.Name + " Set", parent.UniqueName, parent.MarketSlug,
-                setCount, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
+                setCount, 0, 0, 0, 0, setCount, tradable.Sum(x => x.Ducats * x.Required), setQuote.LowestSell,
                 setQuote.HighestBuy, RecommendationAction.SellForPlatinum, parent.Vaulted,
                 HasOrder(parent.MarketId, orders), "The complete set is worth at least as much as its individual parts.",
                 parent.ImageUrl));
@@ -117,8 +118,10 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var reason = platinumWins
                 ? $"Market price beats the 1p/{settings.DucatsPerPlatinum:0.#} ducat threshold."
                 : quote is null ? "No public price; ducat value is available." : "Ducats beat the configured threshold.";
+            var breakdown = ReservationBreakdown(info.Parent, info.Component, inventory, catalog, orders, settings);
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
-                inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key), pair.Value,
+                inventory.Stackables.GetValueOrDefault(pair.Key), reservations.GetValueOrDefault(pair.Key),
+                breakdown.Craft, breakdown.FutureSale, breakdown.Orders, pair.Value,
                 info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy, action, info.Parent.Vaulted,
                 HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
         }
@@ -133,8 +136,10 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var identity = MarketForComponent(info.Parent, info.Component, catalog);
             quotes.TryGetValue(identity?.Slug ?? "", out var quote);
             var kept = Math.Min(pair.Value, reservations.GetValueOrDefault(pair.Key));
+            var breakdown = ReservationBreakdown(info.Parent, info.Component, inventory, catalog, orders, settings);
             results.Add(new SaleRecommendation(info.DisplayName, pair.Key, identity?.Slug,
-                pair.Value, kept, 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
+                pair.Value, kept, Math.Min(kept, breakdown.Craft), Math.Min(kept, breakdown.FutureSale),
+                Math.Min(kept, breakdown.Orders), 0, info.Component.Ducats, quote?.LowestSell, quote?.HighestBuy,
                 RecommendationAction.Keep, info.Parent.Vaulted, HasOrder(identity?.Id, orders),
                 "All owned copies are reserved for collection, crafting, or an existing market order.",
                 info.Parent.ImageUrl));
@@ -142,6 +147,23 @@ public sealed class RecommendationEngine : IRecommendationEngine
 
         return results.OrderBy(x => x.Action).ThenByDescending(x => x.TotalPlatinum ?? 0)
             .ThenByDescending(x => x.TotalDucats).ToArray();
+    }
+
+    private static ReservationParts ReservationBreakdown(CatalogItem item, CatalogComponent component,
+        InventorySnapshot inventory, CatalogSnapshot catalog, IReadOnlyList<MarketOrder> orders,
+        RecommendationSettings settings)
+    {
+        var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
+        var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
+        var craft = !owned && (IsPermanentCollectionItem(item) || !mastered) ? component.Required : 0;
+        var futureSale = item.Vaulted ||
+            (settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && IsWarframe(item) && !item.Vaulted)
+            ? component.Required : 0;
+        var identity = MarketForComponent(item, component, catalog);
+        var orderQuantity = orders.Where(x => x.Type.Equals("sell", StringComparison.OrdinalIgnoreCase))
+            .Sum(order => order.ItemId == item.MarketId ? order.Quantity * component.Required :
+                identity is not null && order.ItemId == identity.Id ? order.Quantity : 0);
+        return new ReservationParts(craft, futureSale, orderQuantity);
     }
 
     private static IReadOnlyList<FarmRecommendation> BuildFarm(InventorySnapshot inventory, CatalogSnapshot catalog,
@@ -232,4 +254,5 @@ public sealed class RecommendationEngine : IRecommendationEngine
     }
     private static bool HasOrder(string? marketId, IReadOnlyList<MarketOrder> orders) => !string.IsNullOrWhiteSpace(marketId) && orders.Any(x => x.ItemId == marketId && x.Type == "sell");
     private sealed record ComponentDetails(CatalogItem Parent, CatalogComponent Component, string DisplayName);
+    private sealed record ReservationParts(int Craft, int FutureSale, int Orders);
 }

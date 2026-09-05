@@ -133,6 +133,9 @@ public sealed record SaleRecommendation(
     string? MarketSlug,
     int Owned,
     int Reserved,
+    int ReservedForCraft,
+    int ReservedForFutureSale,
+    int ReservedForOrders,
     int Excess,
     int DucatsEach,
     int? LowestSell,
@@ -147,13 +150,24 @@ public sealed record SaleRecommendation(
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"Owned {Owned:N0} · extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
+    public string KeepLabel
+    {
+        get
+        {
+            var reasons = new List<string>(3);
+            if (ReservedForCraft > 0) reasons.Add($"keep {ReservedForCraft:N0} to craft");
+            if (ReservedForFutureSale > 0) reasons.Add($"keep {ReservedForFutureSale:N0} to sell after vault");
+            if (ReservedForOrders > 0) reasons.Add($"keep {ReservedForOrders:N0} for active orders");
+            return reasons.Count > 0 ? string.Join(" · ", reasons) : $"keep {Reserved:N0}";
+        }
+    }
     public string ActionLabel => Action switch
     {
         RecommendationAction.ExchangeForDucats =>
-            $"Exchange {Excess:N0}, keep {Reserved:N0} · {TotalDucats:N0} ducats",
+            $"Exchange {Excess:N0} · {KeepLabel} · {TotalDucats:N0} ducats",
         RecommendationAction.SellForPlatinum =>
-            $"Sell {Excess:N0}, keep {Reserved:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}",
-        RecommendationAction.Keep => $"Keep {Reserved:N0} · do not sell or exchange",
+            $"Sell {Excess:N0} · {KeepLabel} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}",
+        RecommendationAction.Keep => $"{KeepLabel} · do not sell or exchange now",
         _ => Action.ToString()
     };
 }
