@@ -16,6 +16,12 @@
             <Setter Property="Padding" Value="16,12" />
             <Setter Property="CornerRadius" Value="10" />
         </Style>
+        <Style x:Key="NavItem" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="HorizontalOptions" Value="Fill" />
+        </Style>
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="BackgroundColor" Value="#151A23" />
             <Setter Property="Stroke" Value="#252D3A" />
@@ -68,12 +74,12 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="1" Spacing="5">
-                    <Button Text="⌂  Dashboard" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" />
-                    <Button Text="◉  Collection" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Collection" />
-                    <Button Text="◇  Farm plan" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Farm" />
-                    <Button Text="⬡  Relic advisor" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Relics" />
-                    <Button Text="⇄  Sales and ducats" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Sales" />
-                    <Button Text="⚙  Settings" Style="{StaticResource NavButton}" Command="{Binding ShowSectionCommand}" CommandParameter="Settings" />
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" /></Border.GestureRecognizers><Label Text="⌂  Dashboard" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Collection" /></Border.GestureRecognizers><Label Text="◉  Collection" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="3" Spacing="4">
