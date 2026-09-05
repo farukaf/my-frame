@@ -12,7 +12,7 @@ public sealed class RecommendationEngineTests
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote> { [quote.Slug] = quote }, [],
-            new RecommendationSettings(10, false));
+            new RecommendationSettings(10, 0));
 
         var sale = Assert.Single(result.Sales);
         Assert.Equal(1, sale.Reserved);
@@ -28,7 +28,7 @@ public sealed class RecommendationEngineTests
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote> { [quote.Slug] = quote }, [],
-            new RecommendationSettings(10, false));
+            new RecommendationSettings(10, 0));
 
         var sale = Assert.Single(result.Sales);
         Assert.Equal(1, sale.Excess);
@@ -43,7 +43,7 @@ public sealed class RecommendationEngineTests
         var (inventory, catalog) = Scenario(ownedParts: 1, ownedEquipment: false);
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(RecommendationAction.Keep, recommendation.Action);
@@ -64,7 +64,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(1, recommendation.Reserved);
@@ -87,7 +87,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, true));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 1));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(0, recommendation.Reserved);
@@ -112,12 +112,38 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, true));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 1));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(1, recommendation.ReservedForCraft);
         Assert.Equal(1, recommendation.ReservedForFutureSale);
         Assert.Equal(1, recommendation.Excess);
+    }
+
+    [Fact]
+    public void ReservesConfiguredNumberOfUnvaultedPrimeSets()
+    {
+        var (inventory, baseCatalog) = Scenario(ownedParts: 5, ownedEquipment: true);
+        var weapon = baseCatalog.Items.Single() with
+        {
+            Category = "Primary",
+            ProductCategory = "LongGuns",
+            Vaulted = false
+        };
+        var catalog = baseCatalog with
+        {
+            Items = [weapon],
+            ByUniqueName = new Dictionary<string, CatalogItem> { [weapon.UniqueName] = weapon }
+        };
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 2));
+
+        var recommendation = Assert.Single(result.Sales);
+        Assert.Equal(0, recommendation.ReservedForCraft);
+        Assert.Equal(2, recommendation.ReservedForFutureSale);
+        Assert.Equal(3, recommendation.Excess);
+        Assert.Contains("keep 2 to sell after vault", recommendation.ActionLabel);
     }
 
     [Fact]
@@ -137,7 +163,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, true));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 1));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(1, recommendation.ReservedForCraft);
@@ -155,7 +181,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.True(recommendation.Mastered);
@@ -179,7 +205,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0));
 
         Assert.Empty(result.Sales);
         Assert.Equal(0, result.TotalDucats);
@@ -194,7 +220,7 @@ public sealed class RecommendationEngineTests
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote> { [quote.Slug] = quote }, [],
-            new RecommendationSettings(10, false));
+            new RecommendationSettings(10, 0));
 
         var recommendation = Assert.Single(result.Sales);
         Assert.Equal(RecommendationAction.SellForPlatinum, recommendation.Action);
@@ -238,7 +264,7 @@ public sealed class RecommendationEngineTests
         var orders = new[] { new MarketOrder("order", "part-id", "test_prime_blueprint", "sell", 10, 2, true) };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog, new Dictionary<string, MarketQuote>(),
-            orders, new RecommendationSettings(10, false));
+            orders, new RecommendationSettings(10, 0));
 
         var sale = Assert.Single(result.Sales);
         Assert.Equal(2, sale.Reserved);
@@ -260,7 +286,7 @@ public sealed class RecommendationEngineTests
         };
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
-            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, false));
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0));
 
         Assert.Single(result.Farm);
     }

@@ -110,7 +110,7 @@
                         </Border>
                         <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8">
                             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                                <Label Text="KEEP 1 PRIME SET" TextColor="#AEB8C8" FontSize="10" VerticalOptions="Center" />
+                                <Label Text="KEEP PRIME SETS" TextColor="#AEB8C8" FontSize="10" VerticalOptions="Center" />
                                 <Border Padding="6,2" StrokeThickness="0" StrokeShape="RoundRectangle 6">
                                     <Border.Triggers>
                                         <DataTrigger TargetType="Border" Binding="{Binding ActivePrimeSetReserveEnabled}" Value="True">
@@ -223,10 +223,11 @@
                 </Grid>
 
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <Label Text="Sales and ducats" Style="{StaticResource Title}" />
                         <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220" />
                         <Picker Grid.Column="2" Style="{StaticResource SelectField}" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" WidthRequest="190" />
+                        <Picker Grid.Column="3" Style="{StaticResource SelectField}" Title="Sort" ItemsSource="{Binding SalesSorts}" SelectedItem="{Binding SelectedSalesSort}" WidthRequest="150" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -273,10 +274,15 @@
                                 </Grid>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                                     <VerticalStackLayout Spacing="2">
-                                        <Label Text="Reserve an unvaulted Prime set" TextColor="#F4F7FB" />
-                                        <Label Text="Keeps one additional weapon or Warframe set to sell after it enters the vault." Style="{StaticResource Muted}" />
+                                        <Label Text="Reserve unvaulted Prime sets" TextColor="#F4F7FB" />
+                                        <Label Text="Choose how many weapon or Warframe sets to hold for sale after they enter the vault. Use 0 to disable." Style="{StaticResource Muted}" />
                                     </VerticalStackLayout>
-                                    <Switch Grid.Column="1" IsToggled="{Binding ReserveUnvaultedPrimeWarframeSet}" OnColor="#167C70" />
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                        <Entry Text="{Binding UnvaultedPrimeSetsToReserve, Mode=TwoWay}" Keyboard="Numeric" MaxLength="2"
+                                               WidthRequest="52" HeightRequest="40" HorizontalTextAlignment="Center"
+                                               TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                        <Label Text="sets" TextColor="#AEB8C8" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>

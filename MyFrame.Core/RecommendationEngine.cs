@@ -47,10 +47,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
             var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
             var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
             var needBuild = !owned && !mastered;
-            var speculate = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted;
+            var speculate = settings.UnvaultedPrimeSetsToReserve > 0 && item.Prime && !item.Vaulted;
             foreach (var component in item.Components.Where(x => x.Tradable))
             {
-                var amount = (needBuild ? component.Required : 0) + (speculate ? component.Required : 0);
+                var amount = (needBuild ? component.Required : 0) +
+                    (speculate ? settings.UnvaultedPrimeSetsToReserve * component.Required : 0);
                 reserved[component.UniqueName] = Math.Max(reserved.GetValueOrDefault(component.UniqueName), amount);
             }
         }
@@ -181,8 +182,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var owned = inventory.OwnedEquipment.Contains(item.UniqueName);
         var mastered = IsMastered(item, inventory.Experience.GetValueOrDefault(item.UniqueName));
         var craft = !owned && !mastered ? component.Required : 0;
-        var futureSale = settings.ReserveUnvaultedPrimeWarframeSet && item.Prime && !item.Vaulted
-            ? component.Required : 0;
+        var futureSale = settings.UnvaultedPrimeSetsToReserve > 0 && item.Prime && !item.Vaulted
+            ? settings.UnvaultedPrimeSetsToReserve * component.Required : 0;
         var identity = MarketForComponent(item, component, catalog);
         var orderQuantity = orders.Where(x => x.Type.Equals("sell", StringComparison.OrdinalIgnoreCase))
             .Sum(order => order.ItemId == item.MarketId ? order.Quantity * component.Required :

@@ -224,7 +224,7 @@ public sealed record RecommendationResult(
 
 public sealed record RecommendationSettings(
     int DucatsPerPlatinum = 10,
-    bool ReserveUnvaultedPrimeWarframeSet = true);
+    int UnvaultedPrimeSetsToReserve = 1);
 
 public sealed record SyncStatus(
     bool IsLoading,
