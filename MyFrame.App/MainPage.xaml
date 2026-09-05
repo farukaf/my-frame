@@ -13,6 +13,7 @@
             <Setter Property="BackgroundColor" Value="Transparent" />
             <Setter Property="TextColor" Value="#AEB8C8" />
             <Setter Property="HorizontalOptions" Value="Fill" />
+            <Setter Property="HorizontalTextAlignment" Value="Start" />
             <Setter Property="Padding" Value="16,12" />
             <Setter Property="CornerRadius" Value="10" />
         </Style>
@@ -36,6 +37,26 @@
         <Style x:Key="Muted" TargetType="Label">
             <Setter Property="TextColor" Value="#8995A8" />
             <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="SearchField" TargetType="Entry">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="#20283A" />
+            <Setter Property="TextColor" Value="#F4F7FB" />
+            <Setter Property="PlaceholderColor" Value="#8995A8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style x:Key="SelectField" TargetType="Picker">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="#20283A" />
+            <Setter Property="TextColor" Value="#F4F7FB" />
+            <Setter Property="TitleColor" Value="#8995A8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0" />
         </Style>
     </ContentPage.Resources>
 
@@ -148,10 +169,9 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <VerticalStackLayout><Label Text="Collection and mastery" Style="{StaticResource Title}"/><Label Text="Items with active progress are shown by default." TextColor="#8995A8"/></VerticalStackLayout>
                         <HorizontalStackLayout Grid.Column="1" Spacing="8">
-                            <Entry Placeholder="Search collection…" Text="{Binding CollectionSearchText}" WidthRequest="190"
-                                   TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
-                            <Picker Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="145" />
-                            <Picker Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                            <Entry Style="{StaticResource SearchField}" Placeholder="Search collection…" Text="{Binding CollectionSearchText}" WidthRequest="190" />
+                            <Picker Style="{StaticResource SelectField}" Title="Filter" ItemsSource="{Binding CollectionFilters}" SelectedItem="{Binding SelectedCollectionFilter}" WidthRequest="145" />
+                            <Picker Style="{StaticResource SelectField}" Title="Sort" ItemsSource="{Binding CollectionSorts}" SelectedItem="{Binding SelectedCollectionSort}" WidthRequest="190" />
                         </HorizontalStackLayout>
                     </Grid>
                     <CollectionView Grid.Row="2" ItemsSource="{Binding Collection}" SelectionMode="None">
@@ -170,8 +190,7 @@
                 <Grid IsVisible="{Binding FarmVisible}" RowDefinitions="Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <Label Text="Farm plan" Style="{StaticResource Title}" />
-                        <Entry Grid.Column="1" Placeholder="Search farm…" Text="{Binding FarmSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search farm…" Text="{Binding FarmSearchText}" WidthRequest="220" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Farm}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -190,8 +209,7 @@
                             <Label Text="Relic advisor" Style="{StaticResource Title}" />
                             <Label Text="Compares the sealed relic price with the chance-weighted market value of its rewards." TextColor="#8995A8" />
                         </VerticalStackLayout>
-                        <Entry Grid.Column="1" Placeholder="Search relics…" Text="{Binding RelicsSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search relics…" Text="{Binding RelicsSearchText}" WidthRequest="220" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Relics}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
@@ -207,9 +225,8 @@
                 <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <Label Text="Sales and ducats" Style="{StaticResource Title}" />
-                        <Entry Grid.Column="1" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220"
-                               TextColor="#F4F7FB" PlaceholderColor="#8995A8" BackgroundColor="#20283A" />
-                        <Picker Grid.Column="2" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="#20283A" TextColor="#F4F7FB" WidthRequest="190" />
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220" />
+                        <Picker Grid.Column="2" Style="{StaticResource SelectField}" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" WidthRequest="190" />
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
