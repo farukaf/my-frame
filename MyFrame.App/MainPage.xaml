@@ -231,12 +231,16 @@
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <Label Text="Sales and ducats" Style="{StaticResource Title}" />
                         <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220" />
-                        <Border Grid.Column="2" HeightRequest="40" BackgroundColor="#20283A" StrokeThickness="0" StrokeShape="RoundRectangle 4" Padding="0">
-                            <Picker Style="{StaticResource SelectField}" Title="Goal" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" WidthRequest="190" BackgroundColor="Transparent" />
-                        </Border>
-                        <Border Grid.Column="3" HeightRequest="40" BackgroundColor="#20283A" StrokeThickness="0" StrokeShape="RoundRectangle 4" Padding="0">
-                            <Picker Style="{StaticResource SelectField}" Title="Sort" ItemsSource="{Binding SalesSorts}" SelectedItem="{Binding SelectedSalesSort}" WidthRequest="150" BackgroundColor="Transparent" />
-                        </Border>
+                        <Grid Grid.Column="2" HeightRequest="40" WidthRequest="190">
+                            <Border BackgroundColor="#20283A" Stroke="#3A455B" StrokeThickness="1" StrokeShape="RoundRectangle 4" Padding="0" />
+                            <Picker Style="{StaticResource SelectField}" Title="" ItemsSource="{Binding SalesFilters}" SelectedItem="{Binding SelectedSalesFilter}" BackgroundColor="Transparent" Margin="4,3,4,0" />
+                            <Label Text="Goal" FontSize="10" TextColor="#AEB8C8" BackgroundColor="#20283A" Padding="3,0" Margin="9,0,0,0" HorizontalOptions="Start" VerticalOptions="Start" />
+                        </Grid>
+                        <Grid Grid.Column="3" HeightRequest="40" WidthRequest="150">
+                            <Border BackgroundColor="#20283A" Stroke="#3A455B" StrokeThickness="1" StrokeShape="RoundRectangle 4" Padding="0" />
+                            <Picker Style="{StaticResource SelectField}" Title="" ItemsSource="{Binding SalesSorts}" SelectedItem="{Binding SelectedSalesSort}" BackgroundColor="Transparent" Margin="4,3,4,0" />
+                            <Label Text="Sort" FontSize="10" TextColor="#AEB8C8" BackgroundColor="#20283A" Padding="3,0" Margin="9,0,0,0" HorizontalOptions="Start" VerticalOptions="Start" />
+                        </Grid>
                     </Grid>
                     <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
