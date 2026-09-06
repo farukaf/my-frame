@@ -34,6 +34,12 @@ public interface IRecommendationEngine
         RecommendationSettings settings);
 }
 
+public interface IMarketStateStore
+{
+    Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default);
+    Task SaveAsync(MarketState state, CancellationToken cancellationToken = default);
+}
+
 public interface IPriceCache
 {
     Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default);

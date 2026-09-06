@@ -87,6 +87,16 @@ public sealed record MarketOrder(
 
 public sealed record MarketAccount(string Id, string IngameName, string Platform);
 
+/// <summary>
+/// The account and open orders from the last successful Warframe.Market call. Persisted so a
+/// launch can price and reserve against them before the network answers. It never carries the
+/// authentication token.
+/// </summary>
+public sealed record MarketState(
+    MarketAccount? Account,
+    IReadOnlyList<MarketOrder> Orders,
+    DateTimeOffset RetrievedAt);
+
 public enum RecommendationAction
 {
     Keep,
@@ -149,7 +159,8 @@ public sealed record RelicRecommendation(
     public int? TotalSellPrice => SellPriceEach * Owned;
     public double TotalExpectedOpenValue => ExpectedOpenValueEach * Owned;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
-    public string CardMetadata => $"Owned {Owned:N0} · sealed {(SellPriceEach is null ? "—" : $"{SellPriceEach:N0}p")} · open EV {ExpectedOpenValueEach:0.0}p";
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => $"sealed {(SellPriceEach is null ? "—" : $"{SellPriceEach:N0}p")} · open EV {ExpectedOpenValueEach:0.0}p";
     public string ItemDetails => $"Currently in inventory: {Owned:N0} relic(s) · Mastery does not apply to relics";
 }
 
@@ -178,7 +189,8 @@ public sealed record SaleRecommendation(
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
     public int KeepQuantity => Action == RecommendationAction.Keep ? Reserved + Excess : Reserved;
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
-    public string CardMetadata => $"Owned {Owned:N0} · extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => $"extra {Excess:N0} · {(TotalPlatinum is null ? "price unavailable" : $"~{TotalPlatinum:N0}p")}";
     public string ItemDetails
     {
         get
@@ -242,7 +254,19 @@ public sealed record SyncStatus(
     DateTimeOffset? LastSuccessfulSync,
     bool HasInventory,
     bool HasMarket,
-    string? Error = null);
+    string? Error = null,
+    int PricesLoaded = 0,
+    int PricesTracked = 0,
+    int PricesStale = 0)
+{
+    public double PriceProgress => PricesTracked <= 0 ? 0d
+        : Math.Clamp((double)PricesLoaded / PricesTracked, 0d, 1d);
+    public string PriceProgressText => PricesTracked <= 0
+        ? "Checking Warframe.Market…" : $"{PricesLoaded:N0} of {PricesTracked:N0} prices";
+    public string StaleWarning => PricesStale <= 0 ? "" : PricesTracked == PricesStale
+        ? "Prices are out of date. Showing inventory only."
+        : $"{PricesStale:N0} of {PricesTracked:N0} prices are out of date.";
+}
 
 public sealed record DashboardSnapshot(
     InventorySnapshot Inventory,

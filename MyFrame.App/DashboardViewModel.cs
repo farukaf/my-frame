@@ -33,6 +33,7 @@ public partial class DashboardViewModel : ObservableObject
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
         UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
+        _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => ApplySyncStatus(status));
         ShowSection("Dashboard");
     }
 
@@ -66,6 +67,11 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SalesSearchText { get; set; } = "";
     [ObservableProperty] public partial string RelicsSearchText { get; set; } = "";
     [ObservableProperty] public partial string AlecaDataUpdatedText { get; set; } = "—";
+    [ObservableProperty] public partial bool IsSyncingPrices { get; set; }
+    [ObservableProperty] public partial double SyncProgress { get; set; }
+    [ObservableProperty] public partial string SyncProgressText { get; set; } = "";
+    [ObservableProperty] public partial bool PricesStale { get; set; }
+    [ObservableProperty] public partial string StaleWarningText { get; set; } = "";
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -155,9 +161,21 @@ public partial class DashboardViewModel : ObservableObject
         SettingsVisible = section == "Settings";
     }
 
+    // Runs both for a published snapshot and for the cheap progress ticks in between, so the
+    // status area keeps moving while the price pass is still running.
+    private void ApplySyncStatus(SyncStatus status)
+    {
+        StatusMessage = status.Message;
+        IsSyncingPrices = status.IsLoading;
+        SyncProgress = status.PriceProgress;
+        SyncProgressText = status.PriceProgressText;
+        StaleWarningText = status.Error ?? status.StaleWarning;
+        PricesStale = !status.IsLoading && StaleWarningText.Length > 0;
+    }
+
     private void Apply(DashboardSnapshot snapshot)
     {
-        StatusMessage = snapshot.Status.Message;
+        ApplySyncStatus(snapshot.Status);
         LastSyncText = snapshot.Status.LastSuccessfulSync?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—";
         AlecaDataUpdatedText = snapshot.Inventory.CapturedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
         AccountText = snapshot.Account is null ? "Token missing or expired" : $"{snapshot.Account.IngameName} · {snapshot.Account.Platform}";

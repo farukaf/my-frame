@@ -9,3 +9,7 @@ artifacts/
 *.cer
 *.snk
 appsettings.local.json
+
+# Local Warframe.Market caches; never part of the repository
+market-data.dat
+market-quotes.json

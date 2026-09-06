@@ -93,6 +93,42 @@ public sealed class InventoryCatalogAlignmentTests
         Assert.Equal(RecommendationAction.SellForPlatinum, sale.Action);
     }
 
+    [Fact]
+    public void APartRowShowsThePartsOwnIconRatherThanTheBuiltItem()
+    {
+        var sale = Assert.Single(SalesFor(Catalog()));
+
+        Assert.Equal("https://cdn.warframestat.us/img/GenericWarframePrimeChassis.png", sale.ImageUrl);
+    }
+
+    [Fact]
+    public void APartWithoutAnIconFallsBackToTheParentArt()
+    {
+        var catalog = Catalog();
+        var chassis = catalog.Items[0].Components.Single(x => x.UniqueName == ChassisComponent) with { ImageName = "" };
+        var warframe = catalog.Items[0] with
+        {
+            Components = [catalog.Items[0].Components[0], chassis]
+        };
+        var items = new[] { warframe, catalog.Items[1] };
+
+        var sale = Assert.Single(SalesFor(catalog with
+        {
+            Items = items,
+            ByUniqueName = items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal)
+        }));
+
+        Assert.Equal("https://cdn.warframestat.us/img/PaladinPrime.png", sale.ImageUrl);
+    }
+
+    private static IReadOnlyList<SaleRecommendation> SalesFor(CatalogSnapshot catalog)
+    {
+        var aligned = InventoryCatalogAlignment.AlignToCatalog(
+            Inventory(new Dictionary<string, int> { [ChassisRecipe] = 2 }), catalog);
+        return new RecommendationEngine().Evaluate(aligned, catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0)).Sales;
+    }
+
     private static InventorySnapshot Align(IDictionary<string, int> stackables, params CatalogComponent[] extra) =>
         InventoryCatalogAlignment.AlignToCatalog(Inventory(stackables), Catalog(extra));
 
@@ -103,10 +139,10 @@ public sealed class InventoryCatalogAlignmentTests
     private static CatalogSnapshot Catalog(params CatalogComponent[] extra)
     {
         var warframe = new CatalogItem("/Lotus/Powersuits/Paladin/PaladinPrime", "Oberon Prime", "Warframes",
-            "Suits", "", true, true, false, true, null, "set-id", "oberon_prime_set",
+            "Suits", "PaladinPrime.png", true, true, false, true, null, "set-id", "oberon_prime_set",
             [
-                new CatalogComponent(SetBlueprint, "Blueprint", 1, 45, true),
-                new CatalogComponent(ChassisComponent, "Chassis", 1, 15, true),
+                new CatalogComponent(SetBlueprint, "Blueprint", 1, 45, true, "blueprint.png"),
+                new CatalogComponent(ChassisComponent, "Chassis", 1, 15, true, "GenericWarframePrimeChassis.png"),
                 .. extra
             ], []);
         var weapon = new CatalogItem("/Lotus/Weapons/Tenno/LongGuns/Trumna", "Trumna", "Primary", "LongGuns",
