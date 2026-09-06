@@ -16,6 +16,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
     private bool _initialized;
+    private CancellationTokenSource? _settingsDebounce;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
     private IReadOnlyList<FarmRecommendation> _allFarm = [];
     private IReadOnlyList<SaleRecommendation> _allSales = [];
@@ -107,8 +108,7 @@ public partial class DashboardViewModel : ObservableObject
         if (IsBusy) return;
         IsBusy = true;
         StatusMessage = "Reading inventory and updating prices…";
-        try { Apply(await _service.RefreshAsync(true, new RecommendationSettings(
-            Math.Clamp((int)Math.Round(DucatsPerPlatinum), 1, 50), Math.Clamp(UnvaultedPrimeSetsToReserve, 0, 10)))); }
+        try { Apply(await _service.RefreshAsync(true, CurrentSettings())); }
         catch (Exception error)
         {
             _logger.LogError(error, "Dashboard refresh failed");
@@ -238,9 +238,38 @@ public partial class DashboardViewModel : ObservableObject
             return;
         }
         _localSettings.DucatsPerPlatinum = integerValue;
+        RescoreSoon();
     }
-    partial void OnUnvaultedPrimeSetsToReserveChanged(int value) =>
+
+    partial void OnUnvaultedPrimeSetsToReserveChanged(int value)
+    {
         _localSettings.UnvaultedPrimeSetsToReserve = value;
+        RescoreSoon();
+    }
+
+    private RecommendationSettings CurrentSettings() => new(
+        Math.Clamp((int)Math.Round(DucatsPerPlatinum), 1, 50),
+        Math.Clamp(UnvaultedPrimeSetsToReserve, 0, 10));
+
+    // Dragging the slider raises a change per pixel, so the rescore waits for the drag to settle
+    // rather than running the engine dozens of times on the way.
+    private void RescoreSoon()
+    {
+        _settingsDebounce?.Cancel();
+        _settingsDebounce?.Dispose();
+        _settingsDebounce = new CancellationTokenSource();
+        var token = _settingsDebounce.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(120, token);
+                _service.Reapply(CurrentSettings());
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception error) { _logger.LogWarning(error, "Rescoring after a settings change failed"); }
+        }, token);
+    }
     partial void OnSelectedSalesFilterChanged(string value)
     {
         ApplySalesView();

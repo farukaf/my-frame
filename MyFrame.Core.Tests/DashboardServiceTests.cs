@@ -202,6 +202,44 @@ public sealed class DashboardServiceTests
         Assert.Equal("Warframe.Market is unavailable; using stored prices and orders.", snapshot.Status.Message);
     }
 
+    [Fact]
+    public async Task ReapplyRescoresTheLoadedSnapshotWithoutTouchingTheMarket()
+    {
+        using var scenario = new Scenario(chassisOwned: 2);
+        await scenario.Service.RefreshAsync();
+        var requestsAfterLoad = scenario.Market.Requested.Count;
+        var publishesAfterLoad = scenario.Published.Count;
+
+        var rescored = scenario.Service.Reapply(new RecommendationSettings(3, 0));
+
+        Assert.Equal(3, rescored!.Recommendations.Settings.DucatsPerPlatinum);
+        Assert.Equal(0, rescored.Recommendations.Settings.UnvaultedPrimeSetsToReserve);
+        Assert.Equal(requestsAfterLoad, scenario.Market.Requested.Count);
+        Assert.Equal(publishesAfterLoad + 1, scenario.Published.Count);
+    }
+
+    [Fact]
+    public void ReapplyBeforeAnythingIsLoadedIsHarmless()
+    {
+        using var scenario = new Scenario(chassisOwned: 2);
+
+        Assert.Null(scenario.Service.Reapply(new RecommendationSettings(3, 0)));
+        Assert.Empty(scenario.Published);
+    }
+
+    [Fact]
+    public async Task SettingsFromAReapplySurviveTheNextRefresh()
+    {
+        using var scenario = new Scenario(chassisOwned: 2);
+        await scenario.Service.RefreshAsync();
+
+        scenario.Service.Reapply(new RecommendationSettings(7, 0));
+        // No settings argument, so the refresh has to carry the ones the slider last set.
+        var snapshot = await scenario.Service.RefreshAsync();
+
+        Assert.Equal(7, snapshot.Recommendations.Settings.DucatsPerPlatinum);
+    }
+
     private sealed class Scenario : IDisposable
     {
         private readonly TemporaryDirectory _directory = new();

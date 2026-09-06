@@ -159,6 +159,29 @@ public sealed class DashboardService : IDisposable
         finally { _refreshGate.Release(); }
     }
 
+    /// <summary>
+    /// Rescores the snapshot already in memory against new settings. The ducat ratio and the prime
+    /// set reserve only change how existing data is judged, so this touches neither disk nor market
+    /// and can run on every slider tick.
+    /// </summary>
+    public DashboardSnapshot? Reapply(RecommendationSettings settings)
+    {
+        _lastSettings = settings;
+        // A refresh in flight publishes with these settings by itself; racing it here would only
+        // build a snapshot that refresh immediately replaces.
+        if (!_refreshGate.Wait(0)) return _lastSnapshot;
+        try
+        {
+            if (_lastSnapshot is null || _catalog is null) return _lastSnapshot;
+            var recommendations = _engine.Evaluate(_lastSnapshot.Inventory, _catalog,
+                _lastSnapshot.Quotes, _lastSnapshot.Orders, settings);
+            _lastSnapshot = _lastSnapshot with { Recommendations = recommendations };
+            SnapshotUpdated?.Invoke(this, _lastSnapshot);
+            return _lastSnapshot;
+        }
+        finally { _refreshGate.Release(); }
+    }
+
     private DashboardSnapshot Publish(InventorySnapshot inventory, Dictionary<string, MarketQuote> quotes,
         MarketAccount? account, IReadOnlyList<MarketOrder> orders, SyncStatus status)
     {
