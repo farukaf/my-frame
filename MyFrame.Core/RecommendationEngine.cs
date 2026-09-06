@@ -278,9 +278,14 @@ public sealed class RecommendationEngine : IRecommendationEngine
     }
 
     // A part row shows the part's own icon, which is the icon the game itself uses for it. The
-    // parent art is the fallback for the handful of components the catalog ships no image for.
+    // main blueprint is the exception: every item in the catalog shares one blueprint.png, so it
+    // keeps the parent art and stays tellable apart. Same fallback for a component with no image.
     private static string PartImage(CatalogItem parent, CatalogComponent component) =>
-        component.ImageUrl.Length > 0 ? component.ImageUrl : parent.ImageUrl;
+        IsMainBlueprint(component) || component.ImageUrl.Length == 0
+            ? parent.ImageUrl : component.ImageUrl;
+
+    private static bool IsMainBlueprint(CatalogComponent component) =>
+        component.Name.Equals("Blueprint", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsRelevantGoal(CatalogItem item) => !item.Category.Contains("Skin", StringComparison.OrdinalIgnoreCase);
     private static bool IsWarframe(CatalogItem item) => item.ProductCategory == "Suits" || item.Category == "Warframes";

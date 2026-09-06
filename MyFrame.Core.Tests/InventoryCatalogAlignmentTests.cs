@@ -121,6 +121,22 @@ public sealed class InventoryCatalogAlignmentTests
         Assert.Equal("https://cdn.warframestat.us/img/PaladinPrime.png", sale.ImageUrl);
     }
 
+    [Fact]
+    public void TheMainBlueprintKeepsTheParentArtBecauseEveryItemSharesOneBlueprintIcon()
+    {
+        var catalog = Catalog();
+        var inventory = Inventory(new Dictionary<string, int> { [SetBlueprint] = 2, [ChassisComponent] = 2 });
+        var sales = new RecommendationEngine().Evaluate(
+            InventoryCatalogAlignment.AlignToCatalog(inventory, catalog), catalog,
+            new Dictionary<string, MarketQuote>(), [], new RecommendationSettings(10, 0)).Sales;
+
+        var blueprint = sales.Single(x => x.UniqueName == SetBlueprint);
+        var chassis = sales.Single(x => x.UniqueName == ChassisComponent);
+
+        Assert.Equal("https://cdn.warframestat.us/img/PaladinPrime.png", blueprint.ImageUrl);
+        Assert.Equal("https://cdn.warframestat.us/img/GenericWarframePrimeChassis.png", chassis.ImageUrl);
+    }
+
     private static IReadOnlyList<SaleRecommendation> SalesFor(CatalogSnapshot catalog)
     {
         var aligned = InventoryCatalogAlignment.AlignToCatalog(
