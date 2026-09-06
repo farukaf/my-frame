@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="MyFrame.App.Components.DucatConversion"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <!-- Bound straight to the dashboard view model, so the same control serves Settings and the
+         sales screen and both stay in step without either owning the value. -->
+    <Grid ColumnDefinitions="*,22,58,Auto,58,22" ColumnSpacing="8" VerticalOptions="Center">
+        <!-- Dragging right raises the ducat side of the ratio, which is also the direction the gold
+             fill grows in, and gold is the ducat colour. -->
+        <Slider Minimum="1" Maximum="50" Value="{Binding DucatsPerPlatinum, Mode=TwoWay}"
+                MinimumTrackColor="#F3C969" MaximumTrackColor="#7DE2D1" ThumbColor="#F4F7FB"
+                VerticalOptions="Center" MinimumWidthRequest="160" />
+        <Image Grid.Column="1" Source="ducats.svg" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"
+               ToolTipProperties.Text="Ducats" />
+        <Entry Grid.Column="2" Text="{Binding DucatsPerPlatinum, Mode=TwoWay}" Keyboard="Numeric"
+               MaxLength="2" HeightRequest="40" HorizontalTextAlignment="Center"
+               TextColor="#F3C969" BackgroundColor="#20283A" />
+        <Label Grid.Column="3" Text=":" TextColor="#F4F7FB" FontFamily="OpenSansSemibold"
+               FontSize="18" VerticalOptions="Center" />
+        <!-- The ratio reads as N ducats to one platinum, so this side is fixed: only N can move. -->
+        <Entry Grid.Column="4" Text="1" IsReadOnly="True" HeightRequest="40"
+               HorizontalTextAlignment="Center" TextColor="#D9F7FF" BackgroundColor="#20283A"
+               ToolTipProperties.Text="The platinum side of the ratio is always one" />
+        <Image Grid.Column="5" Source="platinum.svg" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"
+               ToolTipProperties.Text="Platinum" />
+    </Grid>
+</ContentView>

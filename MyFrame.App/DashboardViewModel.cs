@@ -60,7 +60,6 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
     [ObservableProperty] public partial string SelectedSalesSort { get; set; } = "Name";
-    [ObservableProperty] public partial string ActiveConversionValue { get; set; } = "—";
     [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
     [ObservableProperty] public partial bool ActivePrimeSetReserveEnabled { get; set; }
     [ObservableProperty] public partial string CollectionSearchText { get; set; } = "";
@@ -68,6 +67,8 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SalesSearchText { get; set; } = "";
     [ObservableProperty] public partial string RelicsSearchText { get; set; } = "";
     [ObservableProperty] public partial string AlecaDataUpdatedText { get; set; } = "—";
+    [ObservableProperty] public partial string FilteredDucatsEstimate { get; set; } = "0";
+    [ObservableProperty] public partial bool IncludeVaultedParts { get; set; } = true;
     [ObservableProperty] public partial bool IsSyncingPrices { get; set; }
     [ObservableProperty] public partial double SyncProgress { get; set; }
     [ObservableProperty] public partial string SyncProgressText { get; set; } = "";
@@ -182,7 +183,6 @@ public partial class DashboardViewModel : ObservableObject
         TotalPlatinum = $"{snapshot.Recommendations.EstimatedPlatinum:N0}p";
         TotalDucats = $"{snapshot.Recommendations.TotalDucats:N0} ducats";
         var activeSettings = snapshot.Recommendations.Settings;
-        ActiveConversionValue = activeSettings.DucatsPerPlatinum.ToString();
         ActivePrimeSetReserveEnabled = activeSettings.UnvaultedPrimeSetsToReserve > 0;
         ActivePrimeSetReserveText = ActivePrimeSetReserveEnabled
             ? $"{activeSettings.UnvaultedPrimeSetsToReserve} SET{(activeSettings.UnvaultedPrimeSetsToReserve == 1 ? "" : "S")}"
@@ -228,6 +228,11 @@ public partial class DashboardViewModel : ObservableObject
     partial void OnCollectionSearchTextChanged(string value) => ApplyCollectionView();
     partial void OnFarmSearchTextChanged(string value) => ApplyFarmView();
     partial void OnSalesSearchTextChanged(string value) => ApplySalesView();
+    partial void OnIncludeVaultedPartsChanged(bool value) => ApplySalesView();
+
+    // The label is part of the hit area, so tapping either half flips the box.
+    [RelayCommand]
+    private void ToggleVaultedParts() => IncludeVaultedParts = !IncludeVaultedParts;
     partial void OnRelicsSearchTextChanged(string value) => ApplyRelicsView();
     partial void OnDucatsPerPlatinumChanged(double value)
     {
@@ -287,6 +292,7 @@ public partial class DashboardViewModel : ObservableObject
             "Vaulted items" => _allSales.Where(x => x.Vaulted),
             _ => _allSales
         };
+        if (!IncludeVaultedParts) sales = sales.Where(x => !x.Vaulted);
         if (!string.IsNullOrWhiteSpace(SalesSearchText))
             sales = sales.Where(x => Matches(SalesSearchText, x.ItemName, x.Reason, x.ActionLabel, x.VaultStatus));
         sales = SelectedSalesSort switch
@@ -295,7 +301,14 @@ public partial class DashboardViewModel : ObservableObject
             "Highest value" => sales.OrderByDescending(x => x.TotalPlatinum).ThenBy(x => x.ItemName),
             _ => sales.OrderBy(x => x.ItemName)
         };
-        Replace(Sales, sales.Take(200));
+        var listed = sales.ToArray();
+        // Only the rows actually being recommended for ducats count. Summing every listed row
+        // instead would report the same total at any ratio, since a piece is worth the same in
+        // ducats whether or not selling it for platinum currently wins.
+        FilteredDucatsEstimate = $"{listed
+            .Where(x => x.Action == RecommendationAction.ExchangeForDucats)
+            .Sum(x => (long)x.TotalDucats):N0}";
+        Replace(Sales, listed.Take(200));
     }
 
     private void ApplyFarmView()

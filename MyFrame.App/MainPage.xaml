@@ -116,15 +116,13 @@
                     <Label Text="Collection, farming, relics, and the value of your extras in one place." TextColor="#8995A8" />
                 </VerticalStackLayout>
                 <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">
-                    <HorizontalStackLayout IsVisible="{Binding SalesVisible}" Spacing="8"
-                                           ToolTipProperties.Text="Configuration used for the loaded recommendations">
-                        <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8">
+                    <HorizontalStackLayout IsVisible="{Binding SalesVisible}" Spacing="8">
+                        <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8"
+                                ToolTipProperties.Text="Ducats the rows currently listed would return">
                             <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
-                                <Label Text="ACTIVE" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
-                                <Image Source="platinum.svg" WidthRequest="17" HeightRequest="17" />
-                                <Label Text="1" TextColor="#D9F7FF" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
-                                <Label Text="=" TextColor="#8995A8" VerticalOptions="Center" />
-                                <Label Text="{Binding ActiveConversionValue}" TextColor="#F3C969" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                                <Label Text="ESTIMATE" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                                <Label Text="{Binding FilteredDucatsEstimate}" TextColor="#F3C969"
+                                       FontFamily="OpenSansSemibold" VerticalOptions="Center" />
                                 <Image Source="ducats.svg" WidthRequest="17" HeightRequest="17" />
                             </HorizontalStackLayout>
                         </Border>
@@ -242,7 +240,7 @@
                     </CollectionView>
                 </Grid>
 
-                <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,*" RowSpacing="12">
+                <Grid IsVisible="{Binding SalesVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                         <Label Text="Sales and ducats" Style="{StaticResource Title}" />
                         <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search sales…" Text="{Binding SalesSearchText}" WidthRequest="220" />
@@ -257,7 +255,22 @@
                             <Label Text="Sort" FontSize="10" TextColor="#AEB8C8" BackgroundColor="#20283A" Padding="3,0" Margin="9,0,0,0" HorizontalOptions="Start" VerticalOptions="Start" />
                         </Grid>
                     </Grid>
-                    <CollectionView Grid.Row="1" ItemsSource="{Binding Sales}" SelectionMode="None">
+                    <!-- The ratio sits above the list it reorders, so a drag shows its effect at once. -->
+                    <Border Grid.Row="1" BackgroundColor="#151A23" Stroke="#252D3A" StrokeThickness="1"
+                            StrokeShape="RoundRectangle 10" Padding="14,10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <components:DucatConversion />
+                            <HorizontalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"
+                                                   ToolTipProperties.Text="Vaulted parts cannot be farmed again, so they are often worth holding rather than selling">
+                                <HorizontalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleVaultedPartsCommand}" />
+                                </HorizontalStackLayout.GestureRecognizers>
+                                <CheckBox IsChecked="{Binding IncludeVaultedParts}" Color="#7DE2D1" VerticalOptions="Center" />
+                                <Label Text="Include vaulted parts" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Border>
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding Sales}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.EmptyView><Label Text="No extras available." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
@@ -288,18 +301,8 @@
                         <Border Style="{StaticResource Card}">
                             <VerticalStackLayout Spacing="14">
                                 <Label Text="Ducats / platinum conversion" Style="{StaticResource SectionTitle}" />
-                                <Label Text="Sets the threshold used by recommendations. Changes take effect on the next refresh." TextColor="#8995A8" />
-                                <Grid ColumnDefinitions="*,22,Auto,64,22" ColumnSpacing="8">
-                                    <Slider Minimum="1" Maximum="50" Value="{Binding DucatsPerPlatinum}" MinimumTrackColor="#7DE2D1" />
-                                    <Image Grid.Column="1" Source="platinum.svg" WidthRequest="20" HeightRequest="20"
-                                           ToolTipProperties.Text="Platinum" />
-                                    <Label Grid.Column="2" Text="=" TextColor="#F4F7FB" VerticalOptions="Center" />
-                                    <Entry Grid.Column="3" Text="{Binding DucatsPerPlatinum, Mode=TwoWay}" Keyboard="Numeric"
-                                           MaxLength="2" HorizontalTextAlignment="Center" TextColor="#F4F7FB"
-                                           BackgroundColor="#20283A" />
-                                    <Image Grid.Column="4" Source="ducats.svg" WidthRequest="20" HeightRequest="20"
-                                           ToolTipProperties.Text="Ducats" />
-                                </Grid>
+                                <Label Text="Sets the threshold used by recommendations. Changes apply immediately." TextColor="#8995A8" />
+                                <components:DucatConversion />
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                                     <VerticalStackLayout Spacing="2">
                                         <Label Text="Reserve unvaulted Prime sets" TextColor="#F4F7FB" />
