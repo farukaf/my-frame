@@ -143,7 +143,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 info.Component.Ducats, marketPrice, quote?.HighestBuy, action, info.Parent.Vaulted,
                 inventory.OwnedEquipment.Contains(info.Parent.UniqueName),
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
-                HasOrder(identity?.Id, orders), reason, info.Parent.ImageUrl));
+                HasOrder(identity?.Id, orders), reason, PartImage(info.Parent, info.Component)));
         }
 
         // Show fully reserved pieces as an explicit Keep recommendation so the sales screen
@@ -168,7 +168,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 IsMastered(info.Parent, inventory.Experience.GetValueOrDefault(info.Parent.UniqueName)),
                 HasOrder(identity?.Id, orders),
                 "All owned copies are reserved for collection, crafting, or an existing market order.",
-                info.Parent.ImageUrl));
+                PartImage(info.Parent, info.Component)));
         }
 
         return results.OrderBy(x => x.Action).ThenByDescending(x => x.TotalPlatinum ?? 0)
@@ -276,6 +276,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var name = component.Name.Equals("Blueprint", StringComparison.OrdinalIgnoreCase) ? $"{parent.Name} Blueprint" : $"{parent.Name} {component.Name}";
         return catalog.MarketByNormalizedName.GetValueOrDefault(ItemNameNormalizer.Normalize(name));
     }
+
+    // A part row shows the part's own icon, which is the icon the game itself uses for it. The
+    // parent art is the fallback for the handful of components the catalog ships no image for.
+    private static string PartImage(CatalogItem parent, CatalogComponent component) =>
+        component.ImageUrl.Length > 0 ? component.ImageUrl : parent.ImageUrl;
 
     private static bool IsRelevantGoal(CatalogItem item) => !item.Category.Contains("Skin", StringComparison.OrdinalIgnoreCase);
     private static bool IsWarframe(CatalogItem item) => item.ProductCategory == "Suits" || item.Category == "Warframes";
