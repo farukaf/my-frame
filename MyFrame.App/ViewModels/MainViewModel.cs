@@ -21,9 +21,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new();
         var settings = new DashboardSettingsState(localSettings);
-        Sales = new(settings);
-        Settings = new(alecaPath, directorySettings, preferences, folderPicker, settings, RefreshCoreAsync);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
+        Sales = new(settings);
+        Settings = new(alecaPath, directorySettings, preferences, folderPicker, settings, RefreshCoreAsync,
+            message => GlobalStatus.StatusMessage = message);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
         _service.SnapshotUpdated += OnSnapshotUpdated;
         _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => GlobalStatus.ApplySyncStatus(status));

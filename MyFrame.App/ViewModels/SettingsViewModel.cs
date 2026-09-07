@@ -12,11 +12,13 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IFolderPicker _folderPicker;
     private readonly DashboardSettingsState _settings;
     private readonly Func<Task> _refresh;
+    private readonly Action<string>? _setStatus;
     public SettingsViewModel(IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
-        ISettingsStore preferences, IFolderPicker folderPicker, DashboardSettingsState settings, Func<Task> refresh)
+        ISettingsStore preferences, IFolderPicker folderPicker, DashboardSettingsState settings,
+        Func<Task> refresh, Action<string>? setStatus = null)
     {
         _alecaPath = alecaPath; _directorySettings = directorySettings; _preferences = preferences;
-        _folderPicker = folderPicker; _settings = settings; _refresh = refresh;
+        _folderPicker = folderPicker; _settings = settings; _refresh = refresh; _setStatus = setStatus;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         _settings.PropertyChanged += (_, args) =>
         {
@@ -41,6 +43,7 @@ public partial class SettingsViewModel : ObservableObject
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = directory;
         AlecaFrameDirectoryMessage = "Folder saved. Inventory, catalogs, token, and monitoring now use this location.";
+        _setStatus?.Invoke("AlecaFrame folder configured. Loading data…");
         await _refresh();
     }
 
@@ -52,5 +55,6 @@ public partial class SettingsViewModel : ObservableObject
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
         AlecaFrameDirectoryMessage = error is null ? "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame)." : $"Automatic location restored, but it is not ready: {error}";
+        if (error is not null) _setStatus?.Invoke("AlecaFrame data folder needs to be configured.");
     }
 }
