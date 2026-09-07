@@ -3,7 +3,7 @@ namespace MyFrame.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-public sealed class DashboardService : IDisposable
+public sealed class DashboardService : IDashboardService
 {
     private readonly IAlecaFramePath _alecaPath;
     private readonly IAlecaFrameReader _inventoryReader;
@@ -14,8 +14,7 @@ public sealed class DashboardService : IDisposable
     private readonly IRecommendationEngine _engine;
     private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
-    private FileSystemWatcher? _watcher;
-    private CancellationTokenSource? _debounce;
+    private readonly IAlecaFrameChangeMonitor _changeMonitor;
     private CatalogSnapshot? _catalog;
     private DashboardSnapshot? _lastSnapshot;
     private RecommendationSettings _lastSettings = new();
@@ -25,7 +24,8 @@ public sealed class DashboardService : IDisposable
     public DashboardService(IAlecaFramePath alecaPath, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
         IMarketStateStore marketState, IRecommendationEngine engine,
-        ILogger<DashboardService>? logger = null)
+        ILogger<DashboardService>? logger = null,
+        IAlecaFrameChangeMonitor? changeMonitor = null)
     {
         _marketState = marketState;
         _alecaPath = alecaPath;
@@ -35,28 +35,10 @@ public sealed class DashboardService : IDisposable
         _cache = cache;
         _engine = engine;
         _logger = logger ?? NullLogger<DashboardService>.Instance;
+        _changeMonitor = changeMonitor ?? new FileSystemAlecaFrameChangeMonitor();
         _alecaPath.Changed += OnAlecaDirectoryChanged;
-        ConfigureWatcher(alecaPath.DirectoryPath);
-    }
-
-    private void ConfigureWatcher(string alecaDirectory)
-    {
-        _watcher?.Dispose();
-        _watcher = null;
-        if (Directory.Exists(alecaDirectory))
-        {
-            _watcher = new FileSystemWatcher(alecaDirectory)
-            {
-                Filter = "*.*", IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
-                EnableRaisingEvents = true
-            };
-            _watcher.Changed += OnFileChanged;
-            _watcher.Created += OnFileChanged;
-            _watcher.Renamed += OnFileChanged;
-            _watcher.Deleted += OnFileChanged;
-            _watcher.Error += OnWatcherError;
-        }
+        _changeMonitor.Changed += OnFileChanged;
+        _changeMonitor.Watch(alecaPath.DirectoryPath);
     }
 
     public event EventHandler<DashboardSnapshot>? SnapshotUpdated;
@@ -241,55 +223,33 @@ public sealed class DashboardService : IDisposable
             inventory.Stackables.GetValueOrDefault(x.UniqueName) > (built ? 0 : x.Required));
     }
 
-    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    private void OnFileChanged(object? sender, AlecaFrameChange change)
     {
-        var name = Path.GetFileName(e.FullPath);
-        if (!name.Equals("lastData.dat", StringComparison.OrdinalIgnoreCase) &&
-            !name.Equals("WFMarketToken.tk", StringComparison.OrdinalIgnoreCase) &&
-            !name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) return;
-        if (name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) _catalog = null;
-        ScheduleRefresh();
-    }
-
-    private void ScheduleRefresh()
-    {
-        _debounce?.Cancel();
-        _debounce?.Dispose();
-        _debounce = new CancellationTokenSource();
-        _ = DebouncedRefreshAsync(_debounce.Token);
-    }
-
-    private void OnWatcherError(object sender, ErrorEventArgs e)
-    {
-        _logger.LogWarning(e.GetException(), "AlecaFrame file watcher failed; recreating it");
-        ConfigureWatcher(_alecaPath.DirectoryPath);
-        ScheduleRefresh();
+        if (change.Kind == AlecaFrameChangeKind.Catalog) _catalog = null;
+        _ = RefreshAfterChangeAsync();
     }
 
     private void OnAlecaDirectoryChanged(object? sender, string directory)
     {
         _catalog = null;
-        ConfigureWatcher(directory);
-        ScheduleRefresh();
+        _changeMonitor.Watch(directory);
+        _changeMonitor.Notify(AlecaFrameChangeKind.Directory);
     }
 
-    private async Task DebouncedRefreshAsync(CancellationToken cancellationToken)
+    private async Task RefreshAfterChangeAsync()
     {
         try
         {
-            await Task.Delay(750, cancellationToken);
-            if (!cancellationToken.IsCancellationRequested) await RefreshAsync(false, cancellationToken: cancellationToken);
+            await RefreshAsync(false);
         }
-        catch (OperationCanceledException) { }
         catch (Exception) { /* The UI keeps the last valid snapshot and manual refresh remains available. */ }
     }
 
     public void Dispose()
     {
         _alecaPath.Changed -= OnAlecaDirectoryChanged;
-        _watcher?.Dispose();
-        _debounce?.Cancel();
-        _debounce?.Dispose();
+        _changeMonitor.Changed -= OnFileChanged;
+        _changeMonitor.Dispose();
         _refreshGate.Dispose();
     }
 }
