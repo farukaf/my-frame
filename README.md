@@ -29,6 +29,37 @@ dotnet test MyFrame.Core.Tests/MyFrame.Core.Tests.csproj
 dotnet run --project MyFrame.App/MyFrame.App.csproj -f net10.0-windows10.0.19041.0
 ```
 
+## CI/CD e distribuição
+
+Todo pull request executa todos os testes e gera artefatos `win-x64`
+autocontidos com o Velopack, que não exigem a instalação do .NET SDK ou do
+runtime:
+
+- `MyFrame-win-Portable.zip`: versão portátil;
+- `MyFrame-win-Setup.exe`: instalador one-click por usuário.
+
+Os arquivos podem ser baixados pelo link que o bot publica no PR ou pela seção
+**Artifacts** da execução do GitHub Actions. O preview exige login no GitHub e
+expira após 30 dias. Tags no formato
+`vMAJOR.MINOR.PATCH` (por exemplo, `v1.2.3`) criam ou
+atualizam uma GitHub Release e anexam os mesmos arquivos a ela, junto com os
+metadados e pacotes necessários para implementar atualização automática depois.
+
+O instalador não pede privilégios administrativos: instala em `%LOCALAPPDATA%`,
+cria atalhos no Desktop e no Menu Iniciar e registra a desinstalação no Windows.
+Enquanto os binários não tiverem assinatura de código, o Windows SmartScreen
+poderá exibir um aviso ao baixá-los pela primeira vez.
+
+[Baixar o instalador da versão estável mais recente](https://github.com/farukaf/my-frame/releases/latest/download/MyFrame-win-Setup.exe)
+
+[Baixar a versão portátil mais recente](https://github.com/farukaf/my-frame/releases/latest/download/MyFrame-win-Portable.zip)
+
+Para reproduzir o empacotamento localmente, execute:
+
+```powershell
+./scripts/Build-Distribution.ps1 -Version 1.0.0
+```
+
 ## Logs
 
 O aplicativo grava eventos estruturados em JSON Lines em

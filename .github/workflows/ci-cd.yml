@@ -1,0 +1,173 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    tags:
+      - "v*"
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.event.release.tag_name || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  test:
+    name: Testes
+    runs-on: windows-2025
+    permissions:
+      contents: read
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Instalar o .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+          workloads: maui-windows
+
+      - name: Restaurar dependências
+        run: dotnet restore MyFrame.slnx
+
+      - name: Executar todos os testes
+        shell: pwsh
+        run: |
+          $testProjects = Get-ChildItem -Recurse -Filter '*.Tests.csproj'
+          if ($testProjects.Count -eq 0) {
+            throw 'Nenhum projeto de testes foi encontrado.'
+          }
+
+          foreach ($project in $testProjects) {
+            dotnet test $project.FullName `
+              --configuration Release `
+              --no-restore `
+              --maxcpucount:1 `
+              --logger "trx;LogFilePrefix=$($project.BaseName)" `
+              --results-directory TestResults
+            if ($LASTEXITCODE -ne 0) {
+              throw "Os testes de $($project.Name) falharam."
+            }
+          }
+
+      - name: Disponibilizar resultados dos testes
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ github.run_id }}
+          path: TestResults/**/*.trx
+          if-no-files-found: warn
+          retention-days: 14
+
+  package:
+    name: Aplicativo autocontido (win-x64)
+    needs: test
+    runs-on: windows-2025
+    permissions:
+      contents: read
+    outputs:
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
+      tag_name: ${{ steps.metadata.outputs.tag_name }}
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Instalar o .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+          workloads: maui-windows
+
+      - name: Definir versão e nome do artefato
+        id: metadata
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          $tag = ''
+          if ($env:EVENT_NAME -eq 'pull_request') {
+            $version = "0.0.$env:RUN_NUMBER"
+            $artifactName = "MyFrame-pr-$env:PR_NUMBER-win-x64"
+          }
+          elseif ($env:EVENT_NAME -eq 'workflow_dispatch') {
+            $version = "0.0.$env:RUN_NUMBER"
+            $artifactName = "MyFrame-manual-$env:RUN_NUMBER-win-x64"
+          }
+          else {
+            $tag = if ($env:RELEASE_TAG) { $env:RELEASE_TAG } else { $env:REF_NAME }
+            $version = $tag -replace '^v', ''
+            if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+              throw "A tag '$tag' deve seguir o formato vMAJOR.MINOR.PATCH (por exemplo, v1.2.3)."
+            }
+            $artifactName = "MyFrame-$tag-win-x64"
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "artifact_name=$artifactName" >> $env:GITHUB_OUTPUT
+          "tag_name=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Gerar aplicativo e instalador autocontidos
+        shell: pwsh
+        run: >-
+          ./scripts/Build-Distribution.ps1
+          -Version "${{ steps.metadata.outputs.version }}"
+          -Configuration Release
+
+      - name: Disponibilizar pacote na execução do Actions
+        id: distribution-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: artifacts/distribution/packages/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Exibir link do download
+        shell: pwsh
+        env:
+          ARTIFACT_NAME: ${{ steps.metadata.outputs.artifact_name }}
+          ARTIFACT_URL: ${{ steps.distribution-artifact.outputs.artifact-url }}
+        run: |
+          "## Download" >> $env:GITHUB_STEP_SUMMARY
+          "[$env:ARTIFACT_NAME]($env:ARTIFACT_URL)" >> $env:GITHUB_STEP_SUMMARY
+
+  release:
+    name: Publicar GitHub Release
+    if: github.event_name == 'push' || github.event_name == 'release'
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar os pacotes validados
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.artifact_name }}
+          path: release-assets
+
+      - name: Publicar arquivos na GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.package.outputs.tag_name }}
+          generate_release_notes: ${{ github.event_name == 'push' }}
+          files: release-assets/*
+          fail_on_unmatched_files: true
