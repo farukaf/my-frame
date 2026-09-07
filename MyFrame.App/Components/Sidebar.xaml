@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="MyFrame.App.Components.Sidebar"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:MyFrame.App.Components"
+    BackgroundColor="#10141C">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="22" Padding="18,24">
+        <VerticalStackLayout Spacing="2">
+            <Label Text="MY FRAME" TextColor="#7DE2D1" FontFamily="OpenSansSemibold" FontSize="22" />
+            <Label Text="Warframe companion" Style="{StaticResource Muted}" />
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Row="1" Spacing="5">
+            <Border AutomationId="NavDashboard" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" /></Border.GestureRecognizers><Label Text="⌂  Dashboard" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+            <Border AutomationId="NavCollection" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Collection" /></Border.GestureRecognizers><Label Text="◉  Collection" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+            <Border AutomationId="NavFarm" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+            <Border AutomationId="NavRelics" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+            <Border AutomationId="NavSales" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+            <Border AutomationId="NavSettings" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+        </VerticalStackLayout>
+        <components:GlobalStatus Grid.Row="3" BindingContext="{Binding GlobalStatus}" />
+    </Grid>
+</ContentView>

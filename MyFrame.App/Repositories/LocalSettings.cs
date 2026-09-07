@@ -14,8 +14,6 @@ public sealed class LocalSettings
 {
     private readonly LocalSettingsValues _values;
 
-    public LocalSettings() : this(new MauiAppPreferences()) { }
-
     public LocalSettings(ISettingsStore preferences) => _values = new LocalSettingsValues(preferences);
 
     public int DucatsPerPlatinum

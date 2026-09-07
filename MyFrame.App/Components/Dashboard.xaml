@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="MyFrame.App.Components.Dashboard"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui">
+    <ScrollView IsVisible="{Binding IsVisible}">
+        <VerticalStackLayout Spacing="18">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                <Border Style="{StaticResource Card}"><VerticalStackLayout><Label Text="ESTIMATED PLATINUM" Style="{StaticResource Muted}"/><Label Text="{Binding TotalPlatinum}" TextColor="#7DE2D1" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="AVAILABLE DUCATS" Style="{StaticResource Muted}"/><Label Text="{Binding TotalDucats}" TextColor="#F3C969" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="MASTERY" Style="{StaticResource Muted}"/><Label Text="{Binding MasteryProgress}" TextColor="#B9A7FF" FontSize="26" FontFamily="OpenSansSemibold"/></VerticalStackLayout></Border>
+                <Border Grid.Column="3" Style="{StaticResource Card}"><VerticalStackLayout><Label Text="INVENTORY" Style="{StaticResource Muted}"/><Label Text="{Binding InventorySummary}" TextColor="#F4F7FB" FontSize="16" FontFamily="OpenSansSemibold" LineBreakMode="WordWrap"/></VerticalStackLayout></Border>
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border Style="{StaticResource Card}"><Grid RowDefinitions="Auto,260"><Label Text="Extra inventory value" Style="{StaticResource SectionTitle}"/><lvc:PieChart Grid.Row="1" Series="{Binding ValueSeries}" LegendPosition="Bottom" /></Grid></Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}"><Grid RowDefinitions="Auto,260"><Label Text="Mastery progress" Style="{StaticResource SectionTitle}"/><lvc:CartesianChart Grid.Row="1" Series="{Binding ProgressSeries}" LegendPosition="Bottom" /></Grid></Border>
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

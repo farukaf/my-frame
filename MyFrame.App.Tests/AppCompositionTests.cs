@@ -17,27 +17,31 @@ public sealed class AppCompositionTests
     }
 
     [Fact]
-    public void MainPageComposesTheDashboardAndKeepsTheExistingSections()
+    public void MainPageOnlyComposesTheSections()
     {
         var xaml = ReadAppFile(Path.Combine("Pages", "MainPage.xaml"));
 
         Assert.Contains("x:Class=\"MyFrame.App.MainPage\"", xaml);
-        Assert.Contains("DashboardVisible", xaml);
-        Assert.Contains("CollectionVisible", xaml);
-        Assert.Contains("FarmVisible", xaml);
-        Assert.Contains("SalesVisible", xaml);
-        Assert.Contains("RelicsVisible", xaml);
-        Assert.Contains("SettingsVisible", xaml);
-        Assert.Contains("components:RecommendationCard", xaml);
+        Assert.Contains("components:Sidebar", xaml);
+        Assert.Contains("components:PageHeader", xaml);
+        Assert.Contains("components:Dashboard", xaml);
+        Assert.Contains("components:Collection", xaml);
+        Assert.Contains("components:Farm", xaml);
+        Assert.Contains("components:Relics", xaml);
+        Assert.Contains("components:Sales", xaml);
+        Assert.Contains("components:Settings", xaml);
+        Assert.DoesNotContain("CollectionView", xaml);
     }
 
     [Fact]
     public void MainPageExposesStableAutomationIdsForTheNavigationAndRefreshSmokeFlow()
     {
-        var xaml = ReadAppFile(Path.Combine("Pages", "MainPage.xaml"));
+        var xaml = ReadAppFile(Path.Combine("Components", "Sidebar.xaml"));
+        var header = ReadAppFile(Path.Combine("Components", "PageHeader.xaml"));
 
-        foreach (var id in new[] { "NavDashboard", "NavCollection", "NavFarm", "NavRelics", "NavSales", "NavSettings", "RefreshButton" })
+        foreach (var id in new[] { "NavDashboard", "NavCollection", "NavFarm", "NavRelics", "NavSales", "NavSettings" })
             Assert.Contains($"AutomationId=\"{id}\"", xaml);
+        Assert.Contains("AutomationId=\"RefreshButton\"", header);
     }
 
     [Fact]
@@ -47,7 +51,9 @@ public sealed class AppCompositionTests
 
         Assert.Contains("AddSingleton<MainViewModel>", source);
         Assert.Contains("AddSingleton<MainPage>", source);
-        Assert.Contains("AddSingleton<ISettingsStore, MauiAppPreferences>", source);
+        Assert.Contains("AddSingleton<ISettingsStore>(preferences)", source);
+        Assert.Contains("AddSingleton<IFolderPicker, MauiFolderPicker>", source);
+        Assert.Contains("AddSingleton<IExternalBrowser, MauiExternalBrowser>", source);
     }
 
     [Fact]
@@ -57,6 +63,31 @@ public sealed class AppCompositionTests
         Assert.False(File.Exists(AppPath("MainPage.xaml")));
         Assert.False(File.Exists(CorePath("DashboardService.cs")));
         Assert.False(File.Exists(CorePath("Models.cs")));
+    }
+
+    [Fact]
+    public void EachPresentationComponentHasItsOwnMarkupAndCodeBehind()
+    {
+        foreach (var name in new[] { "Sidebar", "GlobalStatus", "PageHeader", "Dashboard", "Collection", "Farm", "Relics", "Sales", "Settings" })
+        {
+            var xaml = ReadAppFile(Path.Combine("Components", $"{name}.xaml"));
+            Assert.Contains($"x:Class=\"MyFrame.App.Components.{name}\"", xaml);
+            Assert.True(File.Exists(AppPath("Components", $"{name}.xaml.cs")), $"Missing code behind for {name}.");
+        }
+    }
+
+    [Fact]
+    public void EachSectionOwnsAViewModelAndTheCoordinatorDoesNotOwnSectionCollections()
+    {
+        foreach (var name in new[] { "Main", "DashboardSection", "Collection", "Farm", "Relics", "Sales", "Settings", "GlobalStatus" })
+        {
+            var source = ReadAppFile(Path.Combine("ViewModels", $"{name}ViewModel.cs"));
+            Assert.Contains($"class {name}ViewModel", source);
+        }
+
+        var coordinator = ReadAppFile(Path.Combine("ViewModels", "MainViewModel.cs"));
+        Assert.DoesNotContain("ObservableCollection", coordinator);
+        Assert.DoesNotContain("DashboardFilters", coordinator);
     }
 
     private static string ReadAppFile(params string[] parts) => File.ReadAllText(AppPath(parts));

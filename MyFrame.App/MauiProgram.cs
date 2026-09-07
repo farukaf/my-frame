@@ -22,14 +22,16 @@ public static class MauiProgram
 #endif
         builder.Logging.AddSerilog(Log.Logger, dispose: true);
         var automaticAlecaDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlecaFrame");
-        builder.Services.AddSingleton<ISettingsStore, MauiAppPreferences>();
         var preferences = new MauiAppPreferences();
+        builder.Services.AddSingleton<ISettingsStore>(preferences);
         var alecaDirectory = preferences.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<WindowPlacementService>();
+        builder.Services.AddSingleton<IFolderPicker, MauiFolderPicker>();
+        builder.Services.AddSingleton<IExternalBrowser, MauiExternalBrowser>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
