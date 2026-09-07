@@ -57,7 +57,10 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
     private void OnWatcherError(object sender, ErrorEventArgs e)
     {
         _logger.LogWarning(e.GetException(), "AlecaFrame file watcher failed; recreating it");
-        Watch(_directory);
+        lock (_gate)
+            if (_disposed) return;
+        try { Watch(_directory); }
+        catch (ObjectDisposedException) { return; }
         Schedule(AlecaFrameChangeKind.WatcherError);
     }
 
