@@ -4,15 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:components="clr-namespace:MyFrame.App.Components"
     Shell.NavBarIsVisible="False" BackgroundColor="#0B0E14">
-    <ContentPage.Resources>
-        <Style x:Key="NavItem" TargetType="Border"><Setter Property="BackgroundColor" Value="Transparent"/><Setter Property="StrokeThickness" Value="0"/><Setter Property="Padding" Value="16,12"/><Setter Property="HorizontalOptions" Value="Fill"/></Style>
-        <Style x:Key="Card" TargetType="Border"><Setter Property="BackgroundColor" Value="#151A23"/><Setter Property="Stroke" Value="#252D3A"/><Setter Property="StrokeThickness" Value="1"/><Setter Property="StrokeShape" Value="RoundRectangle 14"/><Setter Property="Padding" Value="18"/></Style>
-        <Style x:Key="Title" TargetType="Label"><Setter Property="TextColor" Value="#F4F7FB"/><Setter Property="FontFamily" Value="OpenSansSemibold"/><Setter Property="FontSize" Value="26"/></Style>
-        <Style x:Key="SectionTitle" TargetType="Label"><Setter Property="TextColor" Value="#F4F7FB"/><Setter Property="FontFamily" Value="OpenSansSemibold"/><Setter Property="FontSize" Value="18"/></Style>
-        <Style x:Key="Muted" TargetType="Label"><Setter Property="TextColor" Value="#8995A8"/><Setter Property="FontSize" Value="12"/></Style>
-        <Style x:Key="SearchField" TargetType="Entry"><Setter Property="HeightRequest" Value="40"/><Setter Property="MinimumHeightRequest" Value="40"/><Setter Property="VerticalOptions" Value="Center"/><Setter Property="BackgroundColor" Value="#20283A"/><Setter Property="TextColor" Value="#F4F7FB"/><Setter Property="PlaceholderColor" Value="#8995A8"/><Setter Property="FontSize" Value="14"/><Setter Property="Margin" Value="0"/></Style>
-        <Style x:Key="SelectField" TargetType="Picker"><Setter Property="HeightRequest" Value="40"/><Setter Property="MinimumHeightRequest" Value="40"/><Setter Property="VerticalOptions" Value="Center"/><Setter Property="BackgroundColor" Value="#20283A"/><Setter Property="TextColor" Value="#F4F7FB"/><Setter Property="TitleColor" Value="#8995A8"/><Setter Property="FontSize" Value="14"/><Setter Property="Margin" Value="0"/></Style>
-    </ContentPage.Resources>
     <Grid ColumnDefinitions="220,*" RowDefinitions="*">
         <components:Sidebar Grid.Column="0" BindingContext="{Binding}" />
         <Grid Grid.Column="1" RowDefinitions="Auto,*" Padding="28,22" RowSpacing="18">
