@@ -10,6 +10,7 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
     private FileSystemWatcher? _watcher;
     private CancellationTokenSource? _debounce;
     private string _directory = "";
+    private bool _disposed;
 
     public FileSystemAlecaFrameChangeMonitor(ILogger<FileSystemAlecaFrameChangeMonitor>? logger = null) =>
         _logger = logger ?? NullLogger<FileSystemAlecaFrameChangeMonitor>.Instance;
@@ -20,6 +21,7 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
     {
         lock (_gate)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             _directory = directory;
             _watcher?.Dispose();
             _watcher = null;
@@ -64,6 +66,7 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
         CancellationToken token;
         lock (_gate)
         {
+            if (_disposed) return;
             _debounce?.Cancel();
             _debounce?.Dispose();
             _debounce = new CancellationTokenSource();
@@ -77,6 +80,8 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
         try
         {
             await Task.Delay(750, cancellationToken).ConfigureAwait(false);
+            lock (_gate)
+                if (_disposed || cancellationToken.IsCancellationRequested) return;
             Changed?.Invoke(this, new AlecaFrameChange(kind, _directory));
         }
         catch (OperationCanceledException) { }
@@ -87,6 +92,8 @@ public sealed class FileSystemAlecaFrameChangeMonitor : IAlecaFrameChangeMonitor
     {
         lock (_gate)
         {
+            if (_disposed) return;
+            _disposed = true;
             _watcher?.Dispose();
             _watcher = null;
             _debounce?.Cancel();
