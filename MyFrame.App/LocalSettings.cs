@@ -1,28 +1,35 @@
+using MyFrame.Core;
+
 namespace MyFrame.App;
+
+public sealed class MauiAppPreferences : ISettingsStore
+{
+    public bool ContainsKey(string key) => Preferences.Default.ContainsKey(key);
+    public T Get<T>(string key, T defaultValue) => Preferences.Default.Get(key, defaultValue);
+    public void Set<T>(string key, T value) => Preferences.Default.Set(key, value);
+    public void Remove(string key) => Preferences.Default.Remove(key);
+}
 
 public sealed class LocalSettings
 {
-    private const string DucatsPerPlatinumKey = "DucatsPerPlatinum";
-    private const string UnvaultedPrimeSetsToReserveKey = "UnvaultedPrimeSetsToReserve";
-    private const string LegacyReserveKey = "ReserveUnvaultedPrimeWarframeSet";
+    private readonly LocalSettingsValues _values;
+
+    public LocalSettings() : this(new MauiAppPreferences()) { }
+
+    public LocalSettings(ISettingsStore preferences) => _values = new LocalSettingsValues(preferences);
 
     public int DucatsPerPlatinum
     {
-        get => Math.Clamp(Preferences.Default.Get(DucatsPerPlatinumKey, 10), 1, 50);
-        set => Preferences.Default.Set(DucatsPerPlatinumKey, Math.Clamp(value, 1, 50));
+        get => _values.DucatsPerPlatinum;
+        set => _values.DucatsPerPlatinum = value;
     }
 
     public int UnvaultedPrimeSetsToReserve
     {
         get
         {
-            if (Preferences.Default.ContainsKey(UnvaultedPrimeSetsToReserveKey))
-                return Math.Clamp(Preferences.Default.Get(UnvaultedPrimeSetsToReserveKey, 1), 0, 10);
-            var legacy = Preferences.Default.Get(LegacyReserveKey, true);
-            var migrated = legacy ? 1 : 0;
-            Preferences.Default.Set(UnvaultedPrimeSetsToReserveKey, migrated);
-            return migrated;
+            return _values.UnvaultedPrimeSetsToReserve;
         }
-        set => Preferences.Default.Set(UnvaultedPrimeSetsToReserveKey, Math.Clamp(value, 0, 10));
+        set => _values.UnvaultedPrimeSetsToReserve = value;
     }
 }

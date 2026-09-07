@@ -22,7 +22,9 @@ public static class MauiProgram
 #endif
         builder.Logging.AddSerilog(Log.Logger, dispose: true);
         var automaticAlecaDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlecaFrame");
-        var alecaDirectory = Preferences.Default.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
+        builder.Services.AddSingleton<ISettingsStore, MauiAppPreferences>();
+        var preferences = new MauiAppPreferences();
+        var alecaDirectory = preferences.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();

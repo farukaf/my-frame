@@ -15,6 +15,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly IAlecaFramePath _alecaPath;
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
+    private readonly ISettingsStore _preferences;
     private bool _initialized;
     private CancellationTokenSource? _settingsDebounce;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
@@ -23,13 +24,15 @@ public partial class DashboardViewModel : ObservableObject
     private IReadOnlyList<RelicRecommendation> _allRelics = [];
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
-        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings)
+        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
+        ISettingsStore preferences)
     {
         _service = service;
         _logger = logger;
         _alecaPath = alecaPath;
         _directorySettings = directorySettings;
         _localSettings = localSettings;
+        _preferences = preferences;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
         UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
@@ -125,7 +128,7 @@ public partial class DashboardViewModel : ObservableObject
         if (directory is null) return;
         var error = AlecaFrameDirectorySettings.ValidationError(directory);
         if (error is not null) { AlecaFrameDirectoryMessage = error; return; }
-        Preferences.Default.Set(AlecaFrameDirectorySettings.PreferenceKey, directory);
+        _preferences.Set(AlecaFrameDirectorySettings.PreferenceKey, directory);
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         AlecaFrameDirectoryMessage = "Folder saved. Inventory, catalogs, token, and monitoring now use this location.";
@@ -136,7 +139,7 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void ResetAlecaFrameDirectory()
     {
-        Preferences.Default.Remove(AlecaFrameDirectorySettings.PreferenceKey);
+        _preferences.Remove(AlecaFrameDirectorySettings.PreferenceKey);
         _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
@@ -283,71 +286,25 @@ public partial class DashboardViewModel : ObservableObject
 
     private void ApplySalesView()
     {
-        IEnumerable<SaleRecommendation> sales = SelectedSalesFilter switch
-        {
-            "Keep" => _allSales.Where(x => x.Action == RecommendationAction.Keep),
-            "Platinum" => _allSales.Where(x => x.Action == RecommendationAction.SellForPlatinum),
-            "Ducats" => _allSales.Where(x => x.Action == RecommendationAction.ExchangeForDucats),
-            "Existing orders" => _allSales.Where(x => x.ExistingOrder),
-            "Vaulted items" => _allSales.Where(x => x.Vaulted),
-            _ => _allSales
-        };
-        if (!IncludeVaultedParts) sales = sales.Where(x => !x.Vaulted);
-        if (!string.IsNullOrWhiteSpace(SalesSearchText))
-            sales = sales.Where(x => Matches(SalesSearchText, x.ItemName, x.Reason, x.ActionLabel, x.VaultStatus));
-        sales = SelectedSalesSort switch
-        {
-            "Action" => sales.OrderBy(x => x.ActionLabel).ThenBy(x => x.ItemName),
-            "Highest value" => sales.OrderByDescending(x => x.TotalPlatinum).ThenBy(x => x.ItemName),
-            _ => sales.OrderBy(x => x.ItemName)
-        };
-        var listed = sales.ToArray();
-        // Only the rows actually being recommended for ducats count. Summing every listed row
-        // instead would report the same total at any ratio, since a piece is worth the same in
-        // ducats whether or not selling it for platinum currently wins.
-        FilteredDucatsEstimate = $"{listed
-            .Where(x => x.Action == RecommendationAction.ExchangeForDucats)
-            .Sum(x => (long)x.TotalDucats):N0}";
-        Replace(Sales, listed.Take(200));
+        var view = DashboardFilters.FilterSales(_allSales, SelectedSalesFilter, SelectedSalesSort,
+            SalesSearchText, IncludeVaultedParts);
+        FilteredDucatsEstimate = view.DucatsEstimate;
+        Replace(Sales, view.Items);
     }
 
     private void ApplyFarmView()
     {
-        IEnumerable<FarmRecommendation> values = string.IsNullOrWhiteSpace(FarmSearchText) ? _allFarm : _allFarm.Where(x =>
-            Matches(FarmSearchText, x.ItemName, x.Category, x.Reason, string.Join(' ', x.MissingComponentNames)));
-        Replace(Farm, values.Take(100));
+        Replace(Farm, DashboardFilters.FilterFarm(_allFarm, FarmSearchText));
     }
 
     private void ApplyRelicsView()
     {
-        IEnumerable<RelicRecommendation> values = string.IsNullOrWhiteSpace(RelicsSearchText) ? _allRelics : _allRelics.Where(x =>
-            Matches(RelicsSearchText, x.RelicName, x.Reason, x.Action, x.VaultStatus));
-        Replace(Relics, values.Take(200));
+        Replace(Relics, DashboardFilters.FilterRelics(_allRelics, RelicsSearchText));
     }
 
     private void ApplyCollectionView()
     {
-        IEnumerable<CollectionGoal> values = SelectedCollectionFilter switch
-        {
-            "In progress" => _allCollection.Where(x => !x.Owned && !x.Mastered && x.OwnedComponents > 0),
-            "Not owned" => _allCollection.Where(x => !x.Owned),
-            "Owned" => _allCollection.Where(x => x.Owned),
-            "Mastered" => _allCollection.Where(x => x.Mastered),
-            "Prime only" => _allCollection.Where(x => x.Prime),
-            _ => _allCollection
-        };
-        values = SelectedCollectionSort switch
-        {
-            "Name" => values.OrderBy(x => x.ItemName),
-            "Category" => values.OrderBy(x => x.Category).ThenBy(x => x.ItemName),
-            "Least progress" => values.OrderBy(x => x.Completion).ThenBy(x => x.ItemName),
-            _ => values.OrderByDescending(x => x.Completion).ThenBy(x => x.ItemName)
-        };
-        if (!string.IsNullOrWhiteSpace(CollectionSearchText))
-            values = values.Where(x => Matches(CollectionSearchText, x.ItemName, x.Category, x.Status, x.PrimeStatus));
-        Replace(Collection, values);
+        Replace(Collection, DashboardFilters.FilterCollection(_allCollection, SelectedCollectionFilter,
+            SelectedCollectionSort, CollectionSearchText));
     }
-
-    private static bool Matches(string query, params string?[] values) => values.Any(value =>
-        value?.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) == true);
 }
