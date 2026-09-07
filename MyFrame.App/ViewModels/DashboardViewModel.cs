@@ -10,7 +10,7 @@ namespace MyFrame.App;
 
 public partial class DashboardViewModel : ObservableObject
 {
-    private readonly DashboardService _service;
+    private readonly IDashboardService _service;
     private readonly ILogger<DashboardViewModel> _logger;
     private readonly IAlecaFramePath _alecaPath;
     private readonly AlecaFrameDirectorySettings _directorySettings;
@@ -23,7 +23,7 @@ public partial class DashboardViewModel : ObservableObject
     private IReadOnlyList<SaleRecommendation> _allSales = [];
     private IReadOnlyList<RelicRecommendation> _allRelics = [];
 
-    public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
+    public DashboardViewModel(IDashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
         ISettingsStore preferences)
     {

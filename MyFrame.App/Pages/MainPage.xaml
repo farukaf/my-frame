@@ -74,12 +74,12 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="1" Spacing="5">
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" /></Border.GestureRecognizers><Label Text="⌂  Dashboard" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Collection" /></Border.GestureRecognizers><Label Text="◉  Collection" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
-                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavDashboard" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Dashboard" /></Border.GestureRecognizers><Label Text="⌂  Dashboard" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavCollection" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Collection" /></Border.GestureRecognizers><Label Text="◉  Collection" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavFarm" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavRelics" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavSales" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border AutomationId="NavSettings" Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Grid.Row="3" Spacing="4">
@@ -153,7 +153,7 @@
                         </Border>
                     </HorizontalStackLayout>
                     <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#7DE2D1" />
-                    <Button Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
+                    <Button AutomationId="RefreshButton" Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
                 </Grid>
             </Grid>
 
