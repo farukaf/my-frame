@@ -13,7 +13,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var sales = BuildSales(inventory, catalog, quotes, myOrders, reservations, excess, settings);
         var farm = BuildFarm(inventory, catalog, collection, quotes);
         var relics = BuildRelics(inventory, catalog, quotes);
-        return new RecommendationResult(collection, farm, sales, relics,
+        var surplus = BuildSurplus(inventory, catalog, quotes);
+        return new RecommendationResult(collection, farm, sales, relics, surplus,
             sales.Where(x => x.Action == RecommendationAction.ExchangeForDucats).Sum(x => x.TotalDucats),
             sales.Where(x => x.Action == RecommendationAction.SellForPlatinum).Sum(x => x.TotalPlatinum ?? 0),
             DateTimeOffset.UtcNow, settings);
@@ -261,21 +262,91 @@ public sealed class RecommendationEngine : IRecommendationEngine
             .ToArray();
     }
 
+    // Items whose built form is a permanent, one-per-account fixture: a second copy can never be
+    // installed, so every spare blueprint for one is dead weight regardless of mastery.
+    private static readonly HashSet<string> OneAndDoneTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "Ship Segment", "Orbiter" };
+
+    /// <summary>
+    /// Lists parts held beyond anything they could still build. Deliberately independent of the
+    /// sales pass: it applies no reservations and no ducat threshold, and it keeps untradable parts,
+    /// because "I already mastered this" is a reason to clear a piece out even when nobody will buy
+    /// it. A part only counts once the whole reason to own it is gone.
+    /// </summary>
+    private static IReadOnlyList<SurplusRecommendation> BuildSurplus(InventorySnapshot inventory,
+        CatalogSnapshot catalog, IReadOnlyDictionary<string, MarketQuote> quotes)
+    {
+        var results = new List<SurplusRecommendation>();
+        foreach (var parent in catalog.Items)
+        {
+            var oneAndDone = !parent.Masterable && OneAndDoneTypes.Contains(parent.ItemType);
+            if (!parent.Masterable && !oneAndDone) continue;
+
+            SurplusReason reason;
+            bool perComponentAllowance;
+            if (parent.Masterable)
+            {
+                // Mastery is banked permanently, so an item that is built or mastered needs nothing
+                // more. Anything still pending is left alone: those parts are the build.
+                if (inventory.OwnedEquipment.Contains(parent.UniqueName)) reason = SurplusReason.Crafted;
+                else if (IsMastered(parent, inventory.Experience.GetValueOrDefault(parent.UniqueName)))
+                    reason = SurplusReason.Mastered;
+                else continue;
+                perComponentAllowance = false;
+            }
+            else
+            {
+                // The snapshot never records which ship segments are installed, so one copy is left
+                // standing rather than assuming the fixture is already in place.
+                reason = SurplusReason.OnlyOneNeeded;
+                perComponentAllowance = true;
+            }
+
+            foreach (var component in parent.Components)
+            {
+                // Shared crafting resources are catalog items in their own right and get consumed by
+                // dozens of recipes; only a part that exists solely to build this item can be spare.
+                if (catalog.ByUniqueName.ContainsKey(component.UniqueName)) continue;
+                var owned = inventory.Stackables.GetValueOrDefault(component.UniqueName);
+                var stillNeeded = perComponentAllowance ? component.Required : 0;
+                var spare = owned - stillNeeded;
+                if (spare <= 0) continue;
+
+                var identity = MarketForComponent(parent, component, catalog);
+                quotes.TryGetValue(identity?.Slug ?? "", out var quote);
+                results.Add(new SurplusRecommendation(
+                    ComponentDisplayName(parent, component), component.UniqueName, identity?.Slug,
+                    parent.Name, parent.Category, owned, stillNeeded, spare, component.Ducats,
+                    component.Tradable ? MarketPrice(quote) : null, component.Tradable, reason,
+                    PartImage(parent, component)));
+            }
+        }
+
+        // Rows that convert to platinum lead, since those are the only ones worth a trade chat
+        // message; the rest are ordered by how much shelf space they are taking up.
+        return results
+            .OrderByDescending(x => x.TotalPlatinum ?? 0)
+            .ThenByDescending(x => x.Surplus)
+            .ThenBy(x => x.ItemName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     private static Dictionary<string, ComponentDetails> ComponentInfo(CatalogSnapshot catalog)
     {
         var result = new Dictionary<string, ComponentDetails>(StringComparer.Ordinal);
         foreach (var parent in catalog.Items)
             foreach (var component in parent.Components.Where(x => x.Tradable))
                 result.TryAdd(component.UniqueName, new ComponentDetails(parent, component,
-                    component.Name.Equals("Blueprint", StringComparison.OrdinalIgnoreCase) ? $"{parent.Name} Blueprint" : $"{parent.Name} {component.Name}"));
+                    ComponentDisplayName(parent, component)));
         return result;
     }
 
-    private static MarketIdentity? MarketForComponent(CatalogItem parent, CatalogComponent component, CatalogSnapshot catalog)
-    {
-        var name = component.Name.Equals("Blueprint", StringComparison.OrdinalIgnoreCase) ? $"{parent.Name} Blueprint" : $"{parent.Name} {component.Name}";
-        return catalog.MarketByNormalizedName.GetValueOrDefault(ItemNameNormalizer.Normalize(name));
-    }
+    private static MarketIdentity? MarketForComponent(CatalogItem parent, CatalogComponent component, CatalogSnapshot catalog) =>
+        catalog.MarketByNormalizedName.GetValueOrDefault(
+            ItemNameNormalizer.Normalize(ComponentDisplayName(parent, component)));
+
+    private static string ComponentDisplayName(CatalogItem parent, CatalogComponent component) =>
+        IsMainBlueprint(component) ? $"{parent.Name} Blueprint" : $"{parent.Name} {component.Name}";
 
     // A part row shows the part's own icon, which is the icon the game itself uses for it. The
     // main blueprint is the exception: every item in the catalog shares one blueprint.png, so it

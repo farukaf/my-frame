@@ -399,7 +399,7 @@ public sealed class DashboardServiceTests
             RecommendationSettings settings)
         {
             Inventory = inventory;
-            return new RecommendationResult([], [], [], [], 0, 0, DateTimeOffset.UtcNow, settings);
+            return new RecommendationResult([], [], [], [], [], 0, 0, DateTimeOffset.UtcNow, settings);
         }
     }
 }

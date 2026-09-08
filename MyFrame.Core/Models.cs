@@ -52,7 +52,8 @@ public sealed record CatalogItem(
     string? MarketId,
     string? MarketSlug,
     IReadOnlyList<CatalogComponent> Components,
-    IReadOnlyList<RelicSource> Relics)
+    IReadOnlyList<RelicSource> Relics,
+    string ItemType = "")
 {
     public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
         $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";
@@ -234,11 +235,74 @@ public sealed record SaleRecommendation(
     private bool HasReservations => Reserved > 0;
 }
 
+/// <summary>
+/// Why a piece is no longer needed. The three cases are the ones a player can act on directly:
+/// the item is already built, its mastery is already banked, or only one can ever be used.
+/// </summary>
+public enum SurplusReason
+{
+    Crafted,
+    Mastered,
+    OnlyOneNeeded
+}
+
+/// <summary>
+/// A part held in excess of anything it could still be used for. Unlike a sale recommendation this
+/// ignores prices and reservations entirely: it answers "do I still need this at all?", which is
+/// why it also covers untradable parts that the sales screen has no reason to list.
+/// </summary>
+public sealed record SurplusRecommendation(
+    string ItemName,
+    string UniqueName,
+    string? MarketSlug,
+    string ParentName,
+    string Category,
+    int Owned,
+    int StillNeeded,
+    int Surplus,
+    int DucatsEach,
+    int? LowestSell,
+    bool Tradable,
+    SurplusReason Reason,
+    string ImageUrl)
+{
+    public bool SellableForPlatinum => Tradable && LowestSell is > 0;
+    public int? TotalPlatinum => SellableForPlatinum ? LowestSell * Surplus : null;
+    public int TotalDucats => Tradable ? Surplus * DucatsEach : 0;
+    public string ReasonBadge => Reason switch
+    {
+        SurplusReason.Crafted => "Already built",
+        SurplusReason.Mastered => "Already mastered",
+        _ => "Only one needed"
+    };
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => TotalPlatinum is not null
+        ? $"{Surplus:N0} spare · ~{TotalPlatinum:N0}p"
+        : Tradable ? $"{Surplus:N0} spare · tradable, no price"
+        : $"{Surplus:N0} spare · not tradable";
+    public string ActionLabel => TotalPlatinum is not null
+        ? $"Sell {Surplus:N0} for ~{TotalPlatinum:N0}p or {TotalDucats:N0} ducats"
+        : Tradable ? $"Trade or exchange {Surplus:N0} · {TotalDucats:N0} ducats"
+        : $"Sell {Surplus:N0} in game for credits";
+    public string Explanation => Reason switch
+    {
+        SurplusReason.Crafted =>
+            $"{ParentName} is already built and in your inventory, so this part has nothing left to build.",
+        SurplusReason.Mastered =>
+            $"{ParentName} is already mastered, so building it again would add no mastery.",
+        _ => $"Only one {ParentName} can ever be used, and {StillNeeded:N0} copy is already enough."
+    };
+    public string ItemDetails =>
+        $"Holding {Owned:N0} · still needed {StillNeeded:N0} · surplus {Surplus:N0} · " +
+        $"{(Tradable ? "tradable on Warframe.Market" : "not tradable; sells in game for credits only")}";
+}
+
 public sealed record RecommendationResult(
     IReadOnlyList<CollectionGoal> Collection,
     IReadOnlyList<FarmRecommendation> Farm,
     IReadOnlyList<SaleRecommendation> Sales,
     IReadOnlyList<RelicRecommendation> Relics,
+    IReadOnlyList<SurplusRecommendation> Surplus,
     int TotalDucats,
     int EstimatedPlatinum,
     DateTimeOffset GeneratedAt,

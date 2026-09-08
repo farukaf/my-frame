@@ -103,7 +103,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
             GetString(element, "productCategory") ?? "", GetString(element, "imageName") ?? "",
             GetBool(element, "masterable"), GetBool(element, "isPrime") || name.Contains(" Prime", StringComparison.OrdinalIgnoreCase),
             GetBool(element, "tradable"), GetBool(element, "vaulted"), GetString(element, "estimatedVaultDate"),
-            TryReadMarket(element), components);
+            TryReadMarket(element), components, GetString(element, "type") ?? "");
     }
 
     private static CatalogItem Materialize(RawCatalogItem item,
@@ -132,7 +132,7 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
         return new CatalogItem(item.UniqueName, item.Name, item.Category, item.ProductCategory, item.ImageName,
             item.Masterable, item.Prime, item.Tradable, item.Vaulted, item.EstimatedVaultDate,
-            identity?.Id, identity?.Slug, item.Components, relicSources.Distinct().ToArray());
+            identity?.Id, identity?.Slug, item.Components, relicSources.Distinct().ToArray(), item.ItemType);
     }
 
     private static void ParseRelic(JsonElement relic, JsonElement rewards,
@@ -188,5 +188,5 @@ public sealed class AlecaCatalogReader : IAlecaCatalogReader
 
     private sealed record RawCatalogItem(string UniqueName, string Name, string Category, string ProductCategory,
         string ImageName, bool Masterable, bool Prime, bool Tradable, bool Vaulted, string? EstimatedVaultDate,
-        MarketIdentity? Market, IReadOnlyList<CatalogComponent> Components);
+        MarketIdentity? Market, IReadOnlyList<CatalogComponent> Components, string ItemType);
 }

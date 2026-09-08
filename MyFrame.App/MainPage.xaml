@@ -79,6 +79,7 @@
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Farm" /></Border.GestureRecognizers><Label Text="◇  Farm plan" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Surplus" /></Border.GestureRecognizers><Label Text="⊖  Surplus" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                 </VerticalStackLayout>
 
@@ -152,6 +153,15 @@
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
+                    <Border IsVisible="{Binding SurplusVisible}" Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50"
+                            StrokeShape="RoundRectangle 8" VerticalOptions="Center"
+                            ToolTipProperties.Text="Copies you no longer need, across the rows currently listed">
+                        <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                            <Label Text="SURPLUS" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                            <Label Text="{Binding SurplusSummary}" TextColor="#F3C969"
+                                   FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
                     <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#7DE2D1" />
                     <Button Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
                 </Grid>
@@ -278,6 +288,30 @@
                                 Badge="{Binding VaultStatus}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
                                 Description="{Binding Reason}" IsMastered="{Binding Mastered}"
                                 Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
+                        </DataTemplate></CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+
+                <Grid IsVisible="{Binding SurplusVisible}" RowDefinitions="Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout>
+                            <Label Text="Surplus" Style="{StaticResource Title}" />
+                            <Label Text="Parts with nothing left to build: the item is already yours, its mastery is already banked, or only one can ever be used." TextColor="#8995A8" />
+                        </VerticalStackLayout>
+                        <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search surplus…" Text="{Binding SurplusSearchText}" WidthRequest="220" />
+                        <Grid Grid.Column="2" HeightRequest="40" WidthRequest="200">
+                            <Border BackgroundColor="#20283A" Stroke="#3A455B" StrokeThickness="1" StrokeShape="RoundRectangle 4" Padding="0" />
+                            <Picker Style="{StaticResource SelectField}" Title="" ItemsSource="{Binding SurplusFilters}" SelectedItem="{Binding SelectedSurplusFilter}" BackgroundColor="Transparent" Margin="4,3,4,0" />
+                            <Label Text="Reason" FontSize="10" TextColor="#AEB8C8" BackgroundColor="#20283A" Padding="3,0" Margin="9,0,0,0" HorizontalOptions="Start" VerticalOptions="Start" />
+                        </Grid>
+                    </Grid>
+                    <CollectionView Grid.Row="1" ItemsSource="{Binding Surplus}" SelectionMode="None">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
+                        <CollectionView.EmptyView><Label Text="Nothing spare. Every part you hold still has something to build." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate><DataTemplate>
+                            <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
+                                Badge="{Binding ReasonBadge}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
+                                Description="{Binding Explanation}" Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
                         </DataTemplate></CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

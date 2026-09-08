@@ -21,6 +21,7 @@ public partial class DashboardViewModel : ObservableObject
     private IReadOnlyList<FarmRecommendation> _allFarm = [];
     private IReadOnlyList<SaleRecommendation> _allSales = [];
     private IReadOnlyList<RelicRecommendation> _allRelics = [];
+    private IReadOnlyList<SurplusRecommendation> _allSurplus = [];
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings)
@@ -53,6 +54,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool FarmVisible { get; set; }
     [ObservableProperty] public partial bool SalesVisible { get; set; }
     [ObservableProperty] public partial bool RelicsVisible { get; set; }
+    [ObservableProperty] public partial bool SurplusVisible { get; set; }
     [ObservableProperty] public partial bool SettingsVisible { get; set; }
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
@@ -66,6 +68,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string FarmSearchText { get; set; } = "";
     [ObservableProperty] public partial string SalesSearchText { get; set; } = "";
     [ObservableProperty] public partial string RelicsSearchText { get; set; } = "";
+    [ObservableProperty] public partial string SurplusSearchText { get; set; } = "";
+    [ObservableProperty] public partial string SelectedSurplusFilter { get; set; } = "All";
+    [ObservableProperty] public partial string SurplusSummary { get; set; } = "0 spare";
     [ObservableProperty] public partial string AlecaDataUpdatedText { get; set; } = "—";
     [ObservableProperty] public partial string FilteredDucatsEstimate { get; set; } = "0";
     [ObservableProperty] public partial bool IncludeVaultedParts { get; set; } = true;
@@ -79,10 +84,13 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
     public ObservableCollection<SaleRecommendation> Sales { get; } = [];
     public ObservableCollection<RelicRecommendation> Relics { get; } = [];
+    public ObservableCollection<SurplusRecommendation> Surplus { get; } = [];
     public IReadOnlyList<string> CollectionFilters { get; } = ["In progress", "All", "Not owned", "Owned", "Mastered", "Prime only"];
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
     public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
     public IReadOnlyList<string> SalesSorts { get; } = ["Name", "Action", "Highest value"];
+    public IReadOnlyList<string> SurplusFilters { get; } =
+        ["All", "Have mastered", "Have crafted", "Only one needed", "Sellable for platinum"];
     public ISeries[] ValueSeries { get; private set; } = [];
     public ISeries[] ProgressSeries { get; private set; } = [];
 
@@ -159,6 +167,7 @@ public partial class DashboardViewModel : ObservableObject
         FarmVisible = section == "Farm";
         SalesVisible = section == "Sales";
         RelicsVisible = section == "Relics";
+        SurplusVisible = section == "Surplus";
         SettingsVisible = section == "Settings";
     }
 
@@ -195,10 +204,12 @@ public partial class DashboardViewModel : ObservableObject
         _allFarm = snapshot.Recommendations.Farm;
         _allSales = snapshot.Recommendations.Sales;
         _allRelics = snapshot.Recommendations.Relics;
+        _allSurplus = snapshot.Recommendations.Surplus;
         ApplyCollectionView();
         ApplyFarmView();
         ApplySalesView();
         ApplyRelicsView();
+        ApplySurplusView();
         ValueSeries =
         [
             new PieSeries<double> { Name = "Platinum", Values = [snapshot.Recommendations.EstimatedPlatinum] },
@@ -234,6 +245,8 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void ToggleVaultedParts() => IncludeVaultedParts = !IncludeVaultedParts;
     partial void OnRelicsSearchTextChanged(string value) => ApplyRelicsView();
+    partial void OnSurplusSearchTextChanged(string value) => ApplySurplusView();
+    partial void OnSelectedSurplusFilterChanged(string value) => ApplySurplusView();
     partial void OnDucatsPerPlatinumChanged(double value)
     {
         var integerValue = Math.Clamp((int)Math.Round(value), 1, 50);
@@ -323,6 +336,26 @@ public partial class DashboardViewModel : ObservableObject
         IEnumerable<RelicRecommendation> values = string.IsNullOrWhiteSpace(RelicsSearchText) ? _allRelics : _allRelics.Where(x =>
             Matches(RelicsSearchText, x.RelicName, x.Reason, x.Action, x.VaultStatus));
         Replace(Relics, values.Take(200));
+    }
+
+    private void ApplySurplusView()
+    {
+        IEnumerable<SurplusRecommendation> values = SelectedSurplusFilter switch
+        {
+            "Have mastered" => _allSurplus.Where(x => x.Reason == SurplusReason.Mastered),
+            "Have crafted" => _allSurplus.Where(x => x.Reason == SurplusReason.Crafted),
+            "Only one needed" => _allSurplus.Where(x => x.Reason == SurplusReason.OnlyOneNeeded),
+            "Sellable for platinum" => _allSurplus.Where(x => x.SellableForPlatinum),
+            _ => _allSurplus
+        };
+        if (!string.IsNullOrWhiteSpace(SurplusSearchText))
+            values = values.Where(x => Matches(SurplusSearchText, x.ItemName, x.ParentName, x.Category,
+                x.ReasonBadge, x.Explanation));
+        var listed = values.ToArray();
+        var platinum = listed.Sum(x => (long)(x.TotalPlatinum ?? 0));
+        SurplusSummary = $"{listed.Sum(x => (long)x.Surplus):N0} spare" +
+            (platinum > 0 ? $" · ~{platinum:N0}p" : "");
+        Replace(Surplus, listed.Take(200));
     }
 
     private void ApplyCollectionView()

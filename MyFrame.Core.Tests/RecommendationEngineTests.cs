@@ -322,6 +322,151 @@ public sealed class RecommendationEngineTests
         Assert.Equal(30, recommendation.TotalExpectedOpenValue);
     }
 
+    [Fact]
+    public void SurplusListsPartsForAnItemThatIsAlreadyMastered()
+    {
+        // Nyx: mastery banked long ago, the frame itself sold, two Neuroptics still on the shelf.
+        var (inventory, catalog) = SurplusScenario(ownedParts: 2, ownedEquipment: false, experience: 900_000);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        var surplus = Assert.Single(result.Surplus);
+        Assert.Equal(SurplusReason.Mastered, surplus.Reason);
+        Assert.Equal(2, surplus.Owned);
+        Assert.Equal(0, surplus.StillNeeded);
+        Assert.Equal(2, surplus.Surplus);
+    }
+
+    [Fact]
+    public void SurplusListsPartsForAnItemAlreadyInTheInventory()
+    {
+        var (inventory, catalog) = SurplusScenario(ownedParts: 1, ownedEquipment: true, experience: 0);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        Assert.Equal(SurplusReason.Crafted, Assert.Single(result.Surplus).Reason);
+    }
+
+    [Fact]
+    public void SurplusIgnoresPartsForAnItemStillWaitingToBeBuilt()
+    {
+        var (inventory, catalog) = SurplusScenario(ownedParts: 3, ownedEquipment: false, experience: 0);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        Assert.Empty(result.Surplus);
+    }
+
+    [Fact]
+    public void SurplusPricesTradablePartsAndKeepsUntradableOnes()
+    {
+        var (inventory, catalog) = SurplusScenario(ownedParts: 2, ownedEquipment: true, experience: 0, tradable: true);
+        var quote = new MarketQuote("test_prime_blueprint", 12, 9, DateTimeOffset.UtcNow);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote> { [quote.Slug] = quote }, [], new());
+
+        var surplus = Assert.Single(result.Surplus);
+        Assert.True(surplus.SellableForPlatinum);
+        Assert.Equal(24, surplus.TotalPlatinum);
+        Assert.Equal(90, surplus.TotalDucats);
+    }
+
+    [Fact]
+    public void SurplusLeavesOneCopyOfAOnePerAccountFixture()
+    {
+        // Six Kavat Incubator Upgrade Segment blueprints; the segment can only be installed once.
+        const string partUnique = "/ShipFeatureItems/CatbrowUpgradeBlueprint";
+        const string itemUnique = "/ShipFeatureItems/CatbrowUpgradeItem";
+        var item = new CatalogItem(itemUnique, "Kavat Incubator Upgrade Segment", "Misc", "", "",
+            false, false, false, false, null, null, null,
+            [new(partUnique, "Blueprint", 1, 0, false)], [], "Ship Segment");
+        var catalog = new CatalogSnapshot([item],
+            new Dictionary<string, CatalogItem> { [itemUnique] = item },
+            new Dictionary<string, MarketIdentity>());
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [partUnique] = 6 }, new HashSet<string>(),
+            new Dictionary<string, long>(), 0, 0, "synthetic");
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        var surplus = Assert.Single(result.Surplus);
+        Assert.Equal(SurplusReason.OnlyOneNeeded, surplus.Reason);
+        Assert.Equal(1, surplus.StillNeeded);
+        Assert.Equal(5, surplus.Surplus);
+    }
+
+    [Fact]
+    public void SurplusIgnoresRepeatableNonMasterableItems()
+    {
+        // Forma is built over and over, so a stack of blueprints is never dead weight.
+        const string partUnique = "/Recipes/FormaBlueprint";
+        const string itemUnique = "/Items/Forma";
+        var item = new CatalogItem(itemUnique, "Forma", "Misc", "", "", false, false, false, false,
+            null, null, null, [new(partUnique, "Blueprint", 1, 0, false)], [], "Equipment Adapter");
+        var catalog = new CatalogSnapshot([item],
+            new Dictionary<string, CatalogItem> { [itemUnique] = item },
+            new Dictionary<string, MarketIdentity>());
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [partUnique] = 9 }, new HashSet<string>(),
+            new Dictionary<string, long>(), 0, 0, "synthetic");
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        Assert.Empty(result.Surplus);
+    }
+
+    [Fact]
+    public void SurplusIgnoresSharedCraftingResources()
+    {
+        // An Orokin Cell is a catalog item of its own and feeds dozens of recipes, so holding a pile
+        // of them says nothing about the one built item that happens to list it.
+        const string resourceUnique = "/Resources/OrokinCell";
+        const string partUnique = "/Parts/TestBlueprint";
+        const string itemUnique = "/Items/TestFrame";
+        var item = new CatalogItem(itemUnique, "Test Frame", "Warframes", "Suits", "", true, false,
+            false, false, null, null, null,
+            [new(partUnique, "Blueprint", 1, 0, false), new(resourceUnique, "Orokin Cell", 1, 0, false)], []);
+        var resource = new CatalogItem(resourceUnique, "Orokin Cell", "Resources", "", "", false,
+            false, false, false, null, null, null, [], [], "Resource");
+        var catalog = new CatalogSnapshot([item, resource],
+            new Dictionary<string, CatalogItem> { [itemUnique] = item, [resourceUnique] = resource },
+            new Dictionary<string, MarketIdentity>());
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [partUnique] = 1, [resourceUnique] = 40 },
+            new HashSet<string> { itemUnique }, new Dictionary<string, long>(), 0, 0, "synthetic");
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        Assert.Equal(partUnique, Assert.Single(result.Surplus).UniqueName);
+    }
+
+    private static (InventorySnapshot Inventory, CatalogSnapshot Catalog) SurplusScenario(
+        int ownedParts, bool ownedEquipment, long experience, bool tradable = false)
+    {
+        const string partUnique = "/Parts/TestBlueprint";
+        const string itemUnique = "/Items/TestPrime";
+        var item = new CatalogItem(itemUnique, "Test Prime", "Warframes", "Suits", "", true, true,
+            true, false, null, "set-id", "test_prime_set",
+            [new(partUnique, "Blueprint", 1, 45, tradable)], []);
+        var market = new Dictionary<string, MarketIdentity>
+        {
+            [ItemNameNormalizer.Normalize("Test Prime Blueprint")] = new("part-id", "test_prime_blueprint")
+        };
+        var catalog = new CatalogSnapshot([item], new Dictionary<string, CatalogItem> { [itemUnique] = item }, market);
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [partUnique] = ownedParts },
+            ownedEquipment ? [itemUnique] : new HashSet<string>(),
+            new Dictionary<string, long> { [itemUnique] = experience }, 0, 0, "synthetic");
+        return (inventory, catalog);
+    }
+
     private static (InventorySnapshot Inventory, CatalogSnapshot Catalog) Scenario(int ownedParts, bool ownedEquipment)
     {
         const string partUnique = "/Parts/TestBlueprint";
