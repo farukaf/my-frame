@@ -290,7 +290,10 @@ public sealed record SurplusRecommendation(
             $"{ParentName} is already built and in your inventory, so this part has nothing left to build.",
         SurplusReason.Mastered =>
             $"{ParentName} is already mastered, so building it again would add no mastery.",
-        _ => $"Only one {ParentName} can ever be used, and {StillNeeded:N0} copy is already enough."
+        _ when StillNeeded == 0 =>
+            $"Only one {ParentName} can ever be used and you already have it, so every copy is spare.",
+        _ => $"Only one {ParentName} can ever be used. One copy is held back because the snapshot " +
+             "does not record whether it is already installed."
     };
     public string ItemDetails =>
         $"Holding {Owned:N0} · still needed {StillNeeded:N0} · surplus {Surplus:N0} · " +

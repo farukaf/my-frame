@@ -376,20 +376,10 @@ public sealed class RecommendationEngineTests
     }
 
     [Fact]
-    public void SurplusLeavesOneCopyOfAOnePerAccountFixture()
+    public void SurplusHoldsOneCopyBackWhenAFixtureInstallCannotBeConfirmed()
     {
-        // Six Kavat Incubator Upgrade Segment blueprints; the segment can only be installed once.
-        const string partUnique = "/ShipFeatureItems/CatbrowUpgradeBlueprint";
-        const string itemUnique = "/ShipFeatureItems/CatbrowUpgradeItem";
-        var item = new CatalogItem(itemUnique, "Kavat Incubator Upgrade Segment", "Misc", "", "",
-            false, false, false, false, null, null, null,
-            [new(partUnique, "Blueprint", 1, 0, false)], [], "Ship Segment");
-        var catalog = new CatalogSnapshot([item],
-            new Dictionary<string, CatalogItem> { [itemUnique] = item },
-            new Dictionary<string, MarketIdentity>());
-        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
-            new Dictionary<string, int> { [partUnique] = 6 }, new HashSet<string>(),
-            new Dictionary<string, long>(), 0, 0, "synthetic");
+        var (inventory, catalog) = FixtureScenario("/ShipFeatureItems/NutrioUpgradeItem",
+            "Nutrio Incubator Upgrade Segment", "Ship Segment", held: 4, owned: []);
 
         var result = new RecommendationEngine().Evaluate(inventory, catalog,
             new Dictionary<string, MarketQuote>(), [], new());
@@ -397,7 +387,69 @@ public sealed class RecommendationEngineTests
         var surplus = Assert.Single(result.Surplus);
         Assert.Equal(SurplusReason.OnlyOneNeeded, surplus.Reason);
         Assert.Equal(1, surplus.StillNeeded);
+        Assert.Equal(3, surplus.Surplus);
+    }
+
+    [Fact]
+    public void SurplusFreesEveryCopyWhenTheFixtureItselfIsInTheInventory()
+    {
+        // A landing craft shows up in Ships once built, so nothing has to be held back.
+        const string fixtureUnique = "/Lotus/Types/Items/Ships/ZarimanShip";
+        var (inventory, catalog) = FixtureScenario(fixtureUnique, "Parallax", "Orbiter",
+            held: 5, owned: [fixtureUnique]);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        var surplus = Assert.Single(result.Surplus);
+        Assert.Equal(0, surplus.StillNeeded);
         Assert.Equal(5, surplus.Surplus);
+    }
+
+    [Fact]
+    public void SurplusAcceptsAnOwnedKavatAsProofTheIncubatorSegmentIsInstalled()
+    {
+        // The segment is consumed on install and leaves no entry, but a Kavat cannot exist without it.
+        var (inventory, catalog) = FixtureScenario(
+            "/Lotus/Types/Items/ShipFeatureItems/GeneticFoundryCatbrowUpgradeFeatureItem",
+            "Kavat Incubator Upgrade Segment", "Ship Segment", held: 6,
+            owned: ["/Lotus/Types/Game/CatbrowPet/MirrorCatbrowPetPowerSuit"]);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        var surplus = Assert.Single(result.Surplus);
+        Assert.Equal(0, surplus.StillNeeded);
+        Assert.Equal(6, surplus.Surplus);
+    }
+
+    [Fact]
+    public void SurplusStillHoldsACopyBackForAnUnrelatedSegmentWhenAKavatIsOwned()
+    {
+        var (inventory, catalog) = FixtureScenario("/ShipFeatureItems/NutrioUpgradeItem",
+            "Nutrio Incubator Upgrade Segment", "Ship Segment", held: 3,
+            owned: ["/Lotus/Types/Game/CatbrowPet/MirrorCatbrowPetPowerSuit"]);
+
+        var result = new RecommendationEngine().Evaluate(inventory, catalog,
+            new Dictionary<string, MarketQuote>(), [], new());
+
+        Assert.Equal(1, Assert.Single(result.Surplus).StillNeeded);
+    }
+
+    private static (InventorySnapshot Inventory, CatalogSnapshot Catalog) FixtureScenario(
+        string fixtureUnique, string name, string itemType, int held, string[] owned)
+    {
+        var partUnique = fixtureUnique + "Blueprint";
+        var item = new CatalogItem(fixtureUnique, name, "Misc", "", "", false, false, false, false,
+            null, null, null, [new(partUnique, "Blueprint", 1, 0, false)], [], itemType);
+        var catalog = new CatalogSnapshot([item],
+            new Dictionary<string, CatalogItem> { [fixtureUnique] = item },
+            new Dictionary<string, MarketIdentity>());
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { [partUnique] = held },
+            new HashSet<string>(owned, StringComparer.Ordinal),
+            new Dictionary<string, long>(), 0, 0, "synthetic");
+        return (inventory, catalog);
     }
 
     [Fact]

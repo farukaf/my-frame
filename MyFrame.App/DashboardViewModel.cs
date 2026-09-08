@@ -72,8 +72,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool SurplusShowMastered { get; set; } = true;
     [ObservableProperty] public partial bool SurplusShowCrafted { get; set; } = true;
     [ObservableProperty] public partial bool SurplusShowOnlyOneNeeded { get; set; } = true;
-    [ObservableProperty] public partial bool SurplusShowSellable { get; set; } = true;
-    [ObservableProperty] public partial bool SurplusShowUnsellable { get; set; } = true;
+    [ObservableProperty] public partial string SurplusPlatinum { get; set; } = "Any";
     [ObservableProperty] public partial string SurplusSummary { get; set; } = "0 spare";
     [ObservableProperty] public partial string SurplusEmptyMessage { get; set; } =
         "Nothing spare. Every part you hold still has something to build.";
@@ -253,8 +252,7 @@ public partial class DashboardViewModel : ObservableObject
     partial void OnSurplusShowMasteredChanged(bool value) => ApplySurplusView();
     partial void OnSurplusShowCraftedChanged(bool value) => ApplySurplusView();
     partial void OnSurplusShowOnlyOneNeededChanged(bool value) => ApplySurplusView();
-    partial void OnSurplusShowSellableChanged(bool value) => ApplySurplusView();
-    partial void OnSurplusShowUnsellableChanged(bool value) => ApplySurplusView();
+    partial void OnSurplusPlatinumChanged(string value) => ApplySurplusView();
 
     // Each label is part of its box's hit area, so tapping either half flips the tick.
     [RelayCommand]
@@ -265,14 +263,17 @@ public partial class DashboardViewModel : ObservableObject
             case "Mastered": SurplusShowMastered = !SurplusShowMastered; break;
             case "Crafted": SurplusShowCrafted = !SurplusShowCrafted; break;
             case "OnlyOneNeeded": SurplusShowOnlyOneNeeded = !SurplusShowOnlyOneNeeded; break;
-            case "Sellable": SurplusShowSellable = !SurplusShowSellable; break;
-            case "Unsellable": SurplusShowUnsellable = !SurplusShowUnsellable; break;
         }
     }
 
+    // Platinum value is one property, so it gets one control. It still needs three positions: a
+    // plain tick could only ever mean "all" or "priced ones", never "the ones worth no platinum".
+    [RelayCommand]
+    private void SetSurplusPlatinum(string value) => SurplusPlatinum = value;
+
     [RelayCommand]
     private void ResetSurplusFilters() => (SurplusShowMastered, SurplusShowCrafted,
-        SurplusShowOnlyOneNeeded, SurplusShowSellable, SurplusShowUnsellable) = (true, true, true, true, true);
+        SurplusShowOnlyOneNeeded, SurplusPlatinum) = (true, true, true, "Any");
     partial void OnDucatsPerPlatinumChanged(double value)
     {
         var integerValue = Math.Clamp((int)Math.Round(value), 1, 50);
@@ -364,13 +365,12 @@ public partial class DashboardViewModel : ObservableObject
         Replace(Relics, values.Take(200));
     }
 
-    // The two groups of ticks answer different questions and are combined, not merged: a reason has
-    // to be ticked AND the platinum side of the row has to be ticked. That is what makes the useful
-    // crossings expressible, such as parts for a mastered item that nobody will pay platinum for.
+    // The two controls answer different questions and are combined, not merged: a reason has to be
+    // ticked AND the platinum position has to admit the row. That is what makes the useful crossings
+    // expressible, such as parts for a mastered item that nobody will pay platinum for.
     private void ApplySurplusView()
     {
-        var values = _allSurplus.Where(x => ReasonIsTicked(x.Reason) &&
-            (x.SellableForPlatinum ? SurplusShowSellable : SurplusShowUnsellable));
+        var values = _allSurplus.Where(x => ReasonIsTicked(x.Reason) && PlatinumAdmits(x));
         if (!string.IsNullOrWhiteSpace(SurplusSearchText))
             values = values.Where(x => Matches(SurplusSearchText, x.ItemName, x.ParentName, x.Category,
                 x.ReasonBadge, x.Explanation));
@@ -380,11 +380,9 @@ public partial class DashboardViewModel : ObservableObject
             (platinum > 0 ? $" · ~{platinum:N0}p" : "");
         SurplusEmptyMessage = !SurplusShowMastered && !SurplusShowCrafted && !SurplusShowOnlyOneNeeded
             ? "No reason is ticked, so nothing can match."
-            : !SurplusShowSellable && !SurplusShowUnsellable
-                ? "Neither platinum option is ticked, so nothing can match."
-                : _allSurplus.Count == 0
-                    ? "Nothing spare. Every part you hold still has something to build."
-                    : "No spare part matches the ticked filters.";
+            : _allSurplus.Count == 0
+                ? "Nothing spare. Every part you hold still has something to build."
+                : "No spare part matches the current filters.";
         Replace(Surplus, listed.Take(200));
     }
 
@@ -393,6 +391,13 @@ public partial class DashboardViewModel : ObservableObject
         SurplusReason.Mastered => SurplusShowMastered,
         SurplusReason.Crafted => SurplusShowCrafted,
         _ => SurplusShowOnlyOneNeeded
+    };
+
+    private bool PlatinumAdmits(SurplusRecommendation row) => SurplusPlatinum switch
+    {
+        "Has value" => row.SellableForPlatinum,
+        "No value" => !row.SellableForPlatinum,
+        _ => true
     };
 
     private void ApplyCollectionView()

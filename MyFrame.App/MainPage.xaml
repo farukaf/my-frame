@@ -333,24 +333,62 @@
                                 </HorizontalStackLayout>
                             </HorizontalStackLayout>
                             <BoxView Grid.Column="1" WidthRequest="1" Color="#252D3A" VerticalOptions="Fill" Margin="0,2" />
-                            <HorizontalStackLayout Grid.Column="2" Spacing="10" VerticalOptions="Center">
-                                <Label Text="VALUE" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
-                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
-                                                       ToolTipProperties.Text="Tradable and currently priced on Warframe.Market">
-                                    <HorizontalStackLayout.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Sellable" />
-                                    </HorizontalStackLayout.GestureRecognizers>
-                                    <CheckBox IsChecked="{Binding SurplusShowSellable}" Color="#7DE2D1" VerticalOptions="Center" />
-                                    <Label Text="Sellable for platinum" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
-                                                       ToolTipProperties.Text="Untradable, or tradable with no market price — sells in game for credits">
-                                    <HorizontalStackLayout.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Unsellable" />
-                                    </HorizontalStackLayout.GestureRecognizers>
-                                    <CheckBox IsChecked="{Binding SurplusShowUnsellable}" Color="#7DE2D1" VerticalOptions="Center" />
-                                    <Label Text="No platinum value" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
+                            <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                                <Label Text="PLATINUM" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" Margin="0,0,4,0" />
+                                <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                                        ToolTipProperties.Text="No constraint on platinum value">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetSurplusPlatinumCommand}" CommandParameter="Any" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding SurplusPlatinum}" Value="Any">
+                                            <Setter Property="BackgroundColor" Value="#173F35" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="Any" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding SurplusPlatinum}" Value="Any">
+                                                <Setter Property="TextColor" Value="#7DE2D1" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                                <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                                        ToolTipProperties.Text="Tradable and currently priced on Warframe.Market">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetSurplusPlatinumCommand}" CommandParameter="Has value" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding SurplusPlatinum}" Value="Has value">
+                                            <Setter Property="BackgroundColor" Value="#173F35" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="Has value" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding SurplusPlatinum}" Value="Has value">
+                                                <Setter Property="TextColor" Value="#7DE2D1" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                                <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                                        ToolTipProperties.Text="Untradable, or tradable with no market price — sells in game for credits">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetSurplusPlatinumCommand}" CommandParameter="No value" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding SurplusPlatinum}" Value="No value">
+                                            <Setter Property="BackgroundColor" Value="#173F35" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="No value" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding SurplusPlatinum}" Value="No value">
+                                                <Setter Property="TextColor" Value="#7DE2D1" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
                             </HorizontalStackLayout>
                             <Button Grid.Column="4" Text="Reset" Command="{Binding ResetSurplusFiltersCommand}"
                                     BackgroundColor="#20283A" TextColor="#AEB8C8" FontSize="12"

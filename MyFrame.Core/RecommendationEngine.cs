@@ -268,6 +268,27 @@ public sealed class RecommendationEngine : IRecommendationEngine
         new(StringComparer.OrdinalIgnoreCase) { "Ship Segment", "Orbiter" };
 
     /// <summary>
+    /// Owning one of these is only possible once a fixture is installed, which makes it proof the
+    /// fixture is in place. Needed because a ship segment is consumed on install and, unlike a
+    /// landing craft or a Railjack part, leaves no entry of its own in the snapshot.
+    /// </summary>
+    private static readonly (string Fixture, string ProvenBy)[] InstallProofs =
+    [
+        // A Kavat can only be incubated once the Kavat Incubator Upgrade Segment is installed.
+        ("/Lotus/Types/Items/ShipFeatureItems/GeneticFoundryCatbrowUpgradeFeatureItem",
+            "/Lotus/Types/Game/CatbrowPet/")
+    ];
+
+    // A built fixture is often recorded outright: a landing craft lands in Ships and a Railjack part
+    // in MiscItems, so the item itself shows up. Where it does not, an install proof can still settle
+    // it. Failing both, one copy is left standing rather than telling you to sell your only one.
+    private static bool IsFixtureInstalled(CatalogItem item, InventorySnapshot inventory) =>
+        inventory.OwnedEquipment.Contains(item.UniqueName) ||
+        inventory.Stackables.GetValueOrDefault(item.UniqueName) > 0 ||
+        InstallProofs.Any(proof => proof.Fixture == item.UniqueName &&
+            inventory.OwnedEquipment.Any(owned => owned.StartsWith(proof.ProvenBy, StringComparison.Ordinal)));
+
+    /// <summary>
     /// Lists parts held beyond anything they could still build. Deliberately independent of the
     /// sales pass: it applies no reservations and no ducat threshold, and it keeps untradable parts,
     /// because "I already mastered this" is a reason to clear a piece out even when nobody will buy
@@ -283,7 +304,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             if (!parent.Masterable && !oneAndDone) continue;
 
             SurplusReason reason;
-            bool perComponentAllowance;
+            bool keepOneBack;
             if (parent.Masterable)
             {
                 // Mastery is banked permanently, so an item that is built or mastered needs nothing
@@ -292,14 +313,12 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 else if (IsMastered(parent, inventory.Experience.GetValueOrDefault(parent.UniqueName)))
                     reason = SurplusReason.Mastered;
                 else continue;
-                perComponentAllowance = false;
+                keepOneBack = false;
             }
             else
             {
-                // The snapshot never records which ship segments are installed, so one copy is left
-                // standing rather than assuming the fixture is already in place.
                 reason = SurplusReason.OnlyOneNeeded;
-                perComponentAllowance = true;
+                keepOneBack = !IsFixtureInstalled(parent, inventory);
             }
 
             foreach (var component in parent.Components)
@@ -308,7 +327,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 // dozens of recipes; only a part that exists solely to build this item can be spare.
                 if (catalog.ByUniqueName.ContainsKey(component.UniqueName)) continue;
                 var owned = inventory.Stackables.GetValueOrDefault(component.UniqueName);
-                var stillNeeded = perComponentAllowance ? component.Required : 0;
+                var stillNeeded = keepOneBack ? component.Required : 0;
                 var spare = owned - stillNeeded;
                 if (spare <= 0) continue;
 
