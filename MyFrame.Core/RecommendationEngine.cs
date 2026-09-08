@@ -317,8 +317,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
             }
             else
             {
-                reason = SurplusReason.OnlyOneNeeded;
+                // A fixture that is confirmed present is built, exactly like an owned Warframe, and
+                // belongs in the same bucket. Reserving OnlyOneNeeded for the unconfirmed case keeps
+                // the three reasons mutually exclusive, so a tick removing one really removes it.
                 keepOneBack = !IsFixtureInstalled(parent, inventory);
+                reason = keepOneBack ? SurplusReason.OnlyOneNeeded : SurplusReason.Crafted;
             }
 
             foreach (var component in parent.Components)
@@ -336,7 +339,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 results.Add(new SurplusRecommendation(
                     ComponentDisplayName(parent, component), component.UniqueName, identity?.Slug,
                     parent.Name, parent.Category, owned, stillNeeded, spare, component.Ducats,
-                    component.Tradable ? MarketPrice(quote) : null, component.Tradable, reason,
+                    MarketPrice(quote), component.Tradable, reason, !parent.Masterable,
                     PartImage(parent, component)));
             }
         }

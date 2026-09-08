@@ -22,6 +22,13 @@ public interface IWarframeMarketClient
     Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default);
     Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default);
+    Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IMarketItemIndexStore
+{
+    Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default);
+    Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default);
 }
 
 public interface IRecommendationEngine

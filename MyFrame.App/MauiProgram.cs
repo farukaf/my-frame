@@ -32,13 +32,15 @@ public static class MauiProgram
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
         builder.Services.AddSingleton<IPriceCache>(_ => new JsonPriceCache(Path.Combine(FileSystem.Current.AppDataDirectory, "market-quotes.json")));
         builder.Services.AddSingleton<IMarketStateStore>(_ => new MarketStateStore(Path.Combine(FileSystem.Current.AppDataDirectory, "market-data.dat")));
+        builder.Services.AddSingleton<IMarketItemIndexStore>(_ => new MarketItemIndexStore(Path.Combine(FileSystem.Current.AppDataDirectory, "market-items.dat")));
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
             new HttpClient(), p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<IAlecaFrameReader>(), p.GetRequiredService<IAlecaCatalogReader>(),
             p.GetRequiredService<IWarframeMarketClient>(), p.GetRequiredService<IPriceCache>(),
-            p.GetRequiredService<IMarketStateStore>(), p.GetRequiredService<IRecommendationEngine>(),
+            p.GetRequiredService<IMarketStateStore>(), p.GetRequiredService<IMarketItemIndexStore>(),
+            p.GetRequiredService<IRecommendationEngine>(),
             p.GetRequiredService<ILogger<DashboardService>>()));
         builder.Services.AddSingleton<DashboardViewModel>();
         builder.Services.AddSingleton<MainPage>();

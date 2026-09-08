@@ -98,6 +98,15 @@ public sealed record MarketState(
     IReadOnlyList<MarketOrder> Orders,
     DateTimeOffset RetrievedAt);
 
+/// <summary>
+/// Warframe.Market's own catalogue of tradable items, keyed by normalized name. It is the authority
+/// on what can be traded: AlecaFrame's catalogue leaves the market identity off many parts and marks
+/// them untradable, which is how a part with live sell orders reads as worthless.
+/// </summary>
+public sealed record MarketItemIndex(
+    IReadOnlyDictionary<string, MarketIdentity> ByNormalizedName,
+    DateTimeOffset RetrievedAt);
+
 public enum RecommendationAction
 {
     Keep,
@@ -264,40 +273,42 @@ public sealed record SurplusRecommendation(
     int? LowestSell,
     bool Tradable,
     SurplusReason Reason,
+    bool OnePerAccount,
     string ImageUrl)
 {
-    public bool SellableForPlatinum => Tradable && LowestSell is > 0;
+    // A live sell order is the fact; the catalogue's tradable flag is only a hint, and a wrong one
+    // often enough that trusting it hid parts with real offers on them.
+    public bool SellableForPlatinum => LowestSell is > 0;
     public int? TotalPlatinum => SellableForPlatinum ? LowestSell * Surplus : null;
     public int TotalDucats => Tradable ? Surplus * DucatsEach : 0;
     public string ReasonBadge => Reason switch
     {
-        SurplusReason.Crafted => "Already built",
+        SurplusReason.Crafted => OnePerAccount ? "Already built · one per account" : "Already built",
         SurplusReason.Mastered => "Already mastered",
         _ => "Only one needed"
     };
     public string CardOwned => $"Owned {Owned:N0}";
     public string CardMetadata => TotalPlatinum is not null
         ? $"{Surplus:N0} spare · ~{TotalPlatinum:N0}p"
-        : Tradable ? $"{Surplus:N0} spare · tradable, no price"
-        : $"{Surplus:N0} spare · not tradable";
+        : $"{Surplus:N0} spare · no market price";
     public string ActionLabel => TotalPlatinum is not null
-        ? $"Sell {Surplus:N0} for ~{TotalPlatinum:N0}p or {TotalDucats:N0} ducats"
-        : Tradable ? $"Trade or exchange {Surplus:N0} · {TotalDucats:N0} ducats"
+        ? $"Sell {Surplus:N0} for ~{TotalPlatinum:N0}p{(TotalDucats > 0 ? $" or {TotalDucats:N0} ducats" : "")}"
+        : TotalDucats > 0 ? $"Exchange {Surplus:N0} for {TotalDucats:N0} ducats"
         : $"Sell {Surplus:N0} in game for credits";
     public string Explanation => Reason switch
     {
+        SurplusReason.Crafted when OnePerAccount =>
+            $"Only one {ParentName} can ever be used and you already have it, so every copy is spare.",
         SurplusReason.Crafted =>
             $"{ParentName} is already built and in your inventory, so this part has nothing left to build.",
         SurplusReason.Mastered =>
             $"{ParentName} is already mastered, so building it again would add no mastery.",
-        _ when StillNeeded == 0 =>
-            $"Only one {ParentName} can ever be used and you already have it, so every copy is spare.",
         _ => $"Only one {ParentName} can ever be used. One copy is held back because the snapshot " +
              "does not record whether it is already installed."
     };
     public string ItemDetails =>
         $"Holding {Owned:N0} · still needed {StillNeeded:N0} · surplus {Surplus:N0} · " +
-        $"{(Tradable ? "tradable on Warframe.Market" : "not tradable; sells in game for credits only")}";
+        $"{(SellableForPlatinum ? "priced on Warframe.Market" : "no market price; sells in game for credits")}";
 }
 
 public sealed record RecommendationResult(
