@@ -292,22 +292,75 @@
                     </CollectionView>
                 </Grid>
 
-                <Grid IsVisible="{Binding SurplusVisible}" RowDefinitions="Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <Grid IsVisible="{Binding SurplusVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <VerticalStackLayout>
                             <Label Text="Surplus" Style="{StaticResource Title}" />
                             <Label Text="Parts with nothing left to build: the item is already yours, its mastery is already banked, or only one can ever be used." TextColor="#8995A8" />
                         </VerticalStackLayout>
                         <Entry Grid.Column="1" Style="{StaticResource SearchField}" Placeholder="Search surplus…" Text="{Binding SurplusSearchText}" WidthRequest="220" />
-                        <Grid Grid.Column="2" HeightRequest="40" WidthRequest="200">
-                            <Border BackgroundColor="#20283A" Stroke="#3A455B" StrokeThickness="1" StrokeShape="RoundRectangle 4" Padding="0" />
-                            <Picker Style="{StaticResource SelectField}" Title="" ItemsSource="{Binding SurplusFilters}" SelectedItem="{Binding SelectedSurplusFilter}" BackgroundColor="Transparent" Margin="4,3,4,0" />
-                            <Label Text="Reason" FontSize="10" TextColor="#AEB8C8" BackgroundColor="#20283A" Padding="3,0" Margin="9,0,0,0" HorizontalOptions="Start" VerticalOptions="Start" />
-                        </Grid>
                     </Grid>
-                    <CollectionView Grid.Row="1" ItemsSource="{Binding Surplus}" SelectionMode="None">
+                    <!-- Two groups, combined rather than merged: a reason has to be ticked and so does
+                         the platinum side, which is what makes "mastered but worth no platinum" askable. -->
+                    <Border Grid.Row="1" BackgroundColor="#151A23" Stroke="#252D3A" StrokeThickness="1"
+                            StrokeShape="RoundRectangle 10" Padding="14,10">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="14">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                <Label Text="REASON" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                                       ToolTipProperties.Text="The mastery is already banked, so building it again adds nothing">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Mastered" />
+                                    </HorizontalStackLayout.GestureRecognizers>
+                                    <CheckBox IsChecked="{Binding SurplusShowMastered}" Color="#7DE2D1" VerticalOptions="Center" />
+                                    <Label Text="Have mastered" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                                       ToolTipProperties.Text="The built item is already in your inventory">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Crafted" />
+                                    </HorizontalStackLayout.GestureRecognizers>
+                                    <CheckBox IsChecked="{Binding SurplusShowCrafted}" Color="#7DE2D1" VerticalOptions="Center" />
+                                    <Label Text="Have crafted" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                                       ToolTipProperties.Text="Ship segments and landing craft install once per account, so every copy past the first is spare">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="OnlyOneNeeded" />
+                                    </HorizontalStackLayout.GestureRecognizers>
+                                    <CheckBox IsChecked="{Binding SurplusShowOnlyOneNeeded}" Color="#7DE2D1" VerticalOptions="Center" />
+                                    <Label Text="Only one needed" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </HorizontalStackLayout>
+                            <BoxView Grid.Column="1" WidthRequest="1" Color="#252D3A" VerticalOptions="Fill" Margin="0,2" />
+                            <HorizontalStackLayout Grid.Column="2" Spacing="10" VerticalOptions="Center">
+                                <Label Text="VALUE" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                                       ToolTipProperties.Text="Tradable and currently priced on Warframe.Market">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Sellable" />
+                                    </HorizontalStackLayout.GestureRecognizers>
+                                    <CheckBox IsChecked="{Binding SurplusShowSellable}" Color="#7DE2D1" VerticalOptions="Center" />
+                                    <Label Text="Sellable for platinum" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                                       ToolTipProperties.Text="Untradable, or tradable with no market price — sells in game for credits">
+                                    <HorizontalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleSurplusFilterCommand}" CommandParameter="Unsellable" />
+                                    </HorizontalStackLayout.GestureRecognizers>
+                                    <CheckBox IsChecked="{Binding SurplusShowUnsellable}" Color="#7DE2D1" VerticalOptions="Center" />
+                                    <Label Text="No platinum value" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </HorizontalStackLayout>
+                            <Button Grid.Column="4" Text="Reset" Command="{Binding ResetSurplusFiltersCommand}"
+                                    BackgroundColor="#20283A" TextColor="#AEB8C8" FontSize="12"
+                                    Padding="10,0" HeightRequest="30" VerticalOptions="Center"
+                                    ToolTipProperties.Text="Tick every filter again" />
+                        </Grid>
+                    </Border>
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding Surplus}" SelectionMode="None">
                         <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
-                        <CollectionView.EmptyView><Label Text="Nothing spare. Every part you hold still has something to build." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.EmptyView><Label Text="{Binding SurplusEmptyMessage}" TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate><DataTemplate>
                             <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
                                 Badge="{Binding ReasonBadge}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"

@@ -69,8 +69,14 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SalesSearchText { get; set; } = "";
     [ObservableProperty] public partial string RelicsSearchText { get; set; } = "";
     [ObservableProperty] public partial string SurplusSearchText { get; set; } = "";
-    [ObservableProperty] public partial string SelectedSurplusFilter { get; set; } = "All";
+    [ObservableProperty] public partial bool SurplusShowMastered { get; set; } = true;
+    [ObservableProperty] public partial bool SurplusShowCrafted { get; set; } = true;
+    [ObservableProperty] public partial bool SurplusShowOnlyOneNeeded { get; set; } = true;
+    [ObservableProperty] public partial bool SurplusShowSellable { get; set; } = true;
+    [ObservableProperty] public partial bool SurplusShowUnsellable { get; set; } = true;
     [ObservableProperty] public partial string SurplusSummary { get; set; } = "0 spare";
+    [ObservableProperty] public partial string SurplusEmptyMessage { get; set; } =
+        "Nothing spare. Every part you hold still has something to build.";
     [ObservableProperty] public partial string AlecaDataUpdatedText { get; set; } = "—";
     [ObservableProperty] public partial string FilteredDucatsEstimate { get; set; } = "0";
     [ObservableProperty] public partial bool IncludeVaultedParts { get; set; } = true;
@@ -89,8 +95,6 @@ public partial class DashboardViewModel : ObservableObject
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
     public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
     public IReadOnlyList<string> SalesSorts { get; } = ["Name", "Action", "Highest value"];
-    public IReadOnlyList<string> SurplusFilters { get; } =
-        ["All", "Have mastered", "Have crafted", "Only one needed", "Sellable for platinum"];
     public ISeries[] ValueSeries { get; private set; } = [];
     public ISeries[] ProgressSeries { get; private set; } = [];
 
@@ -246,7 +250,29 @@ public partial class DashboardViewModel : ObservableObject
     private void ToggleVaultedParts() => IncludeVaultedParts = !IncludeVaultedParts;
     partial void OnRelicsSearchTextChanged(string value) => ApplyRelicsView();
     partial void OnSurplusSearchTextChanged(string value) => ApplySurplusView();
-    partial void OnSelectedSurplusFilterChanged(string value) => ApplySurplusView();
+    partial void OnSurplusShowMasteredChanged(bool value) => ApplySurplusView();
+    partial void OnSurplusShowCraftedChanged(bool value) => ApplySurplusView();
+    partial void OnSurplusShowOnlyOneNeededChanged(bool value) => ApplySurplusView();
+    partial void OnSurplusShowSellableChanged(bool value) => ApplySurplusView();
+    partial void OnSurplusShowUnsellableChanged(bool value) => ApplySurplusView();
+
+    // Each label is part of its box's hit area, so tapping either half flips the tick.
+    [RelayCommand]
+    private void ToggleSurplusFilter(string filter)
+    {
+        switch (filter)
+        {
+            case "Mastered": SurplusShowMastered = !SurplusShowMastered; break;
+            case "Crafted": SurplusShowCrafted = !SurplusShowCrafted; break;
+            case "OnlyOneNeeded": SurplusShowOnlyOneNeeded = !SurplusShowOnlyOneNeeded; break;
+            case "Sellable": SurplusShowSellable = !SurplusShowSellable; break;
+            case "Unsellable": SurplusShowUnsellable = !SurplusShowUnsellable; break;
+        }
+    }
+
+    [RelayCommand]
+    private void ResetSurplusFilters() => (SurplusShowMastered, SurplusShowCrafted,
+        SurplusShowOnlyOneNeeded, SurplusShowSellable, SurplusShowUnsellable) = (true, true, true, true, true);
     partial void OnDucatsPerPlatinumChanged(double value)
     {
         var integerValue = Math.Clamp((int)Math.Round(value), 1, 50);
@@ -338,16 +364,13 @@ public partial class DashboardViewModel : ObservableObject
         Replace(Relics, values.Take(200));
     }
 
+    // The two groups of ticks answer different questions and are combined, not merged: a reason has
+    // to be ticked AND the platinum side of the row has to be ticked. That is what makes the useful
+    // crossings expressible, such as parts for a mastered item that nobody will pay platinum for.
     private void ApplySurplusView()
     {
-        IEnumerable<SurplusRecommendation> values = SelectedSurplusFilter switch
-        {
-            "Have mastered" => _allSurplus.Where(x => x.Reason == SurplusReason.Mastered),
-            "Have crafted" => _allSurplus.Where(x => x.Reason == SurplusReason.Crafted),
-            "Only one needed" => _allSurplus.Where(x => x.Reason == SurplusReason.OnlyOneNeeded),
-            "Sellable for platinum" => _allSurplus.Where(x => x.SellableForPlatinum),
-            _ => _allSurplus
-        };
+        var values = _allSurplus.Where(x => ReasonIsTicked(x.Reason) &&
+            (x.SellableForPlatinum ? SurplusShowSellable : SurplusShowUnsellable));
         if (!string.IsNullOrWhiteSpace(SurplusSearchText))
             values = values.Where(x => Matches(SurplusSearchText, x.ItemName, x.ParentName, x.Category,
                 x.ReasonBadge, x.Explanation));
@@ -355,8 +378,22 @@ public partial class DashboardViewModel : ObservableObject
         var platinum = listed.Sum(x => (long)(x.TotalPlatinum ?? 0));
         SurplusSummary = $"{listed.Sum(x => (long)x.Surplus):N0} spare" +
             (platinum > 0 ? $" · ~{platinum:N0}p" : "");
+        SurplusEmptyMessage = !SurplusShowMastered && !SurplusShowCrafted && !SurplusShowOnlyOneNeeded
+            ? "No reason is ticked, so nothing can match."
+            : !SurplusShowSellable && !SurplusShowUnsellable
+                ? "Neither platinum option is ticked, so nothing can match."
+                : _allSurplus.Count == 0
+                    ? "Nothing spare. Every part you hold still has something to build."
+                    : "No spare part matches the ticked filters.";
         Replace(Surplus, listed.Take(200));
     }
+
+    private bool ReasonIsTicked(SurplusReason reason) => reason switch
+    {
+        SurplusReason.Mastered => SurplusShowMastered,
+        SurplusReason.Crafted => SurplusShowCrafted,
+        _ => SurplusShowOnlyOneNeeded
+    };
 
     private void ApplyCollectionView()
     {
