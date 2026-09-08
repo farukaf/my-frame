@@ -26,7 +26,7 @@ else {
 
 $repositoryPrefix = $repositoryRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
 if (-not $outputRootPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "O diretório de saída deve estar dentro do repositório: $outputRootPath"
+    throw "The output directory must be inside the repository: $outputRootPath"
 }
 
 $projectPath = Join-Path $repositoryRoot 'MyFrame.App\MyFrame.App.csproj'
@@ -42,7 +42,7 @@ foreach ($path in @($publishPath, $packagesPath)) {
 
 $displayVersion = ($Version -split '-', 2)[0]
 
-Write-Host "Publicando My Frame $Version para $RuntimeIdentifier..."
+Write-Host "Publishing My Frame $Version for $RuntimeIdentifier..."
 & dotnet publish $projectPath `
     --framework 'net10.0-windows10.0.19041.0' `
     --configuration $Configuration `
@@ -56,21 +56,21 @@ Write-Host "Publicando My Frame $Version para $RuntimeIdentifier..."
     -p:ApplicationDisplayVersion=$displayVersion
 
 if ($LASTEXITCODE -ne 0) {
-    throw "dotnet publish falhou com o código $LASTEXITCODE."
+    throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
 $applicationPath = Join-Path $publishPath 'MyFrame.App.exe'
 if (-not (Test-Path -LiteralPath $applicationPath)) {
-    throw "O executável esperado não foi gerado: $applicationPath"
+    throw "The expected executable was not generated: $applicationPath"
 }
 
-Write-Host 'Restaurando a ferramenta de empacotamento...'
+Write-Host 'Restoring the packaging tool...'
 & dotnet tool restore
 if ($LASTEXITCODE -ne 0) {
-    throw "dotnet tool restore falhou com o código $LASTEXITCODE."
+    throw "dotnet tool restore failed with exit code $LASTEXITCODE."
 }
 
-Write-Host 'Gerando o instalador one-click, a versão portátil e os pacotes de atualização...'
+Write-Host 'Building the one-click installer, portable build, and update packages...'
 & dotnet tool run vpk pack `
     --packId 'MyFrame' `
     --packVersion $Version `
@@ -82,16 +82,16 @@ Write-Host 'Gerando o instalador one-click, a versão portátil e os pacotes de 
     --outputDir $packagesPath
 
 if ($LASTEXITCODE -ne 0) {
-    throw "O empacotamento com Velopack falhou com o código $LASTEXITCODE."
+    throw "Velopack packaging failed with exit code $LASTEXITCODE."
 }
 
 if (-not (Get-ChildItem -LiteralPath $packagesPath -Filter '*-Setup.exe')) {
-    throw 'O Setup.exe esperado não foi gerado pelo Velopack.'
+    throw 'Velopack did not generate the expected Setup.exe.'
 }
 
 if (-not (Get-ChildItem -LiteralPath $packagesPath -Filter '*-Portable.zip')) {
-    throw 'O pacote portátil esperado não foi gerado pelo Velopack.'
+    throw 'Velopack did not generate the expected portable package.'
 }
 
-Write-Host "Pacotes gerados em $packagesPath"
+Write-Host "Packages generated in $packagesPath"
 Get-ChildItem -LiteralPath $packagesPath | Select-Object Name, Length

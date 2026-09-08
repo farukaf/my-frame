@@ -14,14 +14,14 @@ permissions:
 
 jobs:
   comment:
-    name: Publicar link do instalador no PR
+    name: Publish installer link on PR
     if: >-
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Criar ou atualizar comentário
+      - name: Create or update comment
         uses: actions/github-script@v8
         env:
           RUN_ID: ${{ github.event.workflow_run.id }}
@@ -53,7 +53,7 @@ jobs:
             }
 
             if (!pullRequest) {
-              core.warning(`Nenhum PR aberto foi encontrado para ${headSha}.`);
+              core.warning(`No open pull request was found for ${headSha}.`);
               return;
             }
 
@@ -72,7 +72,7 @@ jobs:
             );
 
             if (!artifact) {
-              core.setFailed(`O artifact ${artifactName} não foi encontrado.`);
+              core.setFailed(`Artifact ${artifactName} was not found.`);
               return;
             }
 
@@ -82,17 +82,17 @@ jobs:
             const shortSha = headSha.slice(0, 7);
             const body = [
               marker,
-              '### Preview para Windows',
+              '### Windows preview',
               '',
-              `✅ Testes concluídos e versão autocontida gerada para \`${shortSha}\`.`,
+              `✅ Tests passed and a self-contained build was generated for \`${shortSha}\`.`,
               '',
-              `**[Baixar instalador e versão portátil](${artifactUrl})**`,
+              `**[Download installer and portable build](${artifactUrl})**`,
               '',
-              `O download contém \`MyFrame-win-Setup.exe\` e \`MyFrame-win-Portable.zip\`; não é necessário instalar o .NET SDK.`,
+              `The download contains \`MyFrame-win-Setup.exe\` and \`MyFrame-win-Portable.zip\`; the .NET SDK is not required.`,
               '',
-              '> ⚠️ Preview não assinado, gerado com o código deste PR. Execute somente alterações em que você confia.',
+              '> ⚠️ This unsigned preview was built from the code in this PR. Run only changes you trust.',
               '',
-              `> É necessário entrar no GitHub. O artifact fica disponível por 30 dias. [Ver execução](${runUrl}).`,
+              `> GitHub sign-in is required. The artifact is retained for 30 days. [View workflow run](${runUrl}).`,
             ].join('\n');
 
             const comments = await github.paginate(

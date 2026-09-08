@@ -20,32 +20,32 @@ env:
 
 jobs:
   test:
-    name: Testes
+    name: Tests
     runs-on: windows-2025
     permissions:
       contents: read
 
     steps:
-      - name: Baixar o código
+      - name: Check out source
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
 
-      - name: Instalar o .NET SDK
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
           workloads: maui-windows
 
-      - name: Restaurar dependências
+      - name: Restore dependencies
         run: dotnet restore MyFrame.slnx
 
-      - name: Executar todos os testes
+      - name: Run all tests
         shell: pwsh
         run: |
           $testProjects = Get-ChildItem -Recurse -Filter '*.Tests.csproj'
           if ($testProjects.Count -eq 0) {
-            throw 'Nenhum projeto de testes foi encontrado.'
+            throw 'No test projects were found.'
           }
 
           foreach ($project in $testProjects) {
@@ -56,11 +56,11 @@ jobs:
               --logger "trx;LogFilePrefix=$($project.BaseName)" `
               --results-directory TestResults
             if ($LASTEXITCODE -ne 0) {
-              throw "Os testes de $($project.Name) falharam."
+              throw "Tests failed for $($project.Name)."
             }
           }
 
-      - name: Disponibilizar resultados dos testes
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -70,7 +70,7 @@ jobs:
           retention-days: 14
 
   package:
-    name: Aplicativo autocontido (win-x64)
+    name: Self-contained application (win-x64)
     needs: test
     runs-on: windows-2025
     permissions:
@@ -80,18 +80,18 @@ jobs:
       tag_name: ${{ steps.metadata.outputs.tag_name }}
 
     steps:
-      - name: Baixar o código
+      - name: Check out source
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
 
-      - name: Instalar o .NET SDK
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
           workloads: maui-windows
 
-      - name: Definir versão e nome do artefato
+      - name: Set version and artifact name
         id: metadata
         shell: pwsh
         env:
@@ -114,7 +114,7 @@ jobs:
             $tag = if ($env:RELEASE_TAG) { $env:RELEASE_TAG } else { $env:REF_NAME }
             $version = $tag -replace '^v', ''
             if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
-              throw "A tag '$tag' deve seguir o formato vMAJOR.MINOR.PATCH (por exemplo, v1.2.3)."
+              throw "Tag '$tag' must follow vMAJOR.MINOR.PATCH format (for example, v1.2.3)."
             }
             $artifactName = "MyFrame-$tag-win-x64"
           }
@@ -123,14 +123,14 @@ jobs:
           "artifact_name=$artifactName" >> $env:GITHUB_OUTPUT
           "tag_name=$tag" >> $env:GITHUB_OUTPUT
 
-      - name: Gerar aplicativo e instalador autocontidos
+      - name: Build self-contained application and installer
         shell: pwsh
         run: >-
           ./scripts/Build-Distribution.ps1
           -Version "${{ steps.metadata.outputs.version }}"
           -Configuration Release
 
-      - name: Disponibilizar pacote na execução do Actions
+      - name: Upload distribution package
         id: distribution-artifact
         uses: actions/upload-artifact@v7
         with:
@@ -140,7 +140,7 @@ jobs:
           retention-days: 30
           compression-level: 0
 
-      - name: Exibir link do download
+      - name: Show download link
         shell: pwsh
         env:
           ARTIFACT_NAME: ${{ steps.metadata.outputs.artifact_name }}
@@ -150,7 +150,7 @@ jobs:
           "[$env:ARTIFACT_NAME]($env:ARTIFACT_URL)" >> $env:GITHUB_STEP_SUMMARY
 
   release:
-    name: Publicar GitHub Release
+    name: Publish GitHub Release
     if: github.event_name == 'push' || github.event_name == 'release'
     needs: package
     runs-on: ubuntu-latest
@@ -158,13 +158,13 @@ jobs:
       contents: write
 
     steps:
-      - name: Baixar os pacotes validados
+      - name: Download validated packages
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.package.outputs.artifact_name }}
           path: release-assets
 
-      - name: Publicar arquivos na GitHub Release
+      - name: Upload GitHub Release assets
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.package.outputs.tag_name }}
