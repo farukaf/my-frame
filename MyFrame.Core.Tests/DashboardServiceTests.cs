@@ -253,8 +253,9 @@ public sealed class DashboardServiceTests
                 new HashSet<string>(), new Dictionary<string, long>(), 0, 0, "synthetic");
             Market = new RecordingMarket(Timeline);
             Cache = new SeededCache(cached);
+            MarketItems = new RecordingMarketItems();
             Service = new DashboardService(new StaticPath(_directory.Path), new StubInventory(inventory),
-                new StubCatalog(Catalog()), Market, Cache, MarketState, Engine);
+                new StubCatalog(Catalog()), Market, Cache, MarketState, MarketItems, Engine);
             Service.SnapshotUpdated += (_, snapshot) =>
             {
                 Timeline.Add("publish");
@@ -269,6 +270,7 @@ public sealed class DashboardServiceTests
         public RecordingMarket Market { get; }
         public SeededCache Cache { get; }
         public RecordingMarketState MarketState { get; }
+        public RecordingMarketItems MarketItems { get; }
         public RecordingEngine Engine { get; } = new();
         public DashboardService Service { get; }
 
@@ -354,6 +356,27 @@ public sealed class DashboardServiceTests
             return Task.FromResult(Unanswered.Contains(slug)
                 ? null : new MarketQuote(slug, 12, 9, DateTimeOffset.UtcNow));
         }
+
+        public Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default)
+        {
+            timeline.Add("items");
+            return Task.FromResult(ItemIndex);
+        }
+
+        public MarketItemIndex? ItemIndex { get; set; }
+    }
+
+    private sealed class RecordingMarketItems : IMarketItemIndexStore
+    {
+        public List<MarketItemIndex> Saved { get; } = [];
+        public MarketItemIndex? Stored { get; set; }
+        public Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(Stored);
+        public Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default)
+        {
+            Saved.Add(index);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class RecordingMarketState(MarketState? stored) : IMarketStateStore
@@ -399,7 +422,7 @@ public sealed class DashboardServiceTests
             RecommendationSettings settings)
         {
             Inventory = inventory;
-            return new RecommendationResult([], [], [], [], 0, 0, DateTimeOffset.UtcNow, settings);
+            return new RecommendationResult([], [], [], [], [], 0, 0, DateTimeOffset.UtcNow, settings);
         }
     }
 }

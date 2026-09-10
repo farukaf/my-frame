@@ -29,6 +29,7 @@ public sealed class AppCompositionTests
         Assert.Contains("components:Farm", xaml);
         Assert.Contains("components:Relics", xaml);
         Assert.Contains("components:Sales", xaml);
+        Assert.Contains("components:Surplus", xaml);
         Assert.Contains("components:Settings", xaml);
         Assert.DoesNotContain("CollectionView", xaml);
     }
@@ -39,7 +40,7 @@ public sealed class AppCompositionTests
         var xaml = ReadAppFile(Path.Combine("Components", "Sidebar.xaml"));
         var header = ReadAppFile(Path.Combine("Components", "PageHeader.xaml"));
 
-        foreach (var id in new[] { "NavDashboard", "NavCollection", "NavFarm", "NavRelics", "NavSales", "NavSettings" })
+        foreach (var id in new[] { "NavDashboard", "NavCollection", "NavFarm", "NavRelics", "NavSales", "NavSurplus", "NavSettings" })
             Assert.Contains($"AutomationId=\"{id}\"", xaml);
         Assert.Contains("AutomationId=\"RefreshButton\"", header);
     }
@@ -68,7 +69,7 @@ public sealed class AppCompositionTests
     [Fact]
     public void EachPresentationComponentHasItsOwnMarkupAndCodeBehind()
     {
-        foreach (var name in new[] { "Sidebar", "GlobalStatus", "PageHeader", "Dashboard", "Collection", "Farm", "Relics", "Sales", "Settings" })
+        foreach (var name in new[] { "Sidebar", "GlobalStatus", "PageHeader", "Dashboard", "Collection", "Farm", "Relics", "Sales", "Surplus", "Settings" })
         {
             var xaml = ReadAppFile(Path.Combine("Components", $"{name}.xaml"));
             Assert.Contains($"x:Class=\"MyFrame.App.Components.{name}\"", xaml);
@@ -79,7 +80,7 @@ public sealed class AppCompositionTests
     [Fact]
     public void EachSectionOwnsAViewModelAndTheCoordinatorDoesNotOwnSectionCollections()
     {
-        foreach (var name in new[] { "Main", "DashboardSection", "Collection", "Farm", "Relics", "Sales", "Settings", "GlobalStatus" })
+        foreach (var name in new[] { "Main", "DashboardSection", "Collection", "Farm", "Relics", "Sales", "Surplus", "Settings", "GlobalStatus" })
         {
             var source = ReadAppFile(Path.Combine("ViewModels", $"{name}ViewModel.cs"));
             Assert.Contains($"class {name}ViewModel", source);
