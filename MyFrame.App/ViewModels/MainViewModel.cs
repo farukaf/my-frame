@@ -19,7 +19,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IExternalBrowser externalBrowser)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
-        Dashboard = new(); Collection = new(); Farm = new(); Relics = new();
+        Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
@@ -36,6 +36,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public FarmViewModel Farm { get; }
     public RelicsViewModel Relics { get; }
     public SalesViewModel Sales { get; }
+    public SurplusViewModel Surplus { get; }
     public SettingsViewModel Settings { get; }
     public GlobalStatusViewModel GlobalStatus { get; }
     private IExternalBrowser ExternalBrowser { get; }
@@ -83,6 +84,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Farm.IsVisible = section == "Farm";
         Relics.IsVisible = section == "Relics";
         Sales.IsVisible = section == "Sales";
+        Surplus.IsVisible = section == "Surplus";
         Settings.IsVisible = section == "Settings";
     }
 
@@ -94,7 +96,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void Apply(DashboardSnapshot snapshot)
     {
         GlobalStatus.Apply(snapshot); Dashboard.Apply(snapshot); Collection.Apply(snapshot);
-        Farm.Apply(snapshot); Relics.Apply(snapshot); Sales.Apply(snapshot);
+        Farm.Apply(snapshot); Relics.Apply(snapshot); Sales.Apply(snapshot); Surplus.Apply(snapshot);
     }
     private void ScheduleRescore()
     {

@@ -11,6 +11,7 @@ public sealed class DashboardService : IDashboardService
     private readonly IWarframeMarketClient _market;
     private readonly IPriceCache _cache;
     private readonly IMarketStateStore _marketState;
+    private readonly IMarketItemIndexStore _marketItems;
     private readonly IRecommendationEngine _engine;
     private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -19,15 +20,19 @@ public sealed class DashboardService : IDashboardService
     private DashboardSnapshot? _lastSnapshot;
     private RecommendationSettings _lastSettings = new();
     private DateTimeOffset? _lastSuccessfulSync;
+    private MarketItemIndex? _marketItemIndex;
     private static readonly TimeSpan QuoteFreshness = TimeSpan.FromMinutes(15);
+    // The market's item list only grows when new items ship, so a week-old copy costs nothing.
+    private static readonly TimeSpan ItemIndexFreshness = TimeSpan.FromDays(7);
 
     public DashboardService(IAlecaFramePath alecaPath, IAlecaFrameReader inventoryReader,
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
-        IMarketStateStore marketState, IRecommendationEngine engine,
+        IMarketStateStore marketState, IMarketItemIndexStore marketItems, IRecommendationEngine engine,
         ILogger<DashboardService>? logger = null,
         IAlecaFrameChangeMonitor? changeMonitor = null)
     {
         _marketState = marketState;
+        _marketItems = marketItems;
         _alecaPath = alecaPath;
         _inventoryReader = inventoryReader;
         _catalogReader = catalogReader;
@@ -55,6 +60,8 @@ public sealed class DashboardService : IDashboardService
             var alecaDirectory = _alecaPath.DirectoryPath;
             var inventory = await _inventoryReader.ReadAsync(alecaDirectory, cancellationToken);
             _catalog ??= await _catalogReader.LoadAsync(alecaDirectory, cancellationToken);
+            _marketItemIndex ??= await _marketItems.LoadAsync(cancellationToken);
+            _catalog = CatalogMarketAlignment.AlignToMarket(_catalog, _marketItemIndex);
             inventory = InventoryCatalogAlignment.AlignToCatalog(inventory, _catalog);
             var quotes = new Dictionary<string, MarketQuote>(StringComparer.Ordinal);
             var quoteSlugs = GetRelevantSlugs(inventory, _catalog).Distinct(StringComparer.Ordinal).Take(100).ToArray();
@@ -101,6 +108,21 @@ public sealed class DashboardService : IDashboardService
                     account = null;
                     orders = [];
                 }
+                // A stale or missing item index is refetched here rather than before the first paint,
+                // so a launch never waits on it. The catalogue is realigned in place afterwards, which
+                // is why the parts it newly marks tradable are priced from the next refresh onwards.
+                if (_marketItemIndex is null ||
+                    DateTimeOffset.UtcNow - _marketItemIndex.RetrievedAt > ItemIndexFreshness)
+                {
+                    var fetched = await _market.GetItemIndexAsync(cancellationToken);
+                    if (fetched is not null)
+                    {
+                        _marketItemIndex = fetched;
+                        _catalog = CatalogMarketAlignment.AlignToMarket(_catalog, fetched);
+                        await _marketItems.SaveAsync(fetched, cancellationToken);
+                    }
+                }
+
                 // Quotes still inside the freshness window are reused; only the rest cost a request.
                 if (refreshPrices)
                 {

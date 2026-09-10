@@ -52,7 +52,8 @@ public sealed record CatalogItem(
     string? MarketId,
     string? MarketSlug,
     IReadOnlyList<CatalogComponent> Components,
-    IReadOnlyList<RelicSource> Relics)
+    IReadOnlyList<RelicSource> Relics,
+    string ItemType = "")
 {
     public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
         $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";
@@ -95,6 +96,15 @@ public sealed record MarketAccount(string Id, string IngameName, string Platform
 public sealed record MarketState(
     MarketAccount? Account,
     IReadOnlyList<MarketOrder> Orders,
+    DateTimeOffset RetrievedAt);
+
+/// <summary>
+/// Warframe.Market's own catalogue of tradable items, keyed by normalized name. It is the authority
+/// on what can be traded: AlecaFrame's catalogue leaves the market identity off many parts and marks
+/// them untradable, which is how a part with live sell orders reads as worthless.
+/// </summary>
+public sealed record MarketItemIndex(
+    IReadOnlyDictionary<string, MarketIdentity> ByNormalizedName,
     DateTimeOffset RetrievedAt);
 
 public enum RecommendationAction
@@ -234,11 +244,79 @@ public sealed record SaleRecommendation(
     private bool HasReservations => Reserved > 0;
 }
 
+/// <summary>
+/// Why a piece is no longer needed. The three cases are the ones a player can act on directly:
+/// the item is already built, its mastery is already banked, or only one can ever be used.
+/// </summary>
+public enum SurplusReason
+{
+    Crafted,
+    Mastered,
+    OnlyOneNeeded
+}
+
+/// <summary>
+/// A part held in excess of anything it could still be used for. Unlike a sale recommendation this
+/// ignores prices and reservations entirely: it answers "do I still need this at all?", which is
+/// why it also covers untradable parts that the sales screen has no reason to list.
+/// </summary>
+public sealed record SurplusRecommendation(
+    string ItemName,
+    string UniqueName,
+    string? MarketSlug,
+    string ParentName,
+    string Category,
+    int Owned,
+    int StillNeeded,
+    int Surplus,
+    int DucatsEach,
+    int? LowestSell,
+    bool Tradable,
+    SurplusReason Reason,
+    bool OnePerAccount,
+    string ImageUrl)
+{
+    // A live sell order is the fact; the catalogue's tradable flag is only a hint, and a wrong one
+    // often enough that trusting it hid parts with real offers on them.
+    public bool SellableForPlatinum => LowestSell is > 0;
+    public int? TotalPlatinum => SellableForPlatinum ? LowestSell * Surplus : null;
+    public int TotalDucats => Tradable ? Surplus * DucatsEach : 0;
+    public string ReasonBadge => Reason switch
+    {
+        SurplusReason.Crafted => OnePerAccount ? "Already built · one per account" : "Already built",
+        SurplusReason.Mastered => "Already mastered",
+        _ => "Only one needed"
+    };
+    public string CardOwned => $"Owned {Owned:N0}";
+    public string CardMetadata => TotalPlatinum is not null
+        ? $"{Surplus:N0} spare · ~{TotalPlatinum:N0}p"
+        : $"{Surplus:N0} spare · no market price";
+    public string ActionLabel => TotalPlatinum is not null
+        ? $"Sell {Surplus:N0} for ~{TotalPlatinum:N0}p{(TotalDucats > 0 ? $" or {TotalDucats:N0} ducats" : "")}"
+        : TotalDucats > 0 ? $"Exchange {Surplus:N0} for {TotalDucats:N0} ducats"
+        : $"Sell {Surplus:N0} in game for credits";
+    public string Explanation => Reason switch
+    {
+        SurplusReason.Crafted when OnePerAccount =>
+            $"Only one {ParentName} can ever be used and you already have it, so every copy is spare.",
+        SurplusReason.Crafted =>
+            $"{ParentName} is already built and in your inventory, so this part has nothing left to build.",
+        SurplusReason.Mastered =>
+            $"{ParentName} is already mastered, so building it again would add no mastery.",
+        _ => $"Only one {ParentName} can ever be used. One copy is held back because the snapshot " +
+             "does not record whether it is already installed."
+    };
+    public string ItemDetails =>
+        $"Holding {Owned:N0} · still needed {StillNeeded:N0} · surplus {Surplus:N0} · " +
+        $"{(SellableForPlatinum ? "priced on Warframe.Market" : "no market price; sells in game for credits")}";
+}
+
 public sealed record RecommendationResult(
     IReadOnlyList<CollectionGoal> Collection,
     IReadOnlyList<FarmRecommendation> Farm,
     IReadOnlyList<SaleRecommendation> Sales,
     IReadOnlyList<RelicRecommendation> Relics,
+    IReadOnlyList<SurplusRecommendation> Surplus,
     int TotalDucats,
     int EstimatedPlatinum,
     DateTimeOffset GeneratedAt,

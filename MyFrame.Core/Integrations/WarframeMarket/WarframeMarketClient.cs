@@ -58,6 +58,31 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
         return new MarketQuote(slug, sells.Count == 0 ? null : sells.Min(), buys.Count == 0 ? null : buys.Max(), DateTimeOffset.UtcNow);
     }
 
+    /// <summary>
+    /// The whole tradable catalogue in one request. Fetched rarely and cached, because it changes
+    /// only when Digital Extremes ships new items.
+    /// </summary>
+    public async Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default)
+    {
+        using var json = await GetAsync("v2/items", false, cancellationToken);
+        if (json is null || !json.RootElement.TryGetProperty("data", out var data) ||
+            data.ValueKind != JsonValueKind.Array) return null;
+
+        var identities = new Dictionary<string, MarketIdentity>(StringComparer.Ordinal);
+        foreach (var item in data.EnumerateArray())
+        {
+            var slug = Text(item, "slug");
+            if (string.IsNullOrWhiteSpace(slug)) continue;
+            var name = item.TryGetProperty("i18n", out var i18n) &&
+                       i18n.TryGetProperty("en", out var english) ? Text(english, "name") : null;
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            identities[ItemNameNormalizer.Normalize(name)] = new MarketIdentity(Text(item, "id") ?? "", slug);
+        }
+
+        _logger.LogInformation("Market item index loaded with {ItemCount} tradable items", identities.Count);
+        return identities.Count == 0 ? null : new MarketItemIndex(identities, DateTimeOffset.UtcNow);
+    }
+
     private async Task<JsonDocument?> GetAsync(string uri, bool authenticated, CancellationToken cancellationToken)
     {
         _logger.LogDebug("Market GET {MarketEndpoint}; authenticated={Authenticated}", uri, authenticated);

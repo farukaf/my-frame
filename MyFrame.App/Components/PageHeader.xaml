@@ -32,6 +32,15 @@
                     </HorizontalStackLayout>
                 </Border>
             </HorizontalStackLayout>
+            <Border IsVisible="{Binding Surplus.IsVisible}" Padding="9,6" BackgroundColor="#151A23"
+                    Stroke="#303B50" StrokeShape="RoundRectangle 8" VerticalOptions="Center"
+                    ToolTipProperties.Text="Copies you no longer need, across the rows currently listed">
+                <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                    <Label Text="SURPLUS" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                    <Label Text="{Binding Surplus.Summary}" TextColor="#F3C969"
+                           FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
             <ActivityIndicator Grid.Column="1" IsRunning="{Binding GlobalStatus.IsBusy}" IsVisible="{Binding GlobalStatus.IsBusy}" Color="#7DE2D1" />
             <Button AutomationId="RefreshButton" Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
         </Grid>
