@@ -1,26 +1,26 @@
 # My Frame
 
-Aplicativo Windows em .NET MAUI para visualizar o inventário local do AlecaFrame,
-acompanhar coleção e mastery, planejar farm e separar excedentes entre platinum e
-ducats.
+A .NET MAUI Windows application for viewing the local AlecaFrame inventory,
+tracking collection and mastery progress, planning farming, and separating
+surplus items between platinum and ducats.
 
-## Planejamento
+## Planning
 
-- [Plano completo](docs/PLANO.md)
-- [Arquitetura e engenharia reversa](docs/ARQUITETURA.md)
-- [Regras, testes e segurança](docs/REGRAS-E-VALIDACAO.md)
+- [Full plan](docs/PLANO.md)
+- [Architecture and reverse engineering](docs/ARQUITETURA.md)
+- [Rules, tests, and security](docs/REGRAS-E-VALIDACAO.md)
 
-## Segurança
+## Security
 
-- A pasta do AlecaFrame é sempre aberta em modo somente leitura.
-- `WFMarketToken.tk` é lido somente em memória e nunca é copiado ou registrado.
-- A autenticação do Warframe.Market é usada apenas para consultar o perfil e as
-  ordens do próprio usuário. O aplicativo não cria, altera ou remove anúncios.
-- Dados privados e snapshots reais não fazem parte do repositório.
+- The AlecaFrame directory is always opened in read-only mode.
+- `WFMarketToken.tk` is read only in memory and is never copied or logged.
+- Warframe.Market authentication is used only to query the current user's profile
+  and orders. The application does not create, update, or remove listings.
+- Private data and real snapshots are not included in the repository.
 
-## Desenvolvimento
+## Development
 
-Requisitos: Windows, .NET 10 SDK e workload `maui-windows`.
+Requirements: Windows, .NET 10 SDK, and the `maui-windows` workload.
 
 ```powershell
 dotnet restore MyFrame.slnx
@@ -29,10 +29,42 @@ dotnet test MyFrame.Core.Tests/MyFrame.Core.Tests.csproj
 dotnet run --project MyFrame.App/MyFrame.App.csproj -f net10.0-windows10.0.19041.0
 ```
 
+## CI/CD and distribution
+
+Every pull request runs all tests and generates self-contained `win-x64`
+artifacts with Velopack. Neither the .NET SDK nor the runtime needs to be
+installed:
+
+- `MyFrame-win-Portable.zip`: portable build;
+- `MyFrame-win-Setup.exe`: per-user one-click installer.
+
+The files can be downloaded from the link posted by the bot on the pull request
+or from the workflow run's **Artifacts** section. Preview downloads require a
+GitHub sign-in and expire after 30 days. Tags matching `vMAJOR.MINOR.PATCH` (for
+example, `v1.2.3`) create or update a GitHub Release and attach the same files,
+together with the metadata and packages required for a future automatic update
+implementation.
+
+The installer does not require administrator privileges. It installs under
+`%LOCALAPPDATA%`, creates Desktop and Start Menu shortcuts, and registers the
+application with Windows uninstall settings. Until the binaries are code-signed,
+Windows SmartScreen may display a warning when they are downloaded for the first
+time.
+
+[Download the latest stable installer](https://github.com/farukaf/my-frame/releases/latest/download/MyFrame-win-Setup.exe)
+
+[Download the latest portable build](https://github.com/farukaf/my-frame/releases/latest/download/MyFrame-win-Portable.zip)
+
+To reproduce the packaging process locally, run:
+
+```powershell
+./scripts/Build-Distribution.ps1 -Version 1.0.0
+```
+
 ## Logs
 
-O aplicativo grava eventos estruturados em JSON Lines em
-`%LOCALAPPDATA%\MyFrame\logs\my-frame-AAAAmmddHH.json`. Um novo arquivo é criado
-a cada hora, com retenção máxima de 168 arquivos e limite de 25 MB por arquivo.
-Os logs registram etapas de inicialização, contagens, resultados de sincronização
-e falhas, sem gravar JWT, cabeçalho Authorization ou o inventário completo.
+The application writes structured JSON Lines events to
+`%LOCALAPPDATA%\MyFrame\logs\my-frame-yyyyMMddHH.json`. A new file is created
+every hour, with a maximum retention of 168 files and a 25 MB limit per file.
+Logs record startup stages, counts, synchronization results, and failures without
+recording JWTs, authorization headers, or the complete inventory.

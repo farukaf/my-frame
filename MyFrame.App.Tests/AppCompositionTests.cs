@@ -58,6 +58,18 @@ public sealed class AppCompositionTests
     }
 
     [Fact]
+    public void WindowsEntryPointInitializesVelopackBeforeStartingTheApplication()
+    {
+        var source = ReadAppFile(Path.Combine("Platforms", "Windows", "Program.cs"));
+
+        var velopack = source.IndexOf("VelopackApp.Build().Run()", StringComparison.Ordinal);
+        var application = source.IndexOf("Application.Start", StringComparison.Ordinal);
+
+        Assert.True(velopack >= 0);
+        Assert.True(application > velopack);
+    }
+
+    [Fact]
     public void RootFilesDoNotReintroduceThePreRefactorMonoliths()
     {
         Assert.False(File.Exists(AppPath("DashboardViewModel.cs")));
