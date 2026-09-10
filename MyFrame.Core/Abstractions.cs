@@ -52,3 +52,19 @@ public interface IPriceCache
     Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default);
     Task SetAsync(MarketQuote quote, CancellationToken cancellationToken = default);
 }
+
+public interface IReadOnlyPriceCache
+{
+    Task<IReadOnlyDictionary<string, MarketQuote>> LoadAllAsync(
+        CancellationToken cancellationToken = default);
+}
+
+public interface IMyFrameSettingsStore
+{
+    Task<MyFrameSettingsDocument?> LoadAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IMyFrameSettingsWriter : IMyFrameSettingsStore
+{
+    Task SaveAsync(MyFrameSettingsDocument settings, CancellationToken cancellationToken = default);
+}

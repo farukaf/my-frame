@@ -2,4 +2,6 @@
   <Project Path="MyFrame.App/MyFrame.App.csproj" />
   <Project Path="MyFrame.Core/MyFrame.Core.csproj" />
   <Project Path="MyFrame.Core.Tests/MyFrame.Core.Tests.csproj" />
+  <Project Path="MyFrame.Mcp/MyFrame.Mcp.csproj" />
+  <Project Path="MyFrame.Mcp.Tests/MyFrame.Mcp.Tests.csproj" />
 </Solution>

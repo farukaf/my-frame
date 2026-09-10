@@ -442,6 +442,28 @@
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="AI / MCP" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Connect Codex or Claude to the inventory covered by My Frame. The server is local and read-only, but your client may send returned data to its AI provider." TextColor="#8995A8" />
+                                <Label Text="Account identity is omitted by default. Prices can be old or incomplete; every response reports its source status and coverage." TextColor="#F3C969" FontSize="12" />
+                                <Label Text="Server executable" Style="{StaticResource Muted}" />
+                                <Entry Text="{Binding McpExecutablePath}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                <Label Text="Codex" TextColor="#F4F7FB" FontAttributes="Bold" />
+                                <Editor Text="{Binding CodexMcpCommand}" IsReadOnly="True" AutoSize="TextChanges"
+                                        TextColor="#D6DCE6" BackgroundColor="#20283A" />
+                                <Button Text="Copy Codex command" Command="{Binding CopyMcpCommandCommand}"
+                                        CommandParameter="Codex" BackgroundColor="#167C70" TextColor="White"
+                                        HorizontalOptions="Start" />
+                                <Label Text="Claude Code" TextColor="#F4F7FB" FontAttributes="Bold" />
+                                <Editor Text="{Binding ClaudeMcpCommand}" IsReadOnly="True" AutoSize="TextChanges"
+                                        TextColor="#D6DCE6" BackgroundColor="#20283A" />
+                                <Button Text="Copy Claude command" Command="{Binding CopyMcpCommandCommand}"
+                                        CommandParameter="Claude" BackgroundColor="#167C70" TextColor="White"
+                                        HorizontalOptions="Start" />
+                                <Label Text="{Binding McpCopyMessage}" Style="{StaticResource Muted}" />
+                            </VerticalStackLayout>
+                        </Border>
                     </VerticalStackLayout>
                 </ScrollView>
             </Grid>

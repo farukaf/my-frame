@@ -172,7 +172,7 @@ public sealed class DashboardServiceTests
     }
 
     [Fact]
-    public async Task AnExpiredTokenWalksTheOptimisticOrdersBackAndKeepsTheStoredFile()
+    public async Task AnExpiredTokenWalksTheOptimisticOrdersBackAndPersistsInvalidation()
     {
         var order = new MarketOrder("order-1", "chassis-id", null, "sell", 14, 1, true);
         using var scenario = new Scenario(chassisOwned: 2,
@@ -183,7 +183,10 @@ public sealed class DashboardServiceTests
         Assert.Single(scenario.Published[0].Orders);
         Assert.Empty(snapshot.Orders);
         Assert.Null(snapshot.Account);
-        Assert.Empty(scenario.MarketState.Saved);
+        var invalidated = Assert.Single(scenario.MarketState.Saved);
+        Assert.Equal("invalidated", invalidated.ValidationState);
+        Assert.Empty(invalidated.Orders);
+        Assert.Null(invalidated.Account);
     }
 
     [Fact]

@@ -388,6 +388,7 @@ public sealed class RecommendationEngineTests
         Assert.Equal(SurplusReason.OnlyOneNeeded, surplus.Reason);
         Assert.Equal(1, surplus.StillNeeded);
         Assert.Equal(3, surplus.Surplus);
+        Assert.Equal(3, surplus.AvailableToSell);
     }
 
     [Fact]

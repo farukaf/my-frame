@@ -37,6 +37,10 @@ public partial class DashboardViewModel : ObservableObject
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
         _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => ApplySyncStatus(status));
         ShowSection("Dashboard");
+        McpExecutablePath = Path.Combine(AppContext.BaseDirectory, "MyFrame.Mcp.exe");
+        var quoted = $"\"{McpExecutablePath.Replace("\"", "\\\"")}\"";
+        CodexMcpCommand = $"codex mcp add my-frame -- {quoted}";
+        ClaudeMcpCommand = $"claude mcp add --transport stdio --scope user my-frame -- {quoted}";
     }
 
     [ObservableProperty] public partial bool IsBusy { get; set; }
@@ -84,6 +88,10 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SyncProgressText { get; set; } = "";
     [ObservableProperty] public partial bool PricesStale { get; set; }
     [ObservableProperty] public partial string StaleWarningText { get; set; } = "";
+    [ObservableProperty] public partial string McpExecutablePath { get; set; } = "";
+    [ObservableProperty] public partial string CodexMcpCommand { get; set; } = "";
+    [ObservableProperty] public partial string ClaudeMcpCommand { get; set; } = "";
+    [ObservableProperty] public partial string McpCopyMessage { get; set; } = "";
 
     public ObservableCollection<CollectionGoal> Collection { get; } = [];
     public ObservableCollection<FarmRecommendation> Farm { get; } = [];
@@ -136,7 +144,7 @@ public partial class DashboardViewModel : ObservableObject
         if (directory is null) return;
         var error = AlecaFrameDirectorySettings.ValidationError(directory);
         if (error is not null) { AlecaFrameDirectoryMessage = error; return; }
-        Preferences.Default.Set(AlecaFrameDirectorySettings.PreferenceKey, directory);
+        _localSettings.AlecaFrameDirectory = directory;
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         AlecaFrameDirectoryMessage = "Folder saved. Inventory, catalogs, token, and monitoring now use this location.";
@@ -147,7 +155,7 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void ResetAlecaFrameDirectory()
     {
-        Preferences.Default.Remove(AlecaFrameDirectorySettings.PreferenceKey);
+        _localSettings.AlecaFrameDirectory = _directorySettings.AutomaticDirectory;
         _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
@@ -230,6 +238,15 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenWikiAsync() =>
         await Launcher.Default.OpenAsync("https://wiki.warframe.com/");
+
+    [RelayCommand]
+    private async Task CopyMcpCommandAsync(string client)
+    {
+        var command = client.Equals("Claude", StringComparison.OrdinalIgnoreCase)
+            ? ClaudeMcpCommand : CodexMcpCommand;
+        await Clipboard.Default.SetTextAsync(command);
+        McpCopyMessage = $"{client} command copied.";
+    }
 
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> values)
     {

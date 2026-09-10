@@ -1,89 +1,94 @@
-# Plano de desenvolvimento — My Frame
+# Roteiro do My Frame
 
 ## Objetivo
 
-Aplicativo Windows local para transformar os dados já mantidos pelo AlecaFrame em uma visão de inventário, coleção/maestria, plano de farm e recomendações de venda por platinum ou troca por ducats.
+O My Frame transforma os dados locais já mantidos pelo AlecaFrame em uma visão de
+inventário, coleção/maestria, plano de farm e recomendações de venda por platinum ou
+troca por ducats. Ele permanece somente leitura: não altera o AlecaFrame, não automatiza
+o jogo e não cria, edita ou apaga ordens no Warframe.Market.
 
-O My Frame será somente leitura: não altera o AlecaFrame, não automatiza o jogo e não cria, edita ou apaga ordens no Warframe.Market.
+## Estado atual
 
-## Escopo da primeira versão
+A primeira versão funcional está concluída:
 
-- .NET 10, .NET MAUI e Windows.
-- Leitura de `%LOCALAPPDATA%\AlecaFrame\lastData.dat`.
-- Catálogos em `%LOCALAPPDATA%\AlecaFrame\cachedData`.
-- Token de `%LOCALAPPDATA%\AlecaFrame\WFMarketToken.tk` somente em memória.
-- Consultas HTTP `GET` ao Warframe.Market.
-- Cache próprio apenas de cotações públicas.
-- Dashboard, coleção, farm, vendas/ducats e configurações.
-- Atualização manual e automática por mudanças nos arquivos.
-- Testes com dados sintéticos; nenhum dado privado no Git.
+- solução .NET 10 com `MyFrame.App`, `MyFrame.Core` e testes;
+- leitura tolerante dos formatos atual e antigo de `lastData.dat`;
+- leitura e alinhamento dos catálogos do AlecaFrame e Warframe.Market;
+- consulta read-only de conta, ordens e preços, com cache e funcionamento offline;
+- regras de coleção, maestria, farm, venda, ducats, relíquias e excedentes;
+- configuração da pasta do AlecaFrame, razão ducats/platinum e reserva de sets Prime;
+- atualização manual e automática, estados de erro e logs sem conteúdo privado;
+- interface desktop com dashboard, busca, filtros, detalhes e indicadores visuais;
+- testes sintéticos para parsing, mercado, alinhamento e recomendações.
 
-Ficam fora desta fase: escrita no mercado, modificação de arquivos do AlecaFrame, leitura de memória/injeção no jogo, nuvem e plataformas além de Windows.
+O antigo backlog de ajustes visuais foi encerrado: pill de quantidade possuída, imagem
+específica das peças e controle de conversão com duas cores e dois campos já estão no
+código. O arquivo [todo.md](../todo.md) acompanha o hardening ainda aberto.
 
-## Fases
+## Marco entregue: MCP local read-only
 
-### 1. Fundação
+`MyFrame.Mcp` é um servidor local via `stdio` que permite a Codex, Claude e
+outros clientes MCP consultar as mesmas regras e fontes que alimentam a interface, além
+do inventário agregado dos tipos suportados, com cobertura e limitações explícitas.
 
-- Solução com `MyFrame.App`, `MyFrame.Core` e `MyFrame.Core.Tests`.
-- Modelos, contratos, DI e documentação.
-- Configuração Windows e dependências MAUI/LiveCharts.
+Decisões principais:
 
-Aceite: solução restaura e compila com o workload `maui-windows`.
+- processo console separado, iniciado e encerrado pelo cliente MCP;
+- nenhuma porta HTTP, conta, API key ou autenticação do MCP;
+- nenhuma ferramenta capaz de alterar arquivos, configurações, mercado ou inventário;
+- regras, projeções, configurações e estado das fontes compartilhados com o app;
+- respostas JSON estruturadas, pequenas, pesquisáveis e paginadas por snapshot;
+- correção de estimativas parciais, reservas e significado dos dados antes dos endpoints;
+- migração de settings/caches exclusiva do app e descoberta MCP disponível mesmo sem fontes;
+- distribuição do executável MCP junto com o aplicativo e comandos prontos para cadastro.
 
-### 2. Dados locais
+O desenho técnico, os contratos e os critérios de aceite estão em
+[MCP.md](MCP.md).
 
-- Descriptografar e interpretar `lastData.dat`.
-- Suportar formato atual e formato antigo com `InventoryJson` encapsulado.
-- Ler itens, componentes, relíquias, ducats, tradable, vaulted e IDs do mercado nos catálogos.
-- Tolerar arquivo bloqueado, gravação parcial e campos opcionais.
+## Sequência de entrega executada
 
-Aceite: snapshots sintéticos e o snapshot local válido geram modelos consistentes sem escrita na pasta do AlecaFrame.
+0. Fechar contratos de dados e corrigir análises no Core/UI com expectativas independentes.
+1. Extrair configuração e composição local; implementar migração e armazenamento versionado.
+2. Criar `MyFrame.Mcp` via `stdio`, com schemas, ferramentas, totais e cursores por snapshot.
+3. Validar atualização de todas as fontes, expiração temporal, fallback e limites operacionais.
+4. Criar distribuição com caminho estável, onboarding e testes de upgrade/rollback.
+5. Validar a matriz de regressão, privacidade, desempenho e uso real em Codex e Claude.
 
-### 3. Warframe.Market
+## Critérios de aceite e hardening do marco MCP
 
-- Verificar expiração do JWT antes da chamada.
-- Consultar perfil e ordens próprias com Bearer.
-- Consultar melhores ordens públicas por slug.
-- Respeitar no máximo três requisições por segundo e usar `User-Agent` descritivo.
-- Funcionar offline com cache e sinalização de preço antigo.
+O núcleo funcional da v1 está implementado. Esta lista permanece como régua de fechamento
+do hardening; [todo.md](../todo.md) distingue o que já foi demonstrado do que ainda exige
+matriz ampliada, benchmark ou validação manual em clientes externos.
 
-Aceite: token ausente/expirado ou API indisponível não impedem o inventário local.
+- O usuário cadastra o servidor com um comando copiado da tela de configurações.
+- Codex e Claude iniciam o processo sem credenciais e listam as capacidades disponíveis.
+- Uma IA consulta resumo, inventário e todas as seções analíticas da interface.
+- Resultados grandes são filtráveis e paginados, sem truncamento silencioso.
+- Um mesmo snapshot pode ser usado entre páginas e ferramentas; expiração tem erro explícito.
+- Mudanças de inventário, catálogo, settings e mercado aparecem sem reinício; expiração de
+  preços/ordens é reconhecida mesmo sem mudança de arquivo.
+- Dados de origem sanitizados, cobertura, idade e validade acompanham cada resposta;
+  desconhecido não vira zero, e presença de equipamento não vira quantidade um.
+- Estimativas parciais não fundamentam vantagem econômica definitiva; farm considera peças
+  faltantes e separa seu custo do preço do set. Recomendações têm código e evidências.
+- Excedente de coleção, reservas e disponibilidade para venda são distintos; totais não
+  contam as mesmas peças duas vezes e ordens antigas/invalidadas têm política comum.
+- Falhas de leitura mantêm estado válido do mesmo contexto com aviso, sem zerar os dados.
+- Token, cabeçalho de autorização, caminhos locais e payload bruto nunca aparecem no MCP.
+- Nome de conta é omitido por padrão; onboarding explica possível envio ao provedor de IA.
+- App e MCP produzem resultados equivalentes para as mesmas fontes, settings e instante,
+  e os resultados também passam por expectativas independentes do motor.
+- Descoberta/overview funcionam sem setup completo; MCP não migra, escreve nem acessa rede.
+- Migração repetida/interrompida e upgrade/rollback preservam dados e caminho cadastrado.
+- Limites de bytes, retenção, concorrência, cancelamento e latência de MCP.md são medidos.
+- Build, testes automatizados, MCP Inspector e smoke tests em Codex e Claude passam.
 
-### 4. Recomendações
+## Fora do escopo deste marco
 
-- Calcular coleção, maestria, peças existentes e faltantes.
-- Reservar peças necessárias antes de classificar excedentes.
-- Opcionalmente reservar um conjunto extra de Warframe Prime não vaulted.
-- Considerar ordens existentes.
-- Comparar venda, ducats e conjunto completo versus peças.
-- Usar razão configurável, inicialmente `1 platinum = 10 ducats`.
-
-Aceite: nenhuma peça necessária é recomendada para venda/ducats, e toda decisão tem justificativa.
-
-### 5. Interface
-
-- Navegação lateral desktop em tema escuro.
-- Indicadores de platinum, ducats, maestria e inventário.
-- Gráficos LiveCharts.
-- Listas de coleção, farm e vendas.
-- Estados vazio, carregando, offline, token expirado e erro recuperável.
-- Configuração da razão ducats/platinum.
-
-Aceite: interface útil com dados reais, dados vazios e mercado offline em 1050×700 e 1440×900.
-
-### 6. Qualidade e entrega
-
-- Testes de criptografia/parsing, catálogo, HTTP e regras.
-- Build completo e validação visual.
-- Revisão do diff para impedir dados privados.
-- Commit na `main`, sem push automático.
-
-## Definição de pronto
-
-- O app encontra a instalação local sem configuração manual.
-- Nunca modifica as fontes nem ordens do usuário.
-- Mantém utilidade offline e identifica cache antigo.
-- Recomendações são determinísticas e explicáveis.
-- Build e testes passam; o app inicia e foi validado visualmente.
-- Token, snapshot real e dados pessoais não estão no repositório.
-
+- ferramentas de escrita ou automação do jogo/mercado;
+- acesso remoto, nuvem, Streamable HTTP, OAuth ou servidor multiusuário;
+- captura da janela ou transmissão da interface como imagem;
+- chat embutido no My Frame;
+- suporte oficial a plataformas além de Windows;
+- simulações de settings, agregações configuráveis e inventário por instância, registrados
+  como evoluções em MCP.md; totais filtrados e farm por objetivo já pertencem à v1.
