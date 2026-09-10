@@ -22,11 +22,16 @@ public static class MauiProgram
 #endif
         builder.Logging.AddSerilog(Log.Logger, dispose: true);
         var automaticAlecaDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlecaFrame");
-        var alecaDirectory = Preferences.Default.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
+        var preferences = new MauiAppPreferences();
+        builder.Services.AddSingleton<ISettingsStore>(preferences);
+        var alecaDirectory = preferences.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
+        builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<WindowPlacementService>();
+        builder.Services.AddSingleton<IFolderPicker, MauiFolderPicker>();
+        builder.Services.AddSingleton<IExternalBrowser, MauiExternalBrowser>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
@@ -36,13 +41,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
             new HttpClient(), p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
-        builder.Services.AddSingleton(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
+        builder.Services.AddSingleton<IDashboardService>(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<IAlecaFrameReader>(), p.GetRequiredService<IAlecaCatalogReader>(),
             p.GetRequiredService<IWarframeMarketClient>(), p.GetRequiredService<IPriceCache>(),
             p.GetRequiredService<IMarketStateStore>(), p.GetRequiredService<IMarketItemIndexStore>(),
             p.GetRequiredService<IRecommendationEngine>(),
-            p.GetRequiredService<ILogger<DashboardService>>()));
-        builder.Services.AddSingleton<DashboardViewModel>();
+            p.GetRequiredService<ILogger<DashboardService>>(), p.GetRequiredService<IAlecaFrameChangeMonitor>()));
+        builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainPage>();
         var app = builder.Build();
         StartupDiagnostics.Track("MauiProgram.End");

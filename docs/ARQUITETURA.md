@@ -12,7 +12,23 @@ cache público de preços <──────────────── Dash
                                       DashboardViewModel -> MAUI
 ```
 
-`MyFrame.Core` contém integração e regras; `MyFrame.App` contém DI, view models, XAML e gráficos; `MyFrame.Core.Tests` valida o Core com dados sintéticos.
+`MyFrame.Core` mantém o domínio, contratos, regras, sincronização, repositórios de arquivos/cache e integração HTTP. A organização física é:
+
+```text
+MyFrame.Core/
+  Models/                         snapshots, recomendações e eventos de mudança
+  Abstractions/                   contratos públicos (um por arquivo)
+  Rules/                          RecommendationEngine e alinhamento inventário/catálogo
+  Services/                       DashboardService e monitor de alterações
+  Repositories/AlecaFrame/        lastData.dat, catálogo e diretório atual
+  Repositories/Market/            cache de preços e estado de ordens
+  Integrations/WarframeMarket/    cliente HTTP e autenticação JWT
+```
+
+Os tipos continuam no namespace `MyFrame.Core` para manter compatibilidade entre as camadas.
+`MyFrame.App` contém a composição de DI, páginas, componentes, view models e adaptadores MAUI
+(preferências, seletor de pasta e launcher). `MyFrame.Core.Tests` valida regras, persistência,
+sincronização e monitoramento com dados sintéticos.
 
 ## `lastData.dat`
 
@@ -44,7 +60,11 @@ Bearer vai apenas para endpoints autenticados. O contrato do cliente não oferec
 
 ## Atualização e cache
 
-O `DashboardService` lê inventário, carrega catálogo, recupera cache, tenta atualizar conta/ordens/preços, executa regras e publica um `DashboardSnapshot` atômico. Um watcher com debounce observa snapshot, token e catálogos.
+O `DashboardService` implementa `IDashboardService`: lê inventário, carrega catálogo, recupera cache,
+tenta atualizar conta/ordens/preços, executa regras e publica um `DashboardSnapshot` atômico. O
+`FileSystemAlecaFrameChangeMonitor` implementa `IAlecaFrameChangeMonitor`, encapsulando o
+`FileSystemWatcher`, os filtros de `lastData.dat`, `WFMarketToken.tk` e JSONs, recriação após erro e
+debounce de 750 ms. Alterações de catálogo invalidam o catálogo carregado antes do próximo refresh.
 
 O cache próprio guarda somente slug, menor venda, maior compra e instante da consulta. Após 15 minutos, a cotação é marcada como antiga. Inventário, perfil e ordens não são persistidos nesse cache.
 
@@ -56,3 +76,9 @@ O cache próprio guarda somente slug, menor venda, maior compra e instante da co
 - API offline: usar cache com aviso.
 - Mudança de catálogo: ignorar entrada defeituosa quando seguro e manter diagnóstico sem payload privado.
 
+## Contratos e composição
+
+O Core não acessa APIs MAUI. `IDashboardService` e `IAlecaFrameChangeMonitor` são registrados como
+singletons pela App; o dashboard recebe o monitor por injeção e o descarta junto com o serviço.
+Preferências, seleção de pasta e abertura de links devem ser adaptadas atrás de contratos da App/Core
+para que os view models permaneçam testáveis.
