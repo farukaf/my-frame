@@ -5,6 +5,43 @@ namespace MyFrame.Core.Tests;
 public sealed class SnapshotProviderTests
 {
     [Fact]
+    public async Task ReadingRetainedSnapshotDoesNotRenewItsFiveMinuteLifetime()
+    {
+        using var folder = new TemporaryFolder();
+        var clock = new ManualTimeProvider();
+        var settings = new MyFrameSettingsDocument(1, 1, folder.Path, 10, 0, clock.GetUtcNow());
+        var paths = new MyFrameLocalDataOptions(Path.Combine(folder.Path, "settings.json"),
+            Path.Combine(folder.Path, "prices.json"), Path.Combine(folder.Path, "state.json"),
+            Path.Combine(folder.Path, "items.json"));
+        var inventory = new InventorySnapshot(clock.GetUtcNow(), new Dictionary<string, int>(),
+            new HashSet<string>(), new Dictionary<string, long>(), 0, 0, "synthetic");
+        using var provider = new MyFrameSnapshotProvider(new ToggleInventoryReader(inventory),
+            new CatalogReader(new CatalogSnapshot([], new Dictionary<string, CatalogItem>(),
+                new Dictionary<string, MarketIdentity>())), new RecommendationEngine(),
+            new SettingsStore(settings), new PriceReader(), new StateStore(), new ItemIndexStore(),
+            paths, clock);
+
+        var first = await provider.GetAsync();
+        clock.Advance(MyFrameSnapshotProvider.SnapshotRetention);
+        Assert.Same(first, await provider.GetAsync(first.SnapshotId));
+        clock.Advance(TimeSpan.FromTicks(1));
+
+        var error = await Assert.ThrowsAsync<MyFrameSnapshotException>(() =>
+            provider.GetAsync(first.SnapshotId));
+
+        Assert.Equal("SNAPSHOT_EXPIRED", error.Code);
+        Assert.False(error.Retryable);
+        Assert.Contains("get_overview", error.Message);
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _now = new(2026, 9, 12, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => _now;
+        public void Advance(TimeSpan elapsed) => _now += elapsed;
+    }
+
+    [Fact]
     public async Task TransientReadFailureUsesLastValidSnapshotOnlyForTheSameContext()
     {
         using var folder = new TemporaryFolder();

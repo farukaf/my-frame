@@ -1,5 +1,8 @@
 # Arquitetura
 
+Arquitetura atual. O desenho futuro com Overwolf, SQLite e SyncHost está no
+[plano da plataforma de dados](PLATAFORMA-DE-DADOS.md); não foi implementado ainda.
+
 ## Componentes atuais
 
 ```text

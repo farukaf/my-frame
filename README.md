@@ -14,11 +14,24 @@ O fluxo principal já está implementado: leitura dos dados do AlecaFrame, catá
 integração read-only com Warframe.Market, cache, recomendações, atualização automática,
 configurações e interface desktop.
 
-- [Roteiro do projeto](docs/PLANO.md)
+- [Roteiro da versão atual](docs/PLANO.md)
 - [Plano detalhado do MCP](docs/MCP.md)
 - [Arquitetura](docs/ARQUITETURA.md)
 - [Regras, testes e segurança](docs/REGRAS-E-VALIDACAO.md)
-- [Checklist de hardening](todo.md)
+- [Checklist de entrega e hardening](todo.md)
+
+### Próxima evolução — planejada, não implementada
+
+Plataforma local de dados com captura via Overwolf sem dependência do AlecaFrame,
+SQLite, sincronização observável, fontes públicas, referências Wiki/Overframe e MCP
+de domínio. A aplicação fornece os dados; a LLM compõe recomendações e planos.
+
+- [Plano detalhado: arquitetura, fases, dependências e critérios de entrega](docs/PLATAFORMA-DE-DADOS.md)
+- [Pesquisa: documentação, fontes, evidências e lacunas](docs/FONTES-DE-DADOS.md)
+- [Testes: matriz, homologação e gates de aprovação](docs/VALIDACAO-PLATAFORMA.md)
+
+A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
+precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
 
 ## Segurança
 

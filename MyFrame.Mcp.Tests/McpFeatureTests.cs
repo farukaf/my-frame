@@ -6,10 +6,11 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using MyFrame.Core;
 using MyFrame.Mcp;
+using Xunit.Abstractions;
 
 namespace MyFrame.Mcp.Tests;
 
-public sealed class McpFeatureTests
+public sealed class McpFeatureTests(ITestOutputHelper output)
 {
     [Fact]
     public void EveryToolIsExplicitlyReadOnlyAndHasThePlannedName()
@@ -242,6 +243,7 @@ public sealed class McpFeatureTests
             ShutdownTimeout = TimeSpan.FromSeconds(5)
         });
         await using var client = await McpClient.CreateAsync(transport);
+        output.WriteLine($"Negotiated MCP protocol: {client.NegotiatedProtocolVersion}");
 
         var tools = await client.ListToolsAsync();
         var resources = await client.ListResourcesAsync();
@@ -250,6 +252,10 @@ public sealed class McpFeatureTests
             new Dictionary<string, object?> { ["includeAccount"] = false });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
+        var expired = await client.CallToolAsync("search_inventory",
+            new Dictionary<string, object?> { ["snapshotId"] = "not-retained-synthetic-snapshot" });
+        var unavailable = await client.CallToolAsync("search_inventory",
+            new Dictionary<string, object?>());
 
         Assert.Equal(8, tools.Count);
         Assert.All(tools, tool =>
@@ -268,9 +274,36 @@ public sealed class McpFeatureTests
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
             content => content.Text.Contains("INVALID_ARGUMENT", StringComparison.Ordinal));
+        AssertTextOnlyError(expired, "SNAPSHOT_EXPIRED", "Retryable=false");
+        AssertTextOnlyError(unavailable, "SETUP_REQUIRED", "Retryable=false");
+        Assert.Contains("Check isError", client.ServerInstructions);
         Assert.Contains(result.Content.OfType<TextContentBlock>(), x => x.Text.Contains("snapshotId", StringComparison.Ordinal));
         Assert.DoesNotContain(stderr, line => line.Contains("Authorization", StringComparison.OrdinalIgnoreCase));
         Assert.Empty(Directory.EnumerateFileSystemEntries(data.Path));
+    }
+
+    [Fact]
+    public async Task ValidSearchWithNoMatchesIsAnEmptyPageNotAnError()
+    {
+        var service = Service(new FakeProvider(Snapshot("snapshot", ("/a", "Alpha"))));
+
+        var page = await service.SearchInventoryAsync("no-such-synthetic-item", null, null,
+            null, "all", false, 50, null, null, default);
+
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.Count);
+        Assert.Equal(0, page.TotalCount);
+        Assert.Equal("snapshot", page.Meta.SnapshotId);
+        Assert.Null(page.NextCursor);
+    }
+
+    private static void AssertTextOnlyError(CallToolResult result, string code, string retryable)
+    {
+        Assert.True(result.IsError);
+        Assert.Null(result.StructuredContent);
+        Assert.Contains(result.Content.OfType<TextContentBlock>(), content =>
+            content.Text.Contains(code, StringComparison.Ordinal) &&
+            content.Text.Contains(retryable, StringComparison.Ordinal));
     }
 
     private static MyFrameQueryService Service(IMyFrameSnapshotProvider provider)
