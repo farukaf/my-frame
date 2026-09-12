@@ -1,5 +1,14 @@
 # MCP local — arquitetura e contrato v1
 
+Este é o contrato atual. A expansão de domínios e a migração para SQLite estão no
+[plano da plataforma](PLATAFORMA-DE-DADOS.md), com testes de compatibilidade na
+[matriz de validação](VALIDACAO-PLATAFORMA.md). Não há mudança automática de versão
+do contrato por causa da troca de armazenamento.
+
+Exemplo executável de leitura segura de erros/páginas:
+[consumo MCP](../examples/mcp/README.md). Nunca converter ausência de
+`structuredContent` em inventário vazio; verificar `isError` primeiro.
+
 ## Resultado pretendido
 
 Uma IA conectada ao servidor local deve conseguir responder perguntas como:

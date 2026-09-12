@@ -1,5 +1,10 @@
 # Regras, testes e segurança
 
+Baseline da aplicação atual. Para testes da futura plataforma, incluindo coleta,
+SQLite, migração, referências e respostas LLM, consultar a
+[matriz de validação](VALIDACAO-PLATAFORMA.md). As regras econômicas abaixo continuam
+como regressões a preservar durante a evolução.
+
 ## Regras de negócio
 
 Itens são relacionados por ID quando possível. Nomes são normalizados para minúsculas,
