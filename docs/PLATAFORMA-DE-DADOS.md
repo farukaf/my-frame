@@ -1,6 +1,6 @@
 # Plano de entrega — plataforma local de dados Warframe
 
-Data: 12/09/2026. Estado: F0 em validação; demais fases ainda não implementadas.
+Data: 12/09/2026. Estado: F0 validada localmente, PR #6 aberto; demais fases ainda não implementadas.
 Execução: [relatório F0](validacoes/2026-09-12-f0.md),
 [auditoria](AUDITORIA-ALECAFRAME.md) e [decisões abertas](DECISOES-PLATAFORMA.md).
 

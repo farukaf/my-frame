@@ -7,8 +7,9 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 
 ## Próxima evolução — F0 a F10
 
-- [ ] F0: registrar baseline de build/testes e auditar todas as dependências AlecaFrame.
-- [ ] F0: reproduzir erro MCP interpretado como inventário vazio e criar regressão.
+- [x] F0: registrar baseline de build/testes e auditar todas as dependências AlecaFrame ([evidências](docs/validacoes/2026-09-12-f0.md)).
+- [x] F0: reproduzir erro MCP interpretado como inventário vazio e criar regressão.
+- [x] F0: registrar capacidades mínimas, decisões abertas e mapeamento das pendências; PR #6 com base em `feat/local-mcp`.
 - [ ] F1: provar captura real GEP sem ler AlecaFrame; escolher runtime e transporte.
 - [ ] F1: documentar schema/cobertura, snapshots/deltas e requisitos de distribuição.
 - [ ] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos.

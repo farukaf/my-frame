@@ -1,6 +1,7 @@
 # Plano de testes e validação da plataforma
 
-Data: 12/09/2026. Estado: critérios planejados, ainda não executados.
+Data: 12/09/2026. Estado: matriz de critérios; execução inicial da F0 registrada no
+[relatório de aceite](validacoes/2026-09-12-f0.md). Gates das fases seguintes pendentes.
 Referências: [fases F0–F10](PLATAFORMA-DE-DADOS.md),
 [fontes e lacunas](FONTES-DE-DADOS.md) e
 [regras atuais](REGRAS-E-VALIDACAO.md).
