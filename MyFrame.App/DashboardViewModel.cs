@@ -37,10 +37,12 @@ public partial class DashboardViewModel : ObservableObject
         _service.SnapshotUpdated += (_, snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));
         _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => ApplySyncStatus(status));
         ShowSection("Dashboard");
-        McpExecutablePath = Path.Combine(AppContext.BaseDirectory, "MyFrame.Mcp.exe");
+        McpExecutablePath = ResolveMcpExecutablePath(AppContext.BaseDirectory);
         var quoted = $"\"{McpExecutablePath.Replace("\"", "\\\"")}\"";
         CodexMcpCommand = $"codex mcp add my-frame -- {quoted}";
         ClaudeMcpCommand = $"claude mcp add --transport stdio --scope user my-frame -- {quoted}";
+        if (!File.Exists(McpExecutablePath))
+            McpCopyMessage = "MCP server executable not found. Publish or rebuild My Frame first.";
     }
 
     [ObservableProperty] public partial bool IsBusy { get; set; }
@@ -242,10 +244,43 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private async Task CopyMcpCommandAsync(string client)
     {
+        if (!File.Exists(McpExecutablePath))
+        {
+            McpCopyMessage = "MCP server executable not found. Publish or rebuild My Frame first.";
+            return;
+        }
+
         var command = client.Equals("Claude", StringComparison.OrdinalIgnoreCase)
             ? ClaudeMcpCommand : CodexMcpCommand;
         await Clipboard.Default.SetTextAsync(command);
         McpCopyMessage = $"{client} command copied.";
+    }
+
+    internal static string ResolveMcpExecutablePath(string appBaseDirectory)
+    {
+        var bundled = Path.Combine(appBaseDirectory, "MyFrame.Mcp.exe");
+        if (File.Exists(bundled)) return bundled;
+
+        // Development builds keep each executable in its own project output. Derive that
+        // sibling path from ...\MyFrame.App\bin\<Configuration>\<TFM>\<RID> without
+        // leaking a repository-specific absolute path into the application.
+        var runtimeDirectory = new DirectoryInfo(Path.TrimEndingDirectorySeparator(appBaseDirectory));
+        var frameworkDirectory = runtimeDirectory.Parent;
+        var configurationDirectory = frameworkDirectory?.Parent;
+        var binDirectory = configurationDirectory?.Parent;
+        var appProjectDirectory = binDirectory?.Parent;
+        var repositoryDirectory = appProjectDirectory?.Parent;
+        if (runtimeDirectory.Name.StartsWith("win-", StringComparison.OrdinalIgnoreCase) &&
+            frameworkDirectory?.Name.StartsWith("net", StringComparison.OrdinalIgnoreCase) == true &&
+            string.Equals(binDirectory?.Name, "bin", StringComparison.OrdinalIgnoreCase) &&
+            repositoryDirectory is not null)
+        {
+            var development = Path.Combine(repositoryDirectory.FullName, "MyFrame.Mcp", "bin",
+                configurationDirectory!.Name, "net10.0", runtimeDirectory.Name, "MyFrame.Mcp.exe");
+            if (File.Exists(development)) return development;
+        }
+
+        return bundled;
     }
 
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> values)

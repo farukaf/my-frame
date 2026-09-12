@@ -1,3 +1,10 @@
+# Ideias de Features não refinadas
+
+- Criar ordem de venda/compra no warframe market e a partir dos eventos do overwolf remover a ordem automaticamente. 
+- Colocar na interface condições de remoção da ordem (tempo, inventario conter um dos itens (item da ordem, outro item feito com o item da ordem)
+
+
+
 # Entrega — plataforma de dados e hardening do MCP
 
 Plano novo, ainda não implementado: [plataforma de dados](docs/PLATAFORMA-DE-DADOS.md).
