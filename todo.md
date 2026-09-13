@@ -191,6 +191,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F153: agregar múltiplos documentos Public Export locais em uma revisão de catálogo ([evidências](docs/validacoes/2026-09-13-f153.md)).
 - [x] F154: orquestrar Public Export e World State locais com resultado por fonte ([evidências](docs/validacoes/2026-09-13-f154.md)).
 - [x] F155: executar regressão completa após os fluxos locais ([evidências](docs/validacoes/2026-09-13-f155.md)).
+- [x] F156: expor busca MCP de referências Wiki/Overframe importadas com atribuição ([evidências](docs/validacoes/2026-09-13-f156.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
