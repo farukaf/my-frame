@@ -158,6 +158,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F117: criar serviço de status, validação, gravação e revogação local da credencial WFM ([evidências](docs/validacoes/2026-09-13-f117.md)).
 - [x] F118: adicionar UX de salvar/status/revogar credencial WFM sem expor segredo ([evidências](docs/validacoes/2026-09-13-f118.md)).
 - [x] F119: validar App e MCP ativos lendo a mesma raiz SQLite ([evidências](docs/validacoes/2026-09-13-f119.md)).
+- [x] F120: medir latência, memória e bytes com fixture grande, dois servidores e App ativo ([evidências](docs/validacoes/2026-09-13-f120.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -222,7 +223,7 @@ para a nova matriz e continuam abertas até validação.
 - [ ] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto.
 - [x] Testar paginação durante atualização e assinatura/vínculo de cursores.
 - [x] Testar expiração temporal e descarte por limite de memória ([F110](docs/validacoes/2026-09-13-f110.md)).
-- [ ] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo.
+- [x] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo ([F120](docs/validacoes/2026-09-13-f120.md)).
 - [x] Testar que logs `stdio` não contêm autorização e que DTOs omitem token/caminhos.
 - [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
 - [x] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo ([F119](docs/validacoes/2026-09-13-f119.md)).
