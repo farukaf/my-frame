@@ -292,6 +292,10 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var syncStatusResult = await client.CallToolAsync("get_sync_status");
         var worldStateResult = await client.CallToolAsync("get_world_state",
             new Dictionary<string, object?> { ["limit"] = 50, ["syndicate"] = "entrati" });
+        var filteredWorldState = await client.CallToolAsync("get_world_state",
+            new Dictionary<string, object?> { ["syndicate"] = "Ostrons" });
+        var invalidWorldState = await client.CallToolAsync("get_world_state",
+            new Dictionary<string, object?> { ["limit"] = 0 });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -340,6 +344,9 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("Entrati", worldStateJson);
         Assert.Contains("motherTokens", worldStateJson);
         Assert.Contains("activeRevisionId", worldStateJson);
+        var filteredWorldStateJson = JsonSerializer.Serialize(filteredWorldState.StructuredContent);
+        Assert.DoesNotContain("deimos-f33", filteredWorldStateJson);
+        Assert.True(invalidWorldState.IsError);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
