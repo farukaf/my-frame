@@ -1,4 +1,6 @@
 using MyFrame.Core.Sync;
+using System.Net;
+using System.Net.Http;
 
 namespace MyFrame.Core.Tests;
 
@@ -26,5 +28,30 @@ public sealed class PublicExportTests
         Assert.Null(records[0].Description);
         Assert.Equal("lamina", PublicExportIdentity.Canonicalize("  LÂMINA "));
         Assert.True(PublicExportIdentity.Equivalent("Lâmina", "lamina"));
+    }
+
+    [Fact]
+    public void DecodesLzmaAlonePayloadWithOutputLimit()
+    {
+        var compressed = Convert.FromBase64String("XQAAgAD//////////wA0GUnujmgh////ueAAAA==");
+        Assert.Equal("hello", new LzmaAloneDecoder().Decode(compressed));
+        Assert.Throws<InvalidDataException>(() => new LzmaAloneDecoder(4).Decode(compressed));
+    }
+
+    [Fact]
+    public async Task IndexClientUsesInjectedDecoderAndEnforcesHttpContract()
+    {
+        var compressed = Convert.FromBase64String("XQAAgAD//////////wAingoHEY9IBeKEpQlqWyzFq6gupkTDTCzn+p/JfCj9I/r//3LWAAA=");
+        using var client = new HttpClient(new FixtureHandler(compressed));
+        var decoder = new PublicExportIndexClient(client, bytes => new LzmaAloneDecoder().Decode(bytes));
+        var entries = await decoder.FetchIndexAsync();
+        Assert.Single(entries);
+        Assert.Equal("ExportWarframes_en.json.lzma", entries[0].RelativePath);
+    }
+
+    private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
     }
 }
