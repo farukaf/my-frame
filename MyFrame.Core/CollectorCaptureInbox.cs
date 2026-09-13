@@ -69,7 +69,18 @@ public static class CollectorCaptureInbox
                                           UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
                 rejected++;
-                items.Add(new(markerFileName, "rejected", SafeErrorCode(error), 0, 0, 0));
+                var errorCode = SafeErrorCode(error);
+                try
+                {
+                    await database.RecordFailureAsync("overwolf-inventory", errorCode, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception persistenceError) when (persistenceError is IOException or InvalidOperationException or
+                                                         UnauthorizedAccessException)
+                {
+                    // The capture remains rejected even if status persistence is temporarily unavailable.
+                }
+                items.Add(new(markerFileName, "rejected", errorCode, 0, 0, 0));
             }
         }
 
