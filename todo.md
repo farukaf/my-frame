@@ -66,6 +66,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F26: gerar e validar artefato Windows App/MCP + pacote Overwolf ([evidências](docs/validacoes/2026-09-13-f26.md)).
 - [x] F27: executar smoke do App/MCP distribuídos com data root temporário ([evidências](docs/validacoes/2026-09-13-f27.md)).
 - [x] F28: automatizar gate MCP com stdin EOF, data root limpo e stdout vazio ([evidências](docs/validacoes/2026-09-13-f28.md)).
+- [x] F29: persistir e consultar cobertura por campo do inventário Overwolf ([evidências](docs/validacoes/2026-09-13-f29.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
