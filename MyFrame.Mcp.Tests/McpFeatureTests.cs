@@ -288,7 +288,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var loadoutResult = await client.CallToolAsync("get_loadout",
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
-        var worldStateResult = await client.CallToolAsync("get_world_state");
+        var worldStateResult = await client.CallToolAsync("get_world_state",
+            new Dictionary<string, object?> { ["limit"] = 50 });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",

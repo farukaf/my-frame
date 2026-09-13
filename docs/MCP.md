@@ -223,7 +223,7 @@ permitir filtros e paginação previsível.
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
 | `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte. |
-| `get_world_state` | Estado da fonte, bounties ativas e ciclos planetários na revisão World State. |
+| `get_world_state` | Estado da fonte, bounties ativas e ciclos planetários; limite de 1–200 bounties. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
 | `search_inventory` | Busca inventário agregado suportado por texto, tipo, categoria, quantidade conhecida e estado built/stackable. |
 | `get_item` | Detalhe por `itemId`, com posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
