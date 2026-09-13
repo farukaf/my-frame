@@ -16,7 +16,8 @@ public static class StrictToolRegistration
         {
             TransformOptions = new AIJsonSchemaTransformOptions
             {
-                DisallowAdditionalProperties = true
+                DisallowAdditionalProperties = true,
+                UseNullableKeyword = true
             }
         };
         return typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
