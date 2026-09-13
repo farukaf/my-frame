@@ -10,7 +10,7 @@ namespace MyFrame.Core;
 public sealed class WarframeMarketClient : IWarframeMarketClient
 {
     private readonly HttpClient _http;
-    private readonly Func<string> _tokenPath;
+    private readonly IMarketTokenStore? _tokenStore;
     private readonly SemaphoreSlim _rateGate = new(1, 1);
     private readonly ILogger<WarframeMarketClient> _logger;
     private DateTimeOffset _lastRequest = DateTimeOffset.MinValue;
@@ -19,7 +19,7 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
         ILogger<WarframeMarketClient>? logger = null)
     {
         _http = httpClient;
-        _tokenPath = () => tokenPath;
+        _tokenStore = new FileMarketTokenStore(tokenPath);
         _logger = logger ?? NullLogger<WarframeMarketClient>.Instance;
         _http.BaseAddress ??= new Uri("https://api.warframe.market/");
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("my-frame/1.0 (+local desktop application)");
@@ -27,12 +27,22 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
         _http.Timeout = TimeSpan.FromSeconds(15);
     }
 
+    public WarframeMarketClient(HttpClient httpClient, IMarketTokenStore tokenStore,
+        ILogger<WarframeMarketClient>? logger = null)
+    {
+        _http = httpClient;
+        _tokenStore = tokenStore ?? throw new ArgumentNullException(nameof(tokenStore));
+        _logger = logger ?? NullLogger<WarframeMarketClient>.Instance;
+        _http.BaseAddress ??= new Uri("https://api.warframe.market/");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("my-frame/1.0 (+local desktop application)");
+        _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        _http.Timeout = TimeSpan.FromSeconds(15);
+    }
+
+    [Obsolete("Use the My Frame credential store constructor; AlecaFrame is no longer a required dependency.")]
     public WarframeMarketClient(HttpClient httpClient, IAlecaFramePath alecaPath,
         ILogger<WarframeMarketClient>? logger = null) : this(httpClient,
-            Path.Combine(alecaPath.DirectoryPath, "WFMarketToken.tk"), logger)
-    {
-        _tokenPath = () => Path.Combine(alecaPath.DirectoryPath, "WFMarketToken.tk");
-    }
+            Path.Combine(alecaPath.DirectoryPath, "WFMarketToken.tk"), logger) { }
 
     public async Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default)
     {
@@ -135,14 +145,9 @@ public sealed class WarframeMarketClient : IWarframeMarketClient
 
     private async Task<string?> ReadValidTokenAsync(CancellationToken cancellationToken)
     {
-        var tokenPath = _tokenPath();
-        if (!File.Exists(tokenPath)) return null;
-        string token;
-        await using (var stream = new FileStream(tokenPath, FileMode.Open, FileAccess.Read,
-                         FileShare.ReadWrite | FileShare.Delete, 4096,
-                         FileOptions.Asynchronous | FileOptions.SequentialScan))
-        using (var reader = new StreamReader(stream, Encoding.UTF8, true, 4096, leaveOpen: false))
-            token = (await reader.ReadToEndAsync(cancellationToken)).Trim();
+        if (_tokenStore is null) return null;
+        var token = await _tokenStore.ReadAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(token)) return null;
         var parts = token.Split('.');
         if (parts.Length != 3) return null;
         try
