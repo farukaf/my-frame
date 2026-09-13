@@ -239,6 +239,12 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                 1, DateTimeOffset.UtcNow, "test", "verified", payload, "f33-hash");
             var projection = InventoryPayloadParser.Parse(payload);
             await database.PublishInventoryAsync(envelope, projection);
+            var bounty = new WorldStateBounty("deimos-f33", "Entrati", DateTimeOffset.UtcNow.AddMinutes(-5),
+                DateTimeOffset.UtcNow.AddMinutes(55), [new WorldStateJob("job-f33", "Sample bounty", null, 3,
+                    [100], [new WorldStateReward("Endo", 50, 100, "Common")])]);
+            var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
+                [bounty], [], "world-f33", true, new Dictionary<string, InventoryFieldState>());
+            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1));
         }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
         environment["MYFRAME_DATA_ROOT"] = data.Path;
@@ -300,7 +306,10 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, bountiesResult.IsError);
         Assert.NotNull(bountiesResult.StructuredContent);
-        Assert.Contains("not_initialized", JsonSerializer.Serialize(bountiesResult.StructuredContent));
+        var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);
+        Assert.Contains("available", bountiesJson);
+        Assert.Contains("Entrati", bountiesJson);
+        Assert.Contains("Endo", bountiesJson);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
