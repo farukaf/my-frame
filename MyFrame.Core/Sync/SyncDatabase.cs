@@ -397,7 +397,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT r.revision_id, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected, run.error_code
+            SELECT r.revision_id, r.parser_version, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected, run.error_code
             FROM sources s LEFT JOIN source_revisions r ON r.source_id=s.source_id AND r.state='active'
             LEFT JOIN sync_runs run ON run.run_id=(SELECT run_id FROM sync_runs WHERE source_id=s.source_id ORDER BY started_at DESC LIMIT 1)
             WHERE s.source_id=$source LIMIT 1;
@@ -405,7 +405,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         command.Parameters.AddWithValue("$source", sourceId);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
-        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? null : reader.GetString(6));
+        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(

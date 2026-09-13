@@ -260,7 +260,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
                 [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true,
                 new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved });
-            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1));
+            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1, "worldstate-official-1"));
         }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
         environment["MYFRAME_DATA_ROOT"] = data.Path;
@@ -339,6 +339,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotEqual(true, syncStatusResult.IsError);
         var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
         Assert.Contains("activeRevisionId", syncStatusJson);
+        Assert.Contains("worldstate-official-1", syncStatusJson);
         Assert.Contains("acceptedRecords", syncStatusJson);
         Assert.Contains("warframe-market", syncStatusJson);
         var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);
