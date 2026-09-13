@@ -28,6 +28,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
+- [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
