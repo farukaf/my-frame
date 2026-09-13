@@ -218,6 +218,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F180: cadastrar Codex/Claude no MCP distribuído e corrigir verificador de configuração ([evidências](docs/validacoes/2026-09-13-f180.md)).
 - [x] F181: executar smoke real do caso Mother Token e validar tratamento de fonte não inicializada ([evidências](docs/validacoes/2026-09-13-f181.md)).
 - [x] F182: executar o caso Mother Token em Codex/Claude com revisão World State publicada em fixture ([evidências](docs/validacoes/2026-09-13-f182.md)).
+- [x] F183: enriquecer fixture World State com validade/ciclo e validar resposta F10 sem inferências ([evidências](docs/validacoes/2026-09-13-f183.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
