@@ -73,6 +73,31 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task DashboardAndMcpReadTheSameSnapshotProvider()
+    {
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { ["/parity/item"] = 7 },
+            new HashSet<string>(), new Dictionary<string, long>(), 1, 2, "parity");
+        var item = CatalogItem("/parity/item", "Parity Item");
+        var snapshot = Snapshot("parity-snapshot", inventory, [item]);
+        var provider = new FakeProvider(snapshot);
+        using var folder = new TemporaryFolder();
+        using var dashboard = new DashboardService(new ParityPath(folder.Path),
+            new EmptyInventoryReader(), new EmptyCatalogReader(), new EmptyMarket(),
+            new EmptyPriceCache(), new EmptyMarketState(), new EmptyMarketItems(),
+            new RecommendationEngine(), snapshotProvider: provider);
+
+        var uiSnapshot = await dashboard.RefreshAsync(refreshPrices: false);
+        var mcpPage = await Service(provider).SearchInventoryAsync(null, null, null, null,
+            "all", false, 50, null, null, default);
+
+        var mcpItem = Assert.Single(mcpPage.Items);
+        Assert.Equal(uiSnapshot.Inventory.Stackables["/parity/item"], mcpItem.Quantity);
+        Assert.Equal(uiSnapshot.Inventory.Stackables.Count, mcpPage.TotalCount);
+        Assert.Equal(item.Name, mcpItem.Name);
+    }
+
+    [Fact]
     public async Task CursorKeepsTheOriginalSnapshotWhenCurrentDataChanges()
     {
         var oldSnapshot = Snapshot("old", ("/a", "Alpha"), ("/b", "Beta"));
@@ -616,6 +641,55 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
 
     private static CatalogItem CatalogItem(string id, string name) => new(id, name, "Items", "",
         "", false, false, false, false, null, null, null, [], []);
+
+    private sealed class ParityPath(string directory) : IAlecaFramePath
+    {
+        public string DirectoryPath { get; private set; } = directory;
+        public event EventHandler<string>? Changed;
+        public void SetDirectory(string directoryPath)
+        {
+            DirectoryPath = directoryPath;
+            Changed?.Invoke(this, directoryPath);
+        }
+    }
+
+    private sealed class EmptyInventoryReader : IAlecaFrameReader
+    {
+        public Task<InventorySnapshot> ReadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply inventory for this parity test.");
+    }
+
+    private sealed class EmptyCatalogReader : IAlecaCatalogReader
+    {
+        public Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply catalog for this parity test.");
+    }
+
+    private sealed class EmptyMarket : IWarframeMarketClient
+    {
+        public Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketAccount?>(null);
+        public Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MarketOrder>>([]);
+        public Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+    }
+
+    private sealed class EmptyPriceCache : IPriceCache
+    {
+        public Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task SetAsync(MarketQuote quote, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketState : IMarketStateStore
+    {
+        public Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketState?>(null);
+        public Task SaveAsync(MarketState state, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketItems : IMarketItemIndexStore
+    {
+        public Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+        public Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeProvider(params MyFrameSnapshot[] snapshots) : IMyFrameSnapshotProvider
     {
