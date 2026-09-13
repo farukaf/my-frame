@@ -120,4 +120,16 @@ public sealed class SyncDatabaseTests
         Assert.Equal("instance-1", stored[0].InstanceId);
         Assert.Equal(InventoryFieldState.NotObserved, stored[0].ConfigState);
     }
+
+    [Fact]
+    public async Task WorldStatePublicationKeepsExpiryAndSourceRevision()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var snapshot = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture", [new WorldStateBounty("bounty", "Entrati", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10), [new WorldStateJob("job", "Sample", null, 0, [100], [new WorldStateReward("Endo", 50, 100, "Common")])])], [], "world-hash", true, new Dictionary<string, InventoryFieldState>());
+        await db.PublishWorldStateAsync(snapshot, new SyncBatch("worldstate-pc", "world-hash", "{}", 1));
+        var current = await db.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow);
+        Assert.Single(current);
+        Assert.Equal("Entrati", current[0].Syndicate);
+    }
 }

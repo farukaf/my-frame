@@ -32,6 +32,8 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F3: publicar registros Public Export normalizados junto da revisão SQLite em transação única.
 - [x] F4: contrato de envelope/projeção de inventário com cobertura e instâncias desconhecidas.
 - [x] F4: persistir inventário rico e campos desconhecidos na revisão SQLite.
+- [x] F5: parser/client de World State com validade, bounties, ciclos e recompensas atribuídas.
+- [x] F5: publicar World State em revisão SQLite independente.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
