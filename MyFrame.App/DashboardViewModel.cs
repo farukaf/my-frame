@@ -88,7 +88,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
-    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
+    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Optional legacy import. Synchronized SQLite data is preferred.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
     [ObservableProperty] public partial string SelectedSalesSort { get; set; } = "Name";
     [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
@@ -153,7 +153,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             _logger.LogInformation("No synchronized SQLite data is available; opening optional legacy Settings");
             StatusMessage = "No synchronized Warframe data is available yet.";
-            AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
+            AlecaFrameDirectoryMessage = $"{directoryError} You can choose a legacy folder, but it is not required for SQLite data.";
             ShowSection("Settings");
             return;
         }
@@ -274,7 +274,7 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings.AlecaFrameDirectory = directory;
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
-        AlecaFrameDirectoryMessage = "Folder saved. Legacy inventory and catalog import use this location; market credentials stay in My Frame storage.";
+        AlecaFrameDirectoryMessage = "Legacy folder saved. SQLite synchronized data remains the primary source.";
         StatusMessage = "AlecaFrame folder configured. Loading data…";
         await RefreshAsync();
     }
@@ -282,13 +282,13 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void ResetAlecaFrameDirectory()
     {
-        _localSettings.AlecaFrameDirectory = _directorySettings.AutomaticDirectory;
-        _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
+        _localSettings.AlecaFrameDirectory = string.Empty;
+        _alecaPath.SetDirectory(string.Empty);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
         AlecaFrameDirectoryMessage = error is null
-            ? "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame)."
-            : $"Automatic location restored, but it is not ready: {error}";
+            ? "Legacy folder cleared; SQLite synchronized data remains primary."
+            : $"Legacy folder cleared. SQLite data remains usable; optional import is not ready: {error}";
         if (error is not null)
         {
             StatusMessage = "AlecaFrame data folder needs to be configured.";
