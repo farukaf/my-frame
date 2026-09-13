@@ -185,6 +185,26 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task InventoryPublicationPreservesAttributedUpgrades()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-upgrades-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+            DateTimeOffset.UtcNow, "test", "verified", "{\"mods\":[]}", "upgrades-hash");
+        var projection = new InventoryProjection([], [], [],
+            new Dictionary<string, InventoryFieldState> { ["upgrades.mods"] = InventoryFieldState.Known },
+            [new InventoryUpgradeRecord("instance-1", "mods", "/Lotus/Mod", 5, "{\"id\":\"/Lotus/Mod\",\"rank\":5}")]);
+
+        await db.PublishInventoryAsync(envelope, projection);
+
+        var stored = await db.GetInventoryUpgradesAsync();
+        var upgrade = Assert.Single(stored);
+        Assert.Equal("instance-1", upgrade.OwnerInstanceId);
+        Assert.Equal("/Lotus/Mod", upgrade.UpgradeId);
+        Assert.Equal(5, upgrade.Rank);
+    }
+
+    [Fact]
     public async Task SynchronizedReaderProjectsPublishedInventoryAndCatalog()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");

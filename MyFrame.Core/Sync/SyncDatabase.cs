@@ -34,6 +34,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
+            CREATE TABLE IF NOT EXISTS inventory_upgrades(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, owner_instance_id TEXT, source_field TEXT NOT NULL, upgrade_id TEXT, rank INTEGER, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), source_timestamp TEXT, retrieved_at TEXT NOT NULL, is_current INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS worldstate_bounties(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), bounty_id TEXT NOT NULL, syndicate TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, bounty_id));
             CREATE TABLE IF NOT EXISTS worldstate_jobs(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, type TEXT, unique_name TEXT, minimum_mastery_rank INTEGER, standing_stages_json TEXT NOT NULL, PRIMARY KEY(revision_id, bounty_id, job_id));
@@ -153,6 +154,25 @@ public sealed class SyncDatabase : IAsyncDisposable
         return records;
     }
 
+    public async Task<IReadOnlyList<InventoryUpgradeRecord>> GetInventoryUpgradesAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT u.owner_instance_id, u.source_field, u.upgrade_id, u.rank, u.raw_json
+            FROM inventory_upgrades u JOIN inventory_revisions ir ON ir.revision_id=u.revision_id
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active' ORDER BY u.ordinal;
+            """;
+        var records = new List<InventoryUpgradeRecord>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            records.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0), reader.GetString(1),
+                reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3), reader.GetString(4)));
+        return records;
+    }
+
     public async Task<IReadOnlyList<WorldStateBounty>> GetCurrentWorldStateBountiesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_path)) return [];
@@ -220,6 +240,11 @@ public sealed class SyncDatabase : IAsyncDisposable
                 {
                     var unknown = data.Projection.Unknown[index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_unknown(revision_id, ordinal, kind, reason_code, raw_json) VALUES ($revision, $ordinal, $kind, $reason, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$kind", unknown.Kind), ("$reason", unknown.ReasonCode), ("$raw", unknown.RawJson));
+                }
+                for (var index = 0; index < (data.Projection.Upgrades?.Count ?? 0); index++)
+                {
+                    var upgrade = data.Projection.Upgrades![index];
+                    await CommandAsync(connection, transaction, "INSERT INTO inventory_upgrades(revision_id, ordinal, owner_instance_id, source_field, upgrade_id, rank, raw_json) VALUES ($revision, $ordinal, $owner, $source, $id, $rank, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$owner", (object?)upgrade.OwnerInstanceId ?? DBNull.Value), ("$source", upgrade.SourceField), ("$id", (object?)upgrade.UpgradeId ?? DBNull.Value), ("$rank", (object?)upgrade.Rank ?? DBNull.Value), ("$raw", upgrade.RawJson));
                 }
                 foreach (var field in data.Projection.Coverage)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('overwolf-inventory', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
