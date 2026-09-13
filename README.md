@@ -176,6 +176,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F83 — procedência no resultado do sync](docs/validacoes/2026-09-13-f83.md)
 - [Validação F84 — proteção contra fallback em schema inválido](docs/validacoes/2026-09-13-f84.md)
 - [Validação F85 — fluxo oficial até SQLite](docs/validacoes/2026-09-13-f85.md)
+- [Validação F86 — verificador do endpoint World State](docs/validacoes/2026-09-13-f86.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
