@@ -62,6 +62,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F22: implementar restore SQLite a partir de backup validado e testar reabertura ([evidências](docs/validacoes/2026-09-13-f22.md)).
 - [x] F23: exibir histórico recente de tentativas e falhas na página de sincronização ([evidências](docs/validacoes/2026-09-13-f23.md)).
 - [x] F24: expor histórico sanitizado de sincronização no MCP, com filtro e limite ([evidências](docs/validacoes/2026-09-13-f24.md)).
+- [x] F25: executar o gate estrutural da matriz F10 e registrar a ausência do baseline real ([evidências](docs/validacoes/2026-09-13-f25.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
