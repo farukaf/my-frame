@@ -5,8 +5,18 @@ using ModelContextProtocol.Server;
 namespace MyFrame.Mcp;
 
 [McpServerToolType]
-public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate execution)
+public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate execution, PlatformStatusService platform)
 {
+    [McpServerTool(Name = "get_capabilities", Title = "Get platform capabilities", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns available, partial and externally pending data capabilities. Check this before asking for rich inventory, activities or references.")]
+    public CapabilitiesResponse GetCapabilities() => platform.GetCapabilities();
+
+    [McpServerTool(Name = "get_sync_status", Title = "Get synchronization status", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns read-only status for local sources and their last error. It never starts network synchronization or changes the database.")]
+    public Task<SyncStatusResponse> GetSyncStatus(CancellationToken cancellationToken = default) => platform.GetSyncStatusAsync(cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]
