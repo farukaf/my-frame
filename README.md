@@ -177,6 +177,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F182 — caso F10 Mother Token com revisão World State publicada](docs/validacoes/2026-09-13-f182.md)
 - [Validação F183 — resposta F10 com validade temporal e ciclo de Deimos](docs/validacoes/2026-09-13-f183.md)
 - [Validação F184 — regressão após fixture World State enriquecida](docs/validacoes/2026-09-13-f184.md)
+- [Validação F185 — importação explícita de captura Overwolf pelo SyncHost](docs/validacoes/2026-09-13-f185.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
