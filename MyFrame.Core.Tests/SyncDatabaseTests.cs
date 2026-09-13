@@ -178,6 +178,22 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task HostMaintenanceRunsRetentionThroughTheLifecycleBoundary()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-host-maintenance-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await db.PublishAsync(new SyncBatch("source", "one", "{}", 1));
+        await db.PublishAsync(new SyncBatch("source", "two", "{}", 1));
+        await db.PublishAsync(new SyncBatch("source", "three", "{}", 1));
+        await using var host = new SyncHost(db);
+
+        Assert.Equal(1, await host.RunMaintenanceAsync(2));
+        Assert.True(host.State.Running);
+        Assert.NotNull(host.State.LastRunAt);
+        Assert.Equal("three", (await db.GetStatusAsync("source"))!.ActiveContentHash);
+    }
+
+    [Fact]
     public async Task RecentRunsAreReadOnlyAndOrderedAcrossSources()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
