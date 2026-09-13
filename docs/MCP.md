@@ -215,6 +215,7 @@ permitir filtros e paginação previsível.
 | Ferramenta | Finalidade e filtros principais |
 | --- | --- |
 | `get_capabilities` | Capacidades disponíveis, parciais e pendentes de validação externa. |
+| `get_market_credential_status` | Estado/expiração da credencial independente do Warframe Market; nunca retorna o token. |
 | `get_sync_status` | Estado somente leitura das fontes, última tentativa, revisão ativa, versão do parser, contagens aceitas/rejeitadas e erro sanitizado. |
 | `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
