@@ -16,14 +16,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(IDashboardService service, ILogger<MainViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
-        IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader)
+        IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader,
+        CollectorCaptureInboxService collectorCaptureInbox)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
-        SyncStatus = new(syncStatusReader, logger);
+        SyncStatus = new(syncStatusReader, collectorCaptureInbox, logger);
         Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
             message => GlobalStatus.StatusMessage = message);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
