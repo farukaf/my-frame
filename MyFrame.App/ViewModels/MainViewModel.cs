@@ -17,14 +17,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
         IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader,
-        CollectorCaptureInboxService collectorCaptureInbox)
+        CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher collectorCaptureWatcher)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
-        SyncStatus = new(syncStatusReader, collectorCaptureInbox, logger);
+        SyncStatus = new(syncStatusReader, collectorCaptureInbox, collectorCaptureWatcher, logger);
+        collectorCaptureWatcher.CaptureDetected += (_, _) => SyncStatus.HandleCaptureDetected();
         Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
             message => GlobalStatus.StatusMessage = message);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
@@ -49,6 +50,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (_initialized) return;
         _initialized = true;
+        SyncStatus.StartWatcher();
         _logger.LogInformation("Dashboard view initialized");
         await SyncStatus.RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
@@ -118,6 +120,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _service.SnapshotUpdated -= OnSnapshotUpdated;
+        SyncStatus.StopWatcher();
         _settingsDebounce?.Cancel(); _settingsDebounce?.Dispose();
     }
 }

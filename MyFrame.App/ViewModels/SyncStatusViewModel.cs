@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MyFrame.App;
 
-public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, ILogger logger) : ObservableObject
+public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher watcher, ILogger logger) : ObservableObject
 {
     [ObservableProperty] public partial bool IsVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
@@ -13,6 +13,8 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
+    [ObservableProperty] public partial string CollectorCaptureNotice { get; set; } = "";
+    [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     public string CollectorCaptureDirectory => collectorCaptureInbox.DirectoryPath;
     public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
 
@@ -43,26 +45,40 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
         if (IsImportingCollectorCaptures) return;
         if (!AllowCollectorRawPayload)
         {
-            CollectorCaptureMessage = "Marque o consentimento para importar o payload privado da captura.";
+            CollectorCaptureMessage = "Grant consent to import the private capture payload.";
             return;
         }
         IsImportingCollectorCaptures = true;
-        CollectorCaptureMessage = "Importando capturas validadas…";
+        CollectorCaptureMessage = "Importing validated captures…";
         try
         {
             var result = await collectorCaptureInbox.ImportAsync(true);
-            CollectorCaptureMessage = $"Encontradas {result.Discovered:N0}; novas {result.Imported:N0}; já publicadas {result.AlreadyPublished:N0}; rejeitadas {result.Rejected:N0}.";
+            CollectorCaptureNotice = "";
+            CollectorCaptureNoticeVisible = false;
+            CollectorCaptureMessage = $"Found {result.Discovered:N0}; new {result.Imported:N0}; already published {result.AlreadyPublished:N0}; rejected {result.Rejected:N0}.";
             await RefreshSyncStatusAsync();
         }
         catch (Exception error)
         {
             logger.LogError(error, "Collector capture inbox import failed");
-            CollectorCaptureMessage = "Importação rejeitada; nenhum payload foi publicado.";
+            CollectorCaptureMessage = "Import rejected; no payload was published.";
         }
         finally
         {
             AllowCollectorRawPayload = false;
             IsImportingCollectorCaptures = false;
         }
+    }
+
+    public void StartWatcher() => watcher.Start();
+    public void StopWatcher() => watcher.Dispose();
+    public void HandleCaptureDetected()
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            CollectorCaptureNotice = "New capture detected. Review it and import with explicit consent.";
+            CollectorCaptureNoticeVisible = true;
+            await RefreshSyncStatusAsync();
+        });
     }
 }
