@@ -133,6 +133,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F93: migrar parserVersion ausente em revisões SQLite legadas sem perda de dados ([evidências](docs/validacoes/2026-09-13-f93.md)).
 - [x] F94: executar suíte completa da solução e build integrado do App/MCP ([evidências](docs/validacoes/2026-09-13-f94.md)).
 - [x] F95: validar backup/rollback e reaplicação da migração SQLite legada ([evidências](docs/validacoes/2026-09-13-f95.md)).
+- [x] F96: validar MCP ativo lendo banco migrado em chamadas consecutivas ([evidências](docs/validacoes/2026-09-13-f96.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
