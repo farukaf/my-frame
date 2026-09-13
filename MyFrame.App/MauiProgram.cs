@@ -25,8 +25,10 @@ public static class MauiProgram
         var automaticAlecaDirectory = MyFrameStoragePaths.DefaultAlecaFrameDirectory;
         var migration = SharedDataMigration.Ensure();
         var alecaDirectory = migration.Settings.AlecaFrameDirectory;
-        builder.Services.AddSingleton<IMyFrameSettingsWriter>(migration.Store);
-        builder.Services.AddSingleton<IMyFrameSettingsStore>(migration.Store);
+        builder.Services.AddSingleton<SqliteSettingsStore>(_ => new SqliteSettingsStore(
+            MyFrameStoragePaths.DataDatabasePath, MyFrameStoragePaths.SettingsPath));
+        builder.Services.AddSingleton<IMyFrameSettingsWriter>(p => p.GetRequiredService<SqliteSettingsStore>());
+        builder.Services.AddSingleton<IMyFrameSettingsStore>(p => p.GetRequiredService<SqliteSettingsStore>());
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
