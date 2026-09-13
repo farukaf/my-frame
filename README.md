@@ -201,6 +201,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F108 — chamadas MCP pelo Inspector](docs/validacoes/2026-09-13-f108.md)
 - [Validação F109 — paridade do snapshot entre UI e MCP](docs/validacoes/2026-09-13-f109.md)
 - [Validação F110 — limite de retenção dos snapshots](docs/validacoes/2026-09-13-f110.md)
+- [Validação F111 — falha MCP sem escrita ou vazamento](docs/validacoes/2026-09-13-f111.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
