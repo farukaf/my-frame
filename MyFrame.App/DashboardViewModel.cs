@@ -56,7 +56,7 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     [ObservableProperty] public partial bool IsBusy { get; set; }
-    [ObservableProperty] public partial string StatusMessage { get; set; } = "Waiting for AlecaFrame data…";
+    [ObservableProperty] public partial string StatusMessage { get; set; } = "Waiting for synchronized Warframe data…";
     [ObservableProperty] public partial string LastSyncText { get; set; } = "—";
     [ObservableProperty] public partial string AccountText { get; set; } = "Warframe.Market not connected";
     [ObservableProperty] public partial string TotalPlatinum { get; set; } = "0p";
@@ -136,14 +136,25 @@ public partial class DashboardViewModel : ObservableObject
         _logger.LogInformation("Dashboard view initialized");
         await RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
-        if (directoryError is not null)
+        var hasSynchronizedData = false;
+        try
         {
-            _logger.LogInformation("AlecaFrame folder is not configured; opening Settings");
-            StatusMessage = "AlecaFrame data folder needs to be configured.";
+            hasSynchronizedData = await _syncStatusReader.HasSynchronizedDataAsync();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or NotSupportedException)
+        {
+            _logger.LogWarning(error, "Synchronized SQLite data could not be inspected during startup");
+        }
+        if (directoryError is not null && !hasSynchronizedData)
+        {
+            _logger.LogInformation("No synchronized SQLite data is available; opening optional legacy Settings");
+            StatusMessage = "No synchronized Warframe data is available yet.";
             AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
             ShowSection("Settings");
             return;
         }
+        if (directoryError is not null)
+            StatusMessage = "Using synchronized My Frame data; legacy AlecaFrame import is optional.";
         await RefreshAsync();
     }
 
