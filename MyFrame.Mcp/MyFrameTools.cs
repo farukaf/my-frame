@@ -68,14 +68,16 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [Description("Returns currently active World State bounties with jobs, standing stages and attributed rewards. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
     public Task<WorldStateBountiesResponse> GetBounties(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
-        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, cancellationToken);
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, cancellationToken);
 
     [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns the current World State source status, active bounties with rewards, and supported planetary cycles. It is read-only and never fetches the network.")]
     public Task<WorldStateResponse> GetWorldState(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
-        CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, cancellationToken);
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, syndicate, cancellationToken);
 
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
