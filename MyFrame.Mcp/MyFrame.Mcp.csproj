@@ -13,6 +13,8 @@
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <!-- The MCP executable directly activates the protected WFM credential store. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.11" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyFrame.Core\MyFrame.Core.csproj" />
