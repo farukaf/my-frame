@@ -124,6 +124,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F84: testar que payload oficial inválido não aciona fallback comunitário ([evidências](docs/validacoes/2026-09-13-f84.md)).
 - [x] F85: validar publicação completa do World State oficial até SQLite e status ([evidências](docs/validacoes/2026-09-13-f85.md)).
 - [x] F86: criar verificador operacional do endpoint World State e registrar gate externo ([evidências](docs/validacoes/2026-09-13-f86.md)).
+- [x] F87: permitir validação offline do contrato World State por fixture ([evidências](docs/validacoes/2026-09-13-f87.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
