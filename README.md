@@ -160,6 +160,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F67 — tentativa interativa F1](docs/validacoes/2026-09-13-f67.md)
 - [Validação F68 — prioridade SQLite sobre legado AlecaFrame](docs/validacoes/2026-09-13-f68.md)
 - [Validação F69 — instalação nova sem caminho AlecaFrame](docs/validacoes/2026-09-13-f69.md)
+- [Validação F70 — UX explicita importação legada opcional](docs/validacoes/2026-09-13-f70.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
