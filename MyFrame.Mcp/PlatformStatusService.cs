@@ -183,19 +183,25 @@ public sealed class PlatformStatusService
     }
 
     public async Task<WorldStateResponse> GetWorldStateAsync(int limit = 100, string? syndicate = null,
+        string? reward = null,
         CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
             throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+        if (reward?.Length > 200)
+            throw new ArgumentOutOfRangeException(nameof(reward), "reward is limited to 200 characters.");
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
         var cycles = await database.GetCurrentWorldStateCyclesAsync(cancellationToken);
         var coverage = await database.GetSourceCoverageAsync("worldstate-pc", cancellationToken);
         var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
+        var normalizedReward = string.IsNullOrWhiteSpace(reward) ? null : reward.Trim();
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode,
             bounties.Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
                 string.Equals(bounty.Syndicate, syndicate, StringComparison.OrdinalIgnoreCase))
+                .Where(bounty => normalizedReward is null || bounty.Jobs.Any(job =>
+                    job.Rewards.Any(value => value.Item.Contains(normalizedReward, StringComparison.OrdinalIgnoreCase))))
                 .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
                 bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
@@ -206,5 +212,6 @@ public sealed class PlatformStatusService
     }
 
     public Task<WorldStateResponse> GetActivityAsync(int limit = 100, string? syndicate = null,
-        CancellationToken cancellationToken = default) => GetWorldStateAsync(limit, syndicate, cancellationToken);
+        string? reward = null,
+        CancellationToken cancellationToken = default) => GetWorldStateAsync(limit, syndicate, reward, cancellationToken);
 }
