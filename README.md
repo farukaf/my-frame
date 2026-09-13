@@ -118,6 +118,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F25 — execução do gate estrutural F10](docs/validacoes/2026-09-13-f25.md)
 - [Validação F26 — artefato distribuível Windows](docs/validacoes/2026-09-13-f26.md)
 - [Validação F27 — smoke de instalação limpa](docs/validacoes/2026-09-13-f27.md)
+- [Validação F28 — gate MCP read-only](docs/validacoes/2026-09-13-f28.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
