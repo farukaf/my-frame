@@ -14,7 +14,8 @@ public sealed record PublicExportRecord(
     string? Name,
     string? Category,
     string? Description,
-    IReadOnlyDictionary<string, string> Aliases);
+    IReadOnlyDictionary<string, string> Aliases,
+    string? RawJson = null);
 
 public static class PublicExportIndexParser
 {
@@ -82,7 +83,7 @@ public static class PublicExportDocumentParser
             {
                 ["en"] = name ?? uniqueName
             };
-            records.Add(new PublicExportRecord(uniqueName, name, category, description, aliases));
+            records.Add(new PublicExportRecord(uniqueName, name, category, description, aliases, item.GetRawText()));
         }
         return records;
     }
