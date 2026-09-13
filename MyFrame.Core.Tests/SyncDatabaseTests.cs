@@ -122,6 +122,32 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task SynchronizedReaderProjectsPublishedInventoryAndCatalog()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-hash", "[]", 1),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null, new Dictionary<string, string>())]);
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, "native", "unverified", "{}", "inventory-hash");
+            var projection = new InventoryProjection(
+                [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 30, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{}")],
+                [new InventoryStackableRecord("/Lotus/Resource", 7, InventoryFieldState.Known, "{}")], [],
+                new Dictionary<string, InventoryFieldState>());
+            await db.PublishInventoryAsync(envelope, projection);
+        }
+
+        var reader = new SqliteSynchronizedDataReader(path);
+        var snapshot = await reader.ReadAsync();
+        Assert.NotNull(snapshot);
+        Assert.Contains("/Lotus/Weapon", snapshot!.Inventory.OwnedEquipment);
+        Assert.Equal(7, snapshot.Inventory.Stackables["/Lotus/Resource"]);
+        Assert.Single(snapshot.Catalog.Items);
+        Assert.Equal("Test Weapon", snapshot.Catalog.Items[0].Name);
+    }
+
+    [Fact]
     public async Task WorldStatePublicationKeepsExpiryAndSourceRevision()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
