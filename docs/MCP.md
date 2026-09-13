@@ -214,6 +214,15 @@ permitir filtros e paginação previsível.
 
 | Ferramenta | Finalidade e filtros principais |
 | --- | --- |
+| `get_capabilities` | Capacidades disponíveis, parciais e pendentes de validação externa. |
+| `get_sync_status` | Estado somente leitura das fontes, última tentativa e erro sanitizado. |
+| `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
+| `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
+| `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
+| `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
+| `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
+| `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
+| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
 | `search_inventory` | Busca inventário agregado suportado por texto, tipo, categoria, quantidade conhecida e estado built/stackable. |
 | `get_item` | Detalhe por `itemId`, com posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
@@ -226,6 +235,11 @@ permitir filtros e paginação previsível.
 Todas terão anotações equivalentes a `readOnlyHint=true`, `destructiveHint=false`,
 `idempotentHint=true` e `openWorldHint=false`. Não haverá `set_*`, `update_*`, `sell_*`,
 `delete_*` nem uma ferramenta de atualização de mercado na v1.
+
+As ferramentas de estado (`get_*` de plataforma, inventário rico e bounties) retornam
+listas estruturadas sem paginação por snapshot; seus limites são explícitos no schema.
+As ferramentas analíticas abaixo usam `snapshotId` e cursores assinados para manter
+uma geração consistente durante a paginação.
 
 ### Prompt opcional
 
