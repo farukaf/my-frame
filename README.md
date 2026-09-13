@@ -146,6 +146,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F53 — limite de resposta do World State](docs/validacoes/2026-09-13-f53.md)
 - [Validação F54 — filtro de sindicato no World State](docs/validacoes/2026-09-13-f54.md)
 - [Validação F55 — inicialização sem dependência de AlecaFrame](docs/validacoes/2026-09-13-f55.md)
+- [Validação F56 — metadados de sincronização no MCP](docs/validacoes/2026-09-13-f56.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
