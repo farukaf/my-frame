@@ -185,6 +185,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F147: criar gate read-only de prontidão do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f147.md)).
 - [x] F148: consolidar build, preflight do pacote e readiness Overwolf em um comando ([evidências](docs/validacoes/2026-09-13-f148.md)).
 - [x] F149: registrar heartbeat sanitizado para comprovar sessão do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f149.md)).
+- [x] F150: usar heartbeat como evidência primária de runtime no gate Overwolf ([evidências](docs/validacoes/2026-09-13-f150.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
