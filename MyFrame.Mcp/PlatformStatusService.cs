@@ -24,6 +24,8 @@ public sealed record WorldStateJobDto(string Id, string? Type, string? UniqueNam
     int? MinimumMasteryRank, IReadOnlyList<int> StandingStages, IReadOnlyList<WorldStateRewardDto> Rewards);
 public sealed record WorldStateBountyDto(string Id, string? Syndicate, DateTimeOffset? Activation,
     DateTimeOffset? Expiry, IReadOnlyList<WorldStateJobDto> Jobs);
+public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string State,
+    DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties);
 
 public sealed class PlatformStatusService
 {
@@ -154,7 +156,7 @@ public sealed class PlatformStatusService
             .ToArray();
     }
 
-    public async Task<IReadOnlyList<WorldStateBountyDto>> GetBountiesAsync(
+    public async Task<WorldStateBountiesResponse> GetBountiesAsync(
         int limit = 100, CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
@@ -162,9 +164,11 @@ public sealed class PlatformStatusService
 
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
-        return bounties.Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
+        var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
+        var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
+        return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode, bounties.Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
             bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                 job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
-                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray();
+                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray());
     }
 }

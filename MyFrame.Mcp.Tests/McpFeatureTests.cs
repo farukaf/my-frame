@@ -300,6 +300,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, bountiesResult.IsError);
         Assert.NotNull(bountiesResult.StructuredContent);
+        Assert.Contains("not_initialized", JsonSerializer.Serialize(bountiesResult.StructuredContent));
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
