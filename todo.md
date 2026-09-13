@@ -104,6 +104,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F64: validar pacote Overwolf e testes de framing/UI do coletor ([evidências](docs/validacoes/2026-09-13-f64.md)).
 - [x] F65: publicar artefato Windows 0.0.7 e executar smoke do MCP distribuído ([evidências](docs/validacoes/2026-09-13-f65.md)).
 - [x] F66: validar a estrutura dos três casos da matriz F10 ([evidências](docs/validacoes/2026-09-13-f66.md)).
+- [x] F67: registrar nova tentativa interativa do gate F1 sem declarar captura real ([evidências](docs/validacoes/2026-09-13-f67.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
