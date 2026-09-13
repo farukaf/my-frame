@@ -195,6 +195,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F102 — dois servidores MCP em paralelo](docs/validacoes/2026-09-13-f102.md)
 - [Validação F103 — memória de dois processos MCP](docs/validacoes/2026-09-13-f103.md)
 - [Validação F104 — upgrade lado a lado da distribuição](docs/validacoes/2026-09-13-f104.md)
+- [Validação F105 — configuração dos clientes MCP](docs/validacoes/2026-09-13-f105.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
