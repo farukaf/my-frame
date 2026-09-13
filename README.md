@@ -164,6 +164,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F71 — skill de farm alinhada ao World State v2](docs/validacoes/2026-09-13-f71.md)
 - [Validação F72 — identificador do mercado alinhado no sync status](docs/validacoes/2026-09-13-f72.md)
 - [Validação F73 — limites e filtros World State no stdio](docs/validacoes/2026-09-13-f73.md)
+- [Validação F74 — skill de builds alinhada à cobertura v2](docs/validacoes/2026-09-13-f74.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
