@@ -52,28 +52,19 @@ if (worldState)
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
 try
 {
-    var decoder = new LzmaAloneDecoder();
-    var indexClient = new PublicExportIndexClient(httpClient, decoder.Decode);
-    var documentClient = new PublicExportDocumentClient(httpClient, decoder);
-    var entries = await indexClient.FetchIndexAsync();
-    var entry = entries.FirstOrDefault(value =>
-        value.RelativePath.Contains("ExportWeapons_en.json", StringComparison.OrdinalIgnoreCase))
-        ?? entries.FirstOrDefault(value => value.RelativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
-    if (entry is null) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
-    var publication = await host.RunPublicExportOnceAsync("public-export", documentClient, entry);
-    var status = await database.GetStatusAsync("public-export");
+    var result = await new PublicExportSyncRunner().RunAsync(database, host, httpClient);
     var output = new
     {
-        state = publication is null ? status?.LastRunState ?? "failed" : "published",
-        records = publication?.RecordCount ?? 0,
-        revisionId = publication?.RevisionId ?? status?.ActiveRevisionId,
-        parserVersion = status?.ParserVersion,
-        errorCode = publication is null ? status?.ErrorCode ?? "SYNC_FAILED" : null,
-        source = entry.RelativePath,
-        revisionTag = entry.RevisionTag
+        state = result.State,
+        records = result.Records,
+        revisionId = result.RevisionId,
+        parserVersion = result.ParserVersion,
+        errorCode = result.ErrorCode,
+        source = result.RelativePath,
+        revisionTag = result.RevisionTag
     };
     Console.WriteLine(JsonSerializer.Serialize(output));
-    return publication is null ? 1 : 0;
+    return result.State == "published" ? 0 : 1;
 }
 catch (Exception error) when (error is HttpRequestException or InvalidDataException or NotSupportedException)
 {

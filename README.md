@@ -129,6 +129,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F134 — executor local de sincronização Public Export](docs/validacoes/2026-09-13-f134.md)
 - [Validação F135 — status operacional via CLI](docs/validacoes/2026-09-13-f135.md)
 - [Validação F136 — executor World State](docs/validacoes/2026-09-13-f136.md)
+- [Validação F137 — orquestrador Public Export compartilhado](docs/validacoes/2026-09-13-f137.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
