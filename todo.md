@@ -118,6 +118,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F78: adaptar aliases do World State oficial e tornar o endpoint DE a fonte padrão ([evidências](docs/validacoes/2026-09-13-f78.md)).
 - [x] F79: expor a versão do parser na página/status MCP para rastrear procedência ([evidências](docs/validacoes/2026-09-13-f79.md)).
 - [x] F80: derivar automaticamente a versão do parser pela fonte World State usada ([evidências](docs/validacoes/2026-09-13-f80.md)).
+- [x] F81: habilitar fallback comunitário somente para falhas de transporte da fonte oficial ([evidências](docs/validacoes/2026-09-13-f81.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
