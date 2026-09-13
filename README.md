@@ -125,6 +125,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F32 — migração de schema legado](docs/validacoes/2026-09-13-f32.md)
 - [Validação F33 — equipamentos instanciados no MCP](docs/validacoes/2026-09-13-f33.md)
 - [Validação F34 — preservação de upgrades atribuídos](docs/validacoes/2026-09-13-f34.md)
+- [Validação F35 — consulta de mods no MCP](docs/validacoes/2026-09-13-f35.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

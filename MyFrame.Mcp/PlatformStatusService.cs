@@ -15,6 +15,8 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
 public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
+public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
+    string? UpgradeId, int? Rank);
 
 public sealed class PlatformStatusService
 {
@@ -100,6 +102,26 @@ public sealed class PlatformStatusService
             .Take(limit)
             .Select(item => new InventoryEquipmentDto(item.InstanceId, item.TypeId, item.Rank,
                 item.ConfigJson, item.RankState.ToString(), item.ConfigState.ToString()))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<InventoryUpgradeDto>> GetInventoryUpgradesAsync(
+        string? ownerInstanceId = null, string? sourceField = null, int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var upgrades = await database.GetInventoryUpgradesAsync(cancellationToken);
+        return upgrades
+            .Where(item => string.IsNullOrWhiteSpace(ownerInstanceId) ||
+                string.Equals(item.OwnerInstanceId, ownerInstanceId, StringComparison.Ordinal))
+            .Where(item => string.IsNullOrWhiteSpace(sourceField) ||
+                string.Equals(item.SourceField, sourceField, StringComparison.OrdinalIgnoreCase))
+            .Take(limit)
+            .Select(item => new InventoryUpgradeDto(item.OwnerInstanceId, item.SourceField,
+                item.UpgradeId, item.Rank))
             .ToArray();
     }
 }
