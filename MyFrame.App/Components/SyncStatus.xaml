@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="MyFrame.App.Components.SyncStatus" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Grid IsVisible="{Binding IsVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Synchronization status" Style="{DynamicResource Title}" />
+                <Label Text="Read-only health of the shared SQLite data store used by My Frame and MCP." TextColor="#8995A8" />
+            </VerticalStackLayout>
+            <Button Grid.Column="1" Text="Refresh status" Command="{Binding RefreshSyncStatusCommand}" BackgroundColor="#167C70" TextColor="White" />
+        </Grid>
+        <Border Grid.Row="1" Style="{DynamicResource Card}" Padding="12">
+            <HorizontalStackLayout Spacing="8">
+                <ActivityIndicator IsRunning="{Binding IsLoadingSyncStatus}" IsVisible="{Binding IsLoadingSyncStatus}" Color="#7DE2D1" WidthRequest="16" />
+                <Label Text="{Binding SyncStatusMessage}" Style="{DynamicResource Muted}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Border>
+        <CollectionView Grid.Row="2" ItemsSource="{Binding SyncSources}" SelectionMode="None">
+            <CollectionView.EmptyView><Label Text="No synchronization sources registered." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{DynamicResource Card}" Margin="0,0,0,8" Padding="14">
+                        <Grid ColumnDefinitions="2*,*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                            <Label Text="{Binding DisplayName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold" />
+                            <Label Grid.Column="1" Text="{Binding State}" TextColor="#7DE2D1" />
+                            <Label Grid.Column="2" Text="{Binding LastRun}" Style="{DynamicResource Muted}" HorizontalTextAlignment="End" />
+                            <Label Grid.Row="1" Text="{Binding Detail}" Style="{DynamicResource Muted}" />
+                            <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Revision, StringFormat='Revision: {0}'}" Style="{DynamicResource Muted}" HorizontalTextAlignment="End" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentView>

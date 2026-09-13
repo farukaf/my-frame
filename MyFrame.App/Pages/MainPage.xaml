@@ -15,6 +15,7 @@
                 <components:Relics BindingContext="{Binding Relics}" />
                 <components:Sales BindingContext="{Binding Sales}" />
                 <components:Surplus BindingContext="{Binding Surplus}" />
+                <components:SyncStatus BindingContext="{Binding SyncStatus}" />
                 <components:Settings BindingContext="{Binding Settings}" />
             </Grid>
         </Grid>

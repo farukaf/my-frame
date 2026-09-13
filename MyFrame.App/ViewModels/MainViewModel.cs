@@ -16,13 +16,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(IDashboardService service, ILogger<MainViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
-        IExternalBrowser externalBrowser)
+        IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
+        SyncStatus = new(syncStatusReader, logger);
         Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
             message => GlobalStatus.StatusMessage = message);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
@@ -38,6 +39,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public SalesViewModel Sales { get; }
     public SurplusViewModel Surplus { get; }
     public SettingsViewModel Settings { get; }
+    public SyncStatusViewModel SyncStatus { get; }
     public GlobalStatusViewModel GlobalStatus { get; }
     private IExternalBrowser ExternalBrowser { get; }
     [ObservableProperty] public partial string CurrentSection { get; set; } = "Dashboard";
@@ -47,6 +49,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_initialized) return;
         _initialized = true;
         _logger.LogInformation("Dashboard view initialized");
+        await SyncStatus.RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
         if (directoryError is not null)
         {
@@ -86,6 +89,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Sales.IsVisible = section == "Sales";
         Surplus.IsVisible = section == "Surplus";
         Settings.IsVisible = section == "Settings";
+        SyncStatus.IsVisible = section == "SyncStatus";
     }
 
     [RelayCommand]
