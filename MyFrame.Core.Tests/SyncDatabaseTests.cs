@@ -58,6 +58,30 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task PrunesOldRetainedRevisionsAndKeepsActiveRevision()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-retention-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var publications = new List<SyncPublicationResult>();
+        for (var index = 0; index < 4; index++)
+            publications.Add(await db.PublishAsync(new SyncBatch("catalog", $"hash-{index}", $"{{\"index\":{index}}}", 1)));
+
+        Assert.Equal(2, await db.PruneRetainedAsync(2));
+
+        await using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT revision_id, state FROM source_revisions WHERE source_id='catalog' ORDER BY retrieved_at;";
+        var rows = new List<(string RevisionId, string State)>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync()) rows.Add((reader.GetString(0), reader.GetString(1)));
+
+        Assert.Equal(2, rows.Count);
+        Assert.Contains(rows, row => row.RevisionId == publications[^1].RevisionId && row.State == "active");
+        Assert.Contains(rows, row => row.RevisionId == publications[^2].RevisionId && row.State == "retained");
+    }
+
+    [Fact]
     public async Task InvalidBatchDoesNotCreateSource()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");

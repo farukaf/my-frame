@@ -74,6 +74,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F34: preservar upgrades/mods atribuídos sem inferir semântica ([evidências](docs/validacoes/2026-09-13-f34.md)).
 - [x] F35: consultar mods/upgrades observados no MCP por instância ([evidências](docs/validacoes/2026-09-13-f35.md)).
 - [x] F36: combinar equipamento, configuração e upgrades em loadout por instância ([evidências](docs/validacoes/2026-09-13-f36.md)).
+- [x] F37: podar revisões retidas por fonte sem remover a revisão ativa ([evidências](docs/validacoes/2026-09-13-f37.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
