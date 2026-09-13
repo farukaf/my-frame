@@ -158,6 +158,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F65 — distribuição Windows 0.0.7](docs/validacoes/2026-09-13-f65.md)
 - [Validação F66 — matriz F10 validada](docs/validacoes/2026-09-13-f66.md)
 - [Validação F67 — tentativa interativa F1](docs/validacoes/2026-09-13-f67.md)
+- [Validação F68 — prioridade SQLite sobre legado AlecaFrame](docs/validacoes/2026-09-13-f68.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
