@@ -141,6 +141,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F101: endurecer o schema de resultados da avaliação F10 ([evidências](docs/validacoes/2026-09-13-f101.md)).
 - [x] F102: validar dois servidores MCP e chamadas concorrentes em roots isolados ([evidências](docs/validacoes/2026-09-13-f102.md)).
 - [x] F103: medir WorkingSet de dois processos MCP em paralelo ([evidências](docs/validacoes/2026-09-13-f103.md)).
+- [x] F104: validar upgrade lado a lado com App/MCP versionados ([evidências](docs/validacoes/2026-09-13-f104.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
