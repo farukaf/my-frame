@@ -64,6 +64,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F24: expor histórico sanitizado de sincronização no MCP, com filtro e limite ([evidências](docs/validacoes/2026-09-13-f24.md)).
 - [x] F25: executar o gate estrutural da matriz F10 e registrar a ausência do baseline real ([evidências](docs/validacoes/2026-09-13-f25.md)).
 - [x] F26: gerar e validar artefato Windows App/MCP + pacote Overwolf ([evidências](docs/validacoes/2026-09-13-f26.md)).
+- [x] F27: executar smoke do App/MCP distribuídos com data root temporário ([evidências](docs/validacoes/2026-09-13-f27.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
