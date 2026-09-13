@@ -1,6 +1,6 @@
 # Ideias de Features não refinadas
 
-- Criar ordem de venda/compra no warframe market e a partir dos eventos do overwolf remover a ordem automaticamente. 
+- Criar ordem de venda/compra no warframe market e a partir dos eventos do overwolf remover a ordem automaticamente.
 - Colocar na interface condições de remoção da ordem (tempo, inventario conter um dos itens (item da ordem, outro item feito com o item da ordem)
 
 
