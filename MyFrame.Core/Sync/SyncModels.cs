@@ -20,4 +20,5 @@ public sealed record SyncStatus(
     string? LastRunState,
     DateTimeOffset? LastRunAt,
     long AcceptedRecords,
-    long RejectedRecords);
+    long RejectedRecords,
+    string? ErrorCode = null);

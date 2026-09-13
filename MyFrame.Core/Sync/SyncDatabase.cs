@@ -80,7 +80,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT r.revision_id, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected
+            SELECT r.revision_id, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected, run.error_code
             FROM sources s LEFT JOIN source_revisions r ON r.source_id=s.source_id AND r.state='active'
             LEFT JOIN sync_runs run ON run.run_id=(SELECT run_id FROM sync_runs WHERE source_id=s.source_id ORDER BY started_at DESC LIMIT 1)
             WHERE s.source_id=$source LIMIT 1;
@@ -88,7 +88,22 @@ public sealed class SyncDatabase : IAsyncDisposable
         command.Parameters.AddWithValue("$source", sourceId);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
-        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5));
+        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? null : reader.GetString(6));
+    }
+
+    public async Task RecordFailureAsync(string sourceId, string errorCode, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || string.IsNullOrWhiteSpace(errorCode)) throw new ArgumentException("Source and error code are required.");
+        await _writer.WaitAsync(cancellationToken);
+        try
+        {
+            await InitializeAsync(cancellationToken);
+            await using var connection = await OpenAsync(SqliteOpenMode.ReadWrite, cancellationToken);
+            var now = DateTimeOffset.UtcNow.ToString("O");
+            await CommandAsync(connection, null, "INSERT OR IGNORE INTO sources(source_id, kind, display_name, created_at) VALUES ($id, 'sync', $id, $at);", cancellationToken, ("$id", sourceId), ("$at", now));
+            await CommandAsync(connection, null, "INSERT INTO sync_runs(run_id, source_id, state, started_at, finished_at, records_received, records_accepted, records_rejected, error_code) VALUES ($run, $source, 'failed', $at, $at, 0, 0, 0, $error);", cancellationToken, ("$run", Guid.NewGuid().ToString("N")), ("$source", sourceId), ("$at", now), ("$error", errorCode));
+        }
+        finally { _writer.Release(); }
     }
 
     public async Task BackupAsync(string destinationPath, CancellationToken cancellationToken = default)
@@ -118,6 +133,6 @@ public sealed class SyncDatabase : IAsyncDisposable
         return connection;
     }
     private static async Task ExecuteAsync(SqliteConnection connection, string sql, CancellationToken token = default) { await using var command = connection.CreateCommand(); command.CommandText = sql; await command.ExecuteNonQueryAsync(token); }
-    private static async Task CommandAsync(SqliteConnection c, SqliteTransaction t, string sql, CancellationToken token, params (string Name, object Value)[] args) { await using var command = c.CreateCommand(); command.Transaction = t; command.CommandText = sql; foreach (var (name, value) in args) command.Parameters.AddWithValue(name, value); await command.ExecuteNonQueryAsync(token); }
+    private static async Task CommandAsync(SqliteConnection c, SqliteTransaction? t, string sql, CancellationToken token, params (string Name, object Value)[] args) { await using var command = c.CreateCommand(); if (t is not null) command.Transaction = t; command.CommandText = sql; foreach (var (name, value) in args) command.Parameters.AddWithValue(name, value); await command.ExecuteNonQueryAsync(token); }
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
 }
