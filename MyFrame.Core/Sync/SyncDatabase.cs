@@ -73,7 +73,10 @@ public sealed class SyncDatabase : IAsyncDisposable
 
     public async Task<SyncStatus?> GetStatusAsync(string sourceId, CancellationToken cancellationToken = default)
     {
-        await InitializeAsync(cancellationToken);
+        // Status reads must not create or migrate the database. This keeps the
+        // MCP/UI read path genuinely read-only and lets a missing store report
+        // "not initialized" instead of mutating state.
+        if (!File.Exists(_path)) return null;
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """

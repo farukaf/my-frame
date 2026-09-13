@@ -38,6 +38,7 @@ public sealed class SyncDatabaseTests
         await using var db = new SyncDatabase(path);
         await Assert.ThrowsAsync<ArgumentException>(() => db.PublishAsync(new SyncBatch("", "hash", "{}", 1)));
         Assert.Null(await db.GetStatusAsync("missing"));
+        Assert.False(File.Exists(path));
     }
 
     [Fact]
