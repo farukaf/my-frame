@@ -144,6 +144,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F104: validar upgrade lado a lado com App/MCP versionados ([evidências](docs/validacoes/2026-09-13-f104.md)).
 - [x] F105: validar configuração local do Codex e comandos de onboarding do Claude ([evidências](docs/validacoes/2026-09-13-f105.md)).
 - [x] F106: executar MCP Inspector CLI contra `tools/list` e registrar avisos de portabilidade ([evidências](docs/validacoes/2026-09-13-f106.md)).
+- [x] F107: corrigir schemas nullable para a forma portátil e zerar avisos do Inspector ([evidências](docs/validacoes/2026-09-13-f107.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
