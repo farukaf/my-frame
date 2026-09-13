@@ -88,6 +88,23 @@ public sealed class SyncDatabase : IAsyncDisposable
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5));
     }
 
+    public async Task BackupAsync(string destinationPath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(destinationPath)) throw new ArgumentException("Backup path is required.", nameof(destinationPath));
+        var destination = Path.GetFullPath(destinationPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        await _writer.WaitAsync(cancellationToken);
+        try
+        {
+            await InitializeAsync(cancellationToken);
+            await using var source = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+            await using var target = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = destination, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false }.ToString());
+            await target.OpenAsync(cancellationToken);
+            source.BackupDatabase(target);
+        }
+        finally { _writer.Release(); }
+    }
+
     public async ValueTask DisposeAsync() { _writer.Dispose(); await Task.CompletedTask; }
 
     private async Task<SqliteConnection> OpenAsync(SqliteOpenMode mode, CancellationToken token)
