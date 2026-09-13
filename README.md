@@ -204,6 +204,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F111 — falha MCP sem escrita ou vazamento](docs/validacoes/2026-09-13-f111.md)
 - [Validação F112 — reconciliação da matriz](docs/validacoes/2026-09-13-f112.md)
 - [Validação F113 — caches de mercado no SQLite](docs/validacoes/2026-09-13-f113.md)
+- [Validação F114 — settings no SQLite](docs/validacoes/2026-09-13-f114.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
