@@ -196,6 +196,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F158: criar skill de pesquisa atribuída para Wiki/Overframe ([evidências](docs/validacoes/2026-09-13-f158.md)).
 - [x] F159: refletir referências importadas no status MCP/UI sem expor conteúdo ([evidências](docs/validacoes/2026-09-13-f159.md)).
 - [x] F160: executar regressão após importação/status/busca de referências ([evidências](docs/validacoes/2026-09-13-f160.md)).
+- [x] F161: executar preflight de homologação Overwolf e registrar bloqueio observável da extensão não carregada ([evidências](docs/validacoes/2026-09-13-f161.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
