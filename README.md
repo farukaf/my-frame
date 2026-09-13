@@ -162,6 +162,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F167 — regressão após proteção de deltas e diagnóstico de rede](docs/validacoes/2026-09-13-f167.md)
 - [Validação F168 — status de credencial independente do Warframe Market](docs/validacoes/2026-09-13-f168.md)
 - [Validação F169 — diagnóstico seguro do World State](docs/validacoes/2026-09-13-f169.md)
+- [Validação F170 — baseline após F168/F169](docs/validacoes/2026-09-13-f170.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)

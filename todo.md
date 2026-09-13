@@ -205,6 +205,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F167: executar regressão completa após proteção contra deltas e diagnóstico de rede ([evidências](docs/validacoes/2026-09-13-f167.md)).
 - [x] F168: expor estado seguro da credencial independente do Warframe Market no MCP ([evidências](docs/validacoes/2026-09-13-f168.md)).
 - [x] F169: classificar indisponibilidade de rede do World State sem confundir com ausência de bounties ([evidências](docs/validacoes/2026-09-13-f169.md)).
+- [x] F170: registrar baseline completo após status WFM e hardening World State ([evidências](docs/validacoes/2026-09-13-f170.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
