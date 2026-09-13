@@ -94,6 +94,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F54: filtrar bounties World State por sindicato no MCP ([evidências](docs/validacoes/2026-09-13-f54.md)).
 - [x] F55: permitir inicialização pela projeção SQLite sem exigir pasta AlecaFrame ([evidências](docs/validacoes/2026-09-13-f55.md)).
 - [x] F56: expor revisão e contagens da sincronização no `get_sync_status` ([evidências](docs/validacoes/2026-09-13-f56.md)).
+- [x] F57: permitir sincronização manual do World State pela página de status ([evidências](docs/validacoes/2026-09-13-f57.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

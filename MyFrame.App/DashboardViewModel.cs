@@ -16,6 +16,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
     private readonly SyncStatusReader _syncStatusReader;
+    private readonly WorldStateSyncService _worldStateSync;
     private readonly CollectorCaptureInboxService _collectorCaptureInbox;
     private readonly CollectorCaptureInboxWatcher _collectorCaptureWatcher;
     private bool _initialized;
@@ -29,7 +30,7 @@ public partial class DashboardViewModel : ObservableObject
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
         SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox,
-        CollectorCaptureInboxWatcher collectorCaptureWatcher)
+        CollectorCaptureInboxWatcher collectorCaptureWatcher, WorldStateSyncService worldStateSync)
     {
         _service = service;
         _logger = logger;
@@ -37,6 +38,7 @@ public partial class DashboardViewModel : ObservableObject
         _directorySettings = directorySettings;
         _localSettings = localSettings;
         _syncStatusReader = syncStatusReader;
+        _worldStateSync = worldStateSync;
         _collectorCaptureInbox = collectorCaptureInbox;
         _collectorCaptureWatcher = collectorCaptureWatcher;
         _collectorCaptureWatcher.CaptureDetected += OnCollectorCaptureDetected;
@@ -75,6 +77,8 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool SyncStatusVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
     [ObservableProperty] public partial string SyncStatusMessage { get; set; } = "Status not loaded.";
+    [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
+    [ObservableProperty] public partial string WorldStateSyncMessage { get; set; } = "No World State synchronization requested.";
     [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
@@ -180,6 +184,28 @@ public partial class DashboardViewModel : ObservableObject
             SyncStatusMessage = "Unable to read synchronization status.";
         }
         finally { IsLoadingSyncStatus = false; }
+    }
+
+    [RelayCommand]
+    private async Task SyncWorldStateAsync()
+    {
+        if (IsSyncingWorldState) return;
+        IsSyncingWorldState = true;
+        WorldStateSyncMessage = "Fetching Warframe World State…";
+        try
+        {
+            var result = await _worldStateSync.RunAsync();
+            WorldStateSyncMessage = result.State == "published"
+                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}."
+                : $"World State synchronization failed: {result.ErrorCode ?? result.State}.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "World State synchronization failed");
+            WorldStateSyncMessage = "World State synchronization failed; previous data was preserved.";
+        }
+        finally { IsSyncingWorldState = false; }
     }
 
     [RelayCommand]

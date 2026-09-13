@@ -223,6 +223,11 @@
                             <Label Text="{Binding CollectorCaptureMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
                             <Label Text="{Binding CollectorCaptureNotice}" TextColor="#F4C76D" IsVisible="{Binding CollectorCaptureNoticeVisible}" />
                             </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="10">
+                                <Button Text="Sync World State" Command="{Binding SyncWorldStateCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                <ActivityIndicator IsRunning="{Binding IsSyncingWorldState}" IsVisible="{Binding IsSyncingWorldState}" Color="#7DE2D1" WidthRequest="16" />
+                                <Label Text="{Binding WorldStateSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                     <CollectionView Grid.Row="3" ItemsSource="{Binding SyncSources}" SelectionMode="None">
