@@ -110,7 +110,8 @@ public sealed class WorldStateTests
             ContentHash = "coverage-not-observed",
             Coverage = new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved }
         };
-        await database.PublishWorldStateAsync(first, new SyncBatch("worldstate-pc", first.ContentHash, "{}", 0));
+        await database.PublishWorldStateAsync(first, new SyncBatch("worldstate-pc", first.ContentHash, "{}", 0, "worldstate-official-1"));
+        Assert.Equal("worldstate-official-1", (await database.GetStatusAsync("worldstate-pc"))!.ParserVersion);
         await database.PublishWorldStateAsync(second, new SyncBatch("worldstate-pc", second.ContentHash, "{}", 0));
 
         var coverage = await database.GetSourceCoverageAsync("worldstate-pc");
