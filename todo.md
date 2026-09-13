@@ -201,6 +201,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F163: preservar modo snapshot/delta no envelope e na revisão SQLite, sem inferir deltas ([evidências](docs/validacoes/2026-09-13-f163.md)).
 - [x] F164: expor metadados snapshot/delta da revisão ativa no status MCP, sem payload ([evidências](docs/validacoes/2026-09-13-f164.md)).
 - [x] F165: impedir que o leitor SQLite trate uma captura delta como inventário completo ([evidências](docs/validacoes/2026-09-13-f165.md)).
+- [x] F166: classificar indisponibilidade de rede do Public Export sem vazar detalhes ([evidências](docs/validacoes/2026-09-13-f166.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

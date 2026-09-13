@@ -149,6 +149,20 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task SharedRunnerClassifiesTransportFailureWithoutLeakingNetworkDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-network-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        using var client = new HttpClient(new ThrowingHandler());
+
+        var result = await new PublicExportSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("failed", result.State);
+        Assert.Equal("PUBLIC_EXPORT_NETWORK_UNAVAILABLE", result.ErrorCode);
+    }
+
+    [Fact]
     public async Task SharedRunnerPublishesLocalPublicExportFileWithItsParserVersion()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-public-file-{Guid.NewGuid():N}");
@@ -213,5 +227,11 @@ public sealed class PublicExportTests
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) });
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(index) });
         }
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("proxy details must not escape");
     }
 }

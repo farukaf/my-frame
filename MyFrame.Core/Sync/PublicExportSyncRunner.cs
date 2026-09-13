@@ -153,6 +153,7 @@ public sealed class PublicExportSyncRunner
     {
         InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
         HttpRequestException request when request.Message.StartsWith("PUBLIC_EXPORT_HTTP_", StringComparison.Ordinal) => request.Message,
+        HttpRequestException => "PUBLIC_EXPORT_NETWORK_UNAVAILABLE",
         NotSupportedException unsupported when unsupported.Message.Contains("LZMA", StringComparison.OrdinalIgnoreCase) => "PUBLIC_EXPORT_LZMA_DECODER_NOT_CONFIGURED",
         _ => "SYNC_FAILED"
     };
