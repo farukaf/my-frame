@@ -50,4 +50,20 @@ public sealed class SyncDatabaseTests
         Assert.Equal(4, results.Count(r => !r.AlreadyPublished));
         Assert.NotNull(status!.ActiveRevisionId);
     }
+
+    [Fact]
+    public async Task BackupCanBeOpenedReadOnly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}");
+        var path = Path.Combine(root, "sync.db");
+        var backup = Path.Combine(root, "backup", "sync.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishAsync(new SyncBatch("warframe", "hash", "{}", 2));
+            await db.BackupAsync(backup);
+        }
+        await using var restored = new SyncDatabase(backup);
+        var status = await restored.GetStatusAsync("warframe");
+        Assert.Equal("hash", status!.ActiveContentHash);
+    }
 }
