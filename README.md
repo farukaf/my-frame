@@ -134,6 +134,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F139 — sincronização conjunta das fontes oficiais](docs/validacoes/2026-09-13-f139.md)
 - [Validação F140 — runbook de agendamento Windows](docs/validacoes/2026-09-13-f140.md)
 - [Validação F141 — consolidação do aceite F2](docs/validacoes/2026-09-13-f141.md)
+- [Validação F142 — cobertura do Public Export](docs/validacoes/2026-09-13-f142.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
