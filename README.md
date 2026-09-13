@@ -165,6 +165,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F170 — baseline após F168/F169](docs/validacoes/2026-09-13-f170.md)
 - [Validação F171 — avaliador F10 vinculado à matriz oficial](docs/validacoes/2026-09-13-f171.md)
 - [Validação F172 — build do MCP com status de credencial](docs/validacoes/2026-09-13-f172.md)
+- [Validação F173 — smoke do MCP Inspector com credencial WFM](docs/validacoes/2026-09-13-f173.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)

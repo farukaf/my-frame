@@ -39,6 +39,7 @@ try {
     $calls = @(
         @{ Name = 'get_capabilities'; Args = @() },
         @{ Name = 'get_sync_status'; Args = @() },
+        @{ Name = 'get_market_credential_status'; Args = @() },
         @{ Name = 'get_world_state'; Args = @('limit=1') }
     )
     $index = 0
@@ -48,7 +49,7 @@ try {
     }
     Write-Output 'MCP_INSPECTOR_CALLS_OK=1'
     Write-Output "MCP_INSPECTOR_CALLS_COUNT=$($calls.Count)"
-    Write-Output 'MCP_INSPECTOR_CALLS_STRUCTURED=3'
+    Write-Output 'MCP_INSPECTOR_CALLS_STRUCTURED=4'
 }
 finally {
     if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force }
