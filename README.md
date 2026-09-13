@@ -144,6 +144,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F149 — heartbeat sanitizado da sessão Overwolf](docs/validacoes/2026-09-13-f149.md)
 - [Validação F150 — gate de runtime baseado em heartbeat](docs/validacoes/2026-09-13-f150.md)
 - [Validação F151 — sincronização Public Export por arquivo local](docs/validacoes/2026-09-13-f151.md)
+- [Validação F152 — sincronização World State por arquivo local](docs/validacoes/2026-09-13-f152.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
