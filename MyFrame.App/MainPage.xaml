@@ -220,7 +220,8 @@
                             </HorizontalStackLayout>
                             <HorizontalStackLayout Spacing="8">
                                 <ActivityIndicator IsRunning="{Binding IsImportingCollectorCaptures}" IsVisible="{Binding IsImportingCollectorCaptures}" Color="#7DE2D1" WidthRequest="16" />
-                                <Label Text="{Binding CollectorCaptureMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                            <Label Text="{Binding CollectorCaptureMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                            <Label Text="{Binding CollectorCaptureNotice}" TextColor="#F4C76D" IsVisible="{Binding CollectorCaptureNoticeVisible}" />
                             </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
