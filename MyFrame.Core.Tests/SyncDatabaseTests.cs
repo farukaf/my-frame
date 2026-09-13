@@ -103,6 +103,22 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task RecentRunsAreReadOnlyAndOrderedAcrossSources()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await db.PublishAsync(new SyncBatch("source-a", "hash", "{}", 1));
+        await db.RecordFailureAsync("source-b", "TEST_FAILURE");
+
+        var runs = await db.GetRecentRunsAsync(limit: 10);
+
+        Assert.Equal(2, runs.Count);
+        Assert.Equal("failed", runs[0].State);
+        Assert.Equal("TEST_FAILURE", runs[0].ErrorCode);
+        Assert.Equal("source-a", runs[1].SourceId);
+    }
+
+    [Fact]
     public async Task CatalogPublicationStoresNormalizedItemsAtomically()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");

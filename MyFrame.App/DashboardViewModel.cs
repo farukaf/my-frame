@@ -120,6 +120,7 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<RelicRecommendation> Relics { get; } = [];
     public ObservableCollection<SurplusRecommendation> Surplus { get; } = [];
     public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
+    public ObservableCollection<SyncAttemptStatusRow> SyncAttempts { get; } = [];
     public IReadOnlyList<string> CollectionFilters { get; } = ["In progress", "All", "Not owned", "Owned", "Mastered", "Prime only"];
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
     public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
@@ -157,6 +158,9 @@ public partial class DashboardViewModel : ObservableObject
             var rows = await _syncStatusReader.ReadAsync();
             SyncSources.Clear();
             foreach (var row in rows) SyncSources.Add(row);
+            var attempts = await _syncStatusReader.ReadRecentRunsAsync();
+            SyncAttempts.Clear();
+            foreach (var attempt in attempts) SyncAttempts.Add(attempt);
             SyncStatusMessage = "Read-only view of the shared My Frame SQLite store.";
         }
         catch (Exception error)
