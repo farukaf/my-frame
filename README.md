@@ -199,6 +199,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F106 — MCP Inspector CLI](docs/validacoes/2026-09-13-f106.md)
 - [Validação F107 — schemas MCP nullable portáveis](docs/validacoes/2026-09-13-f107.md)
 - [Validação F108 — chamadas MCP pelo Inspector](docs/validacoes/2026-09-13-f108.md)
+- [Validação F109 — paridade do snapshot entre UI e MCP](docs/validacoes/2026-09-13-f109.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
