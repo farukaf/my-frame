@@ -106,4 +106,18 @@ public sealed class SyncDatabaseTests
         var status = await db.GetStatusAsync("public-export");
         Assert.Equal("PUBLIC_EXPORT_HTTP_403", status!.ErrorCode);
     }
+
+    [Fact]
+    public async Task InventoryPublicationPreservesInstanceAndCoverage()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 2, DateTimeOffset.UtcNow, "native", "unverified", "{\"equipment\":[]}", "inventory-hash");
+        var projection = new InventoryProjection([new InventoryEquipmentRecord("instance-1", "/Lotus/Test", 30, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"instanceId\":\"instance-1\"}")], [], [new InventoryUnknownRecord("futureField", "true", "FIELD_NOT_MAPPED")], new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known });
+        await db.PublishInventoryAsync(envelope, projection);
+        var stored = await db.GetInventoryEquipmentAsync();
+        Assert.Single(stored);
+        Assert.Equal("instance-1", stored[0].InstanceId);
+        Assert.Equal(InventoryFieldState.NotObserved, stored[0].ConfigState);
+    }
 }
