@@ -16,6 +16,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
     private readonly SyncStatusReader _syncStatusReader;
+    private readonly CollectorCaptureInboxService _collectorCaptureInbox;
     private bool _initialized;
     private CancellationTokenSource? _settingsDebounce;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
@@ -26,7 +27,7 @@ public partial class DashboardViewModel : ObservableObject
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
-        SyncStatusReader syncStatusReader)
+        SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox)
     {
         _service = service;
         _logger = logger;
@@ -34,6 +35,7 @@ public partial class DashboardViewModel : ObservableObject
         _directorySettings = directorySettings;
         _localSettings = localSettings;
         _syncStatusReader = syncStatusReader;
+        _collectorCaptureInbox = collectorCaptureInbox;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
         UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
@@ -41,6 +43,7 @@ public partial class DashboardViewModel : ObservableObject
         _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => ApplySyncStatus(status));
         ShowSection("Dashboard");
         McpExecutablePath = ResolveMcpExecutablePath(AppContext.BaseDirectory);
+        CollectorCaptureDirectory = _collectorCaptureInbox.DirectoryPath;
         var quoted = $"\"{McpExecutablePath.Replace("\"", "\\\"")}\"";
         CodexMcpCommand = $"codex mcp add my-frame -- {quoted}";
         ClaudeMcpCommand = $"claude mcp add --transport stdio --scope user my-frame -- {quoted}";
@@ -68,6 +71,10 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool SyncStatusVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
     [ObservableProperty] public partial string SyncStatusMessage { get; set; } = "Status not loaded.";
+    [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
+    [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
+    [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
+    [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
@@ -151,6 +158,35 @@ public partial class DashboardViewModel : ObservableObject
             SyncStatusMessage = "Unable to read synchronization status.";
         }
         finally { IsLoadingSyncStatus = false; }
+    }
+
+    [RelayCommand]
+    private async Task ImportCollectorCapturesAsync()
+    {
+        if (IsImportingCollectorCaptures) return;
+        if (!AllowCollectorRawPayload)
+        {
+            CollectorCaptureMessage = "Marque o consentimento para importar o payload privado da captura.";
+            return;
+        }
+        IsImportingCollectorCaptures = true;
+        CollectorCaptureMessage = "Importando capturas validadas…";
+        try
+        {
+            var result = await _collectorCaptureInbox.ImportAsync(true);
+            CollectorCaptureMessage = $"Encontradas {result.Discovered:N0}; novas {result.Imported:N0}; já publicadas {result.AlreadyPublished:N0}; rejeitadas {result.Rejected:N0}.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Collector capture inbox import failed");
+            CollectorCaptureMessage = "Importação rejeitada; nenhum payload foi publicado.";
+        }
+        finally
+        {
+            AllowCollectorRawPayload = false;
+            IsImportingCollectorCaptures = false;
+        }
     }
 
     [RelayCommand]
