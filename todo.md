@@ -49,6 +49,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis ([skills](skills/README.md), [evidências](docs/validacoes/2026-09-13-f9.md)).
 - [x] F10: definir casos e protocolo reproduzível de avaliação antes/depois ([fixtures](docs/avaliacao/f10-cases.json), [protocolo](docs/avaliacao/2026-09-13-f10.md)).
 - [x] F11: exibir status de sincronização SQLite em página somente leitura ([evidências](docs/validacoes/2026-09-13-f11.md)).
+- [x] F12: preferir snapshot SQLite no MCP/app com fallback legado e cobertura parcial ([evidências](docs/validacoes/2026-09-13-f12.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

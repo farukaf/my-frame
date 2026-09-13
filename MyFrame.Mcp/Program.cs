@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using MyFrame.Core;
+using MyFrame.Core.Sync;
 using MyFrame.Mcp;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -29,6 +30,8 @@ builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequi
 builder.Services.AddSingleton<IMarketStateStore>(_ => new MarketStateStore(MyFrameStoragePaths.MarketStatePath));
 builder.Services.AddSingleton<IMarketItemIndexStore>(_ => new MarketItemIndexStore(MyFrameStoragePaths.MarketItemIndexPath));
 builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
+builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
+    new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath));
 builder.Services.AddSingleton<CursorCodec>();
 builder.Services.AddSingleton<MyFrameQueryService>();
 builder.Services.AddSingleton<QueryExecutionGate>();

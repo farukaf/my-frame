@@ -1,4 +1,5 @@
 using MyFrame.Core;
+using MyFrame.Core.Sync;
 
 namespace MyFrame.Core.Tests;
 
@@ -75,6 +76,34 @@ public sealed class SnapshotProviderTests
         Assert.All(fallback.Sources.Values, source => Assert.True(source.Fallback));
     }
 
+    [Fact]
+    public async Task UsesSynchronizedDataWhenAlecaSettingsAreMissing()
+    {
+        using var folder = new TemporaryFolder();
+        var item = new CatalogItem("/synced/item", "Synced Item", "Weapon", "", "", false, false,
+            false, false, null, null, null, [], []);
+        var synced = new SynchronizedDataSnapshot(
+            new InventorySnapshot(DateTimeOffset.UtcNow,
+                new Dictionary<string, int> { ["/synced/resource"] = 3 },
+                new HashSet<string> { item.UniqueName }, new Dictionary<string, long>(), 0, 0, "my-frame-sqlite"),
+            new CatalogSnapshot([item], new Dictionary<string, CatalogItem> { [item.UniqueName] = item },
+                new Dictionary<string, MarketIdentity>()), DateTimeOffset.UtcNow);
+        var paths = new MyFrameLocalDataOptions(Path.Combine(folder.Path, "settings.json"),
+            Path.Combine(folder.Path, "prices.json"), Path.Combine(folder.Path, "state.json"),
+            Path.Combine(folder.Path, "items.json"));
+        using var provider = new MyFrameSnapshotProvider(new ToggleInventoryReader(synced.Inventory),
+            new CatalogReader(new CatalogSnapshot([], new Dictionary<string, CatalogItem>(), new Dictionary<string, MarketIdentity>())),
+            new RecommendationEngine(), new NullSettingsStore(), new PriceReader(), new StateStore(),
+            new ItemIndexStore(), paths, synchronizedData: new FakeSynchronizedReader(synced));
+
+        var snapshot = await provider.GetAsync();
+
+        Assert.NotNull(snapshot.Inventory);
+        Assert.Equal("SYNC_DATABASE", snapshot.Sources["inventory"].DetailCode);
+        Assert.Equal("partial", snapshot.Sources["catalog"].State);
+        Assert.Equal(3, snapshot.Inventory!.Stackables["/synced/resource"]);
+    }
+
     private sealed class ToggleInventoryReader(InventorySnapshot value) : IAlecaFrameReader
     {
         public bool Fail { get; set; }
@@ -94,6 +123,18 @@ public sealed class SnapshotProviderTests
     {
         public Task<MyFrameSettingsDocument?> LoadAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<MyFrameSettingsDocument?>(value);
+    }
+
+    private sealed class NullSettingsStore : IMyFrameSettingsStore
+    {
+        public Task<MyFrameSettingsDocument?> LoadAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MyFrameSettingsDocument?>(null);
+    }
+
+    private sealed class FakeSynchronizedReader(SynchronizedDataSnapshot value) : ISynchronizedDataReader
+    {
+        public Task<SynchronizedDataSnapshot?> ReadAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<SynchronizedDataSnapshot?>(value);
     }
 
     private sealed class PriceReader : IReadOnlyPriceCache

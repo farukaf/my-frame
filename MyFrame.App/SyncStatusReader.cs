@@ -16,7 +16,7 @@ public sealed class SyncStatusReader
     private static readonly (string Id, string Name)[] Sources =
     [
         ("overwolf-inventory", "Warframe inventory"),
-        ("public-export-en", "Warframe catalog"),
+        ("public-export", "Warframe catalog"),
         ("worldstate-pc", "World State"),
         ("warframe-market", "Warframe Market")
     ];
