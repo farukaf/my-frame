@@ -13,4 +13,5 @@ Contrato comum:
 6. separar fatos observados, cálculos determinísticos, referência comunitária e hipótese;
 7. citar fonte/revisão e declarar o que falta confirmar.
 
-Skills disponíveis: `warframe-builds`, `warframe-farm` e `warframe-economy`.
+Skills disponíveis: `warframe-builds`, `warframe-farm` (v2, World State com
+revisão/cobertura) e `warframe-economy`.
