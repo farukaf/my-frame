@@ -91,6 +91,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F51: automatizar regressão de ferramentas MCP documentadas ([evidências](docs/validacoes/2026-09-13-f51.md)).
 - [x] F52: expor bounties e ciclos em uma consulta World State no MCP ([evidências](docs/validacoes/2026-09-13-f52.md)).
 - [x] F53: limitar bounties retornadas por `get_world_state` ([evidências](docs/validacoes/2026-09-13-f53.md)).
+- [x] F54: filtrar bounties World State por sindicato no MCP ([evidências](docs/validacoes/2026-09-13-f54.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
