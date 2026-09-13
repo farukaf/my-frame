@@ -71,6 +71,28 @@ public sealed class WorldStateTests
         Assert.Equal("Endo", bounties[0].Jobs[0].Rewards[0].Item);
     }
 
+    [Fact]
+    public async Task NewWorldStateRevisionReplacesPreviousCoverage()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-coverage-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        var now = DateTimeOffset.UtcNow;
+        var first = new WorldStateSnapshot(now, now, "fixture", [], [], "coverage-known", true,
+            new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.Known });
+        var second = first with
+        {
+            RetrievedAt = now.AddMinutes(1),
+            ContentHash = "coverage-not-observed",
+            Coverage = new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved }
+        };
+        await database.PublishWorldStateAsync(first, new SyncBatch("worldstate-pc", first.ContentHash, "{}", 0));
+        await database.PublishWorldStateAsync(second, new SyncBatch("worldstate-pc", second.ContentHash, "{}", 0));
+
+        var coverage = await database.GetSourceCoverageAsync("worldstate-pc");
+
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["motherTokens"]);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
