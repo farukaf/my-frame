@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MyFrame.App;
 
-public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher watcher, ILogger logger) : ObservableObject
+public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher watcher, WorldStateSyncService worldStateSync, ILogger logger) : ObservableObject
 {
     [ObservableProperty] public partial bool IsVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
@@ -15,6 +15,8 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
     [ObservableProperty] public partial string CollectorCaptureNotice { get; set; } = "";
     [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
+    [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
+    [ObservableProperty] public partial string WorldStateSyncMessage { get; set; } = "No World State synchronization requested.";
     public string CollectorCaptureDirectory => collectorCaptureInbox.DirectoryPath;
     public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
     public ObservableCollection<SyncAttemptStatusRow> SyncAttempts { get; } = [];
@@ -85,5 +87,27 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
             CollectorCaptureNoticeVisible = true;
             await RefreshSyncStatusAsync();
         });
+    }
+
+    [RelayCommand]
+    private async Task SyncWorldStateAsync()
+    {
+        if (IsSyncingWorldState) return;
+        IsSyncingWorldState = true;
+        WorldStateSyncMessage = "Fetching Warframe World State…";
+        try
+        {
+            var result = await worldStateSync.RunAsync();
+            WorldStateSyncMessage = result.State == "published"
+                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}."
+                : $"World State synchronization failed: {result.ErrorCode ?? result.State}.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "World State synchronization failed");
+            WorldStateSyncMessage = "World State synchronization failed; previous data was preserved.";
+        }
+        finally { IsSyncingWorldState = false; }
     }
 }
