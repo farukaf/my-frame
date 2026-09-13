@@ -210,6 +210,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F172: compilar MCP distribuível após status WFM e endurecimento F10 ([evidências](docs/validacoes/2026-09-13-f172.md)).
 - [x] F173: incluir status de credencial WFM no smoke do MCP Inspector ([evidências](docs/validacoes/2026-09-13-f173.md)).
 - [x] F174: corrigir dependência DPAPI ausente no executável MCP e aprovar smoke real do Inspector ([evidências](docs/validacoes/2026-09-13-f174.md)).
+- [x] F175: publicar pacote Windows com App, MCP e SyncHost após o hardening do MCP ([evidências](docs/validacoes/2026-09-13-f175.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
