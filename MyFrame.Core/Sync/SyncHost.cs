@@ -43,6 +43,27 @@ public sealed class SyncHost : IAsyncDisposable
         }
     }
 
+    public async Task<SyncPublicationResult?> RunCatalogOnceAsync(string sourceId, Func<CancellationToken, Task<(SyncBatch Batch, IReadOnlyList<PublicExportRecord> Records)>> fetch, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fetch);
+        await StartAsync(cancellationToken);
+        try
+        {
+            var (batch, records) = await fetch(cancellationToken);
+            if (!string.Equals(batch.SourceId, sourceId, StringComparison.Ordinal)) throw new InvalidDataException("SYNC_SOURCE_MISMATCH");
+            var result = await _database.PublishCatalogAsync(batch, records, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            await _database.RecordFailureAsync(sourceId, error is InvalidDataException data ? data.Message : "SYNC_FAILED", cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return null;
+        }
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         await _lifecycle.WaitAsync(cancellationToken);

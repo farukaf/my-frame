@@ -27,6 +27,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE UNIQUE INDEX IF NOT EXISTS ux_source_revision_hash ON source_revisions(source_id, content_hash);
             CREATE TABLE IF NOT EXISTS coverage(source_id TEXT NOT NULL REFERENCES sources(source_id), field_path TEXT NOT NULL, state TEXT NOT NULL, observed_at TEXT NOT NULL, detail TEXT, PRIMARY KEY(source_id, field_path));
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
+            CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, PRIMARY KEY(revision_id, unique_name));
+            CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
             """);
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -36,6 +38,39 @@ public sealed class SyncDatabase : IAsyncDisposable
     }
 
     public async Task<SyncPublicationResult> PublishAsync(SyncBatch batch, CancellationToken cancellationToken = default)
+        => await PublishInternalAsync(batch, null, cancellationToken);
+
+    public async Task<SyncPublicationResult> PublishCatalogAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord> records, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+        if (records.Count != batch.RecordCount) throw new ArgumentException("Catalog record count does not match batch.", nameof(records));
+        if (records.Select(record => record.UniqueName).Distinct(StringComparer.Ordinal).Count() != records.Count) throw new ArgumentException("Catalog contains duplicate unique names.", nameof(records));
+        return await PublishInternalAsync(batch, records, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PublicExportRecord>> GetPublicExportItemsAsync(string sourceId, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name
+            FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
+            WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
+            """;
+        command.Parameters.AddWithValue("$source", sourceId);
+        var records = new List<PublicExportRecord>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var uniqueName = reader.GetString(0);
+            var name = reader.IsDBNull(1) ? null : reader.GetString(1);
+            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }));
+        }
+        return records;
+    }
+
+    private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, CancellationToken cancellationToken)
     {
         Validate(batch);
         await _writer.WaitAsync(cancellationToken);
@@ -65,6 +100,9 @@ public sealed class SyncDatabase : IAsyncDisposable
             await CommandAsync(connection, transaction, "INSERT INTO staging_records(run_id, ordinal, payload_hash, payload_json) VALUES ($run, 0, $hash, $payload);", cancellationToken, ("$run", runId), ("$hash", batch.ContentHash), ("$payload", batch.PayloadJson));
             await CommandAsync(connection, transaction, "UPDATE source_revisions SET state='retained' WHERE source_id=$source AND state='active';", cancellationToken, ("$source", batch.SourceId));
             await CommandAsync(connection, transaction, "INSERT INTO source_revisions(revision_id, source_id, content_hash, payload_json, parser_version, record_count, state, retrieved_at, published_at) VALUES ($revision, $source, $hash, $payload, $parser, $count, 'active', $at, $at);", cancellationToken, ("$revision", revisionId), ("$source", batch.SourceId), ("$hash", batch.ContentHash), ("$payload", batch.PayloadJson), ("$parser", batch.ParserVersion), ("$count", batch.RecordCount), ("$at", now));
+            if (records is not null)
+                foreach (var record in records)
+                    await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name) VALUES ($revision, $unique, $name, $category, $description, $canonical);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)));
             await transaction.CommitAsync(cancellationToken);
             return new SyncPublicationResult(runId, revisionId, false, batch.RecordCount);
         }
