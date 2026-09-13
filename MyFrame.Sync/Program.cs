@@ -7,13 +7,15 @@ var publicExportFile = args.Any(argument => string.Equals(argument, "--public-ex
 var publicExportDirectory = args.Any(argument => string.Equals(argument, "--public-export-directory", StringComparison.Ordinal));
 var worldState = args.Any(argument => string.Equals(argument, "--world-state", StringComparison.Ordinal));
 var worldStateFile = args.Any(argument => string.Equals(argument, "--world-state-file", StringComparison.Ordinal));
+var overwolfInventoryDirectory = args.Any(argument => string.Equals(argument, "--overwolf-inventory-directory", StringComparison.Ordinal));
+var allowRaw = args.Any(argument => string.Equals(argument, "--allow-raw", StringComparison.Ordinal));
 var referenceFile = args.Any(argument => string.Equals(argument, "--reference-file", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
 var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -137,6 +139,33 @@ if (worldStateFile && !allLocal)
         source = "worldstate-pc"
     }));
     return result.State == "published" ? 0 : 1;
+}
+
+if (overwolfInventoryDirectory)
+{
+    if (!allowRaw)
+    {
+        Console.Error.WriteLine("--overwolf-inventory-directory requires --allow-raw consent.");
+        return 2;
+    }
+    var directoryIndex = Array.FindIndex(args, argument => string.Equals(argument, "--overwolf-inventory-directory", StringComparison.Ordinal));
+    if (directoryIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(args[directoryIndex + 1]))
+    {
+        Console.Error.WriteLine("--overwolf-inventory-directory requires a directory path.");
+        return 2;
+    }
+    var result = await CollectorCaptureInbox.ImportAsync(args[directoryIndex + 1], database, true);
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = result.Rejected == 0 ? "published" : "partial-failure",
+        source = "overwolf-inventory",
+        discovered = result.Discovered,
+        imported = result.Imported,
+        alreadyPublished = result.AlreadyPublished,
+        rejected = result.Rejected,
+        items = result.Items
+    }));
+    return result.Rejected == 0 ? 0 : 1;
 }
 
 if (allSources)

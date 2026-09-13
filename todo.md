@@ -220,6 +220,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F182: executar o caso Mother Token em Codex/Claude com revisão World State publicada em fixture ([evidências](docs/validacoes/2026-09-13-f182.md)).
 - [x] F183: enriquecer fixture World State com validade/ciclo e validar resposta F10 sem inferências ([evidências](docs/validacoes/2026-09-13-f183.md)).
 - [x] F184: executar regressão Core/MCP após fixture World State enriquecida ([evidências](docs/validacoes/2026-09-13-f184.md)).
+- [x] F185: expor importação explícita de captura Overwolf no SyncHost com consentimento ([evidências](docs/validacoes/2026-09-13-f185.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
