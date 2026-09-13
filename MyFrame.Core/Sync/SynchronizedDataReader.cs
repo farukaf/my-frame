@@ -22,6 +22,12 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
         // Ensure the complete schema exists so a clean installation reports setup-required data
         // instead of leaking a "no such table" SQLite exception through MCP.
         await database.InitializeAsync(cancellationToken);
+        var inventoryRevision = await database.GetActiveInventoryRevisionStatusAsync(cancellationToken);
+        // A delta is evidence of change, not a complete inventory. Until a
+        // reconciler applies it to a verified snapshot, refuse to project it
+        // as authoritative MCP inventory rather than turning omissions into
+        // zero/absent ownership.
+        if (inventoryRevision is { CaptureMode: "delta" }) return null;
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
         var stackables = await database.GetInventoryStackablesAsync(cancellationToken);
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);

@@ -410,6 +410,25 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task SynchronizedReaderDoesNotProjectDeltaAsCompleteInventory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-delta-reader-{Guid.NewGuid():N}.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-delta-reader", "[]", 1),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                    new Dictionary<string, string>())]);
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, "native", "unverified", "{\"equipment\":[]}", "inventory-delta-reader", "delta");
+            await db.PublishInventoryAsync(envelope, new InventoryProjection([], [], [],
+                new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known }));
+        }
+
+        var snapshot = await new SqliteSynchronizedDataReader(path).ReadAsync();
+        Assert.Null(snapshot);
+    }
+
+    [Fact]
     public async Task WorldStatePublicationKeepsExpiryAndSourceRevision()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
