@@ -124,6 +124,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F129 — consolidação dos gates F10](docs/validacoes/2026-09-13-f129.md)
 - [Validação F130 — sincronização manual do Public Export no App](docs/validacoes/2026-09-13-f130.md)
 - [Validação F131 — smoke da fonte oficial Public Export](docs/validacoes/2026-09-13-f131.md)
+- [Validação F132 — decoder LZMA no fluxo do App](docs/validacoes/2026-09-13-f132.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
