@@ -104,6 +104,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F11 — página visual de status de sincronização](docs/validacoes/2026-09-13-f11.md)
 - [Validação F12 — snapshot preferencial do SQLite sincronizado](docs/validacoes/2026-09-13-f12.md)
 - [Validação F13 — catálogo Public Export rico e preservado](docs/validacoes/2026-09-13-f13.md)
+- [Validação F14 — importação de captura validada para SQLite](docs/validacoes/2026-09-13-f14.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
