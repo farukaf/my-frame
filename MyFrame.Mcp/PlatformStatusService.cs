@@ -18,6 +18,9 @@ public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
     string? Description, IReadOnlyDictionary<string, string> Aliases);
+public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
+    string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
+    IReadOnlyList<PublicExportItemDto> Items);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
@@ -123,7 +126,7 @@ public sealed class PlatformStatusService
             .ToArray();
     }
 
-    public async Task<IReadOnlyList<PublicExportItemDto>> SearchPublicExportAsync(
+    public async Task<PublicExportSearchResponse> SearchPublicExportAsync(
         string? text = null, string? category = null, int limit = 50,
         CancellationToken cancellationToken = default)
     {
@@ -135,7 +138,7 @@ public sealed class PlatformStatusService
         var normalizedText = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
         var normalizedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
-        return records
+        var items = records
             .Where(record => normalizedCategory is null || string.Equals(record.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase))
             .Where(record => normalizedText is null || Contains(record.UniqueName, normalizedText) ||
                 Contains(record.Name, normalizedText) || Contains(record.Category, normalizedText) ||
@@ -146,6 +149,11 @@ public sealed class PlatformStatusService
             .Select(record => new PublicExportItemDto(record.UniqueName, record.Name, record.Category,
                 record.Description, record.Aliases))
             .ToArray();
+        var status = await database.GetStatusAsync("public-export", cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
+        return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" : status.LastRunState ?? "unknown",
+            status?.ActiveRevisionId, status?.ParserVersion,
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal), items);
     }
 
     private static bool Contains(string? value, string text) =>
