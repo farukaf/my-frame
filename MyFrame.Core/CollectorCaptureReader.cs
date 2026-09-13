@@ -37,7 +37,7 @@ public static class CollectorCaptureReader
             if (body.Length != expectedBytes || !string.Equals(Convert.ToHexString(SHA256.HashData(body)),
                     expectedHash, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("CAPTURE_INTEGRITY_FAILED");
-            using var envelope = JsonDocument.Parse(body, new() { MaxDepth = 8 });
+            using var envelope = JsonDocument.Parse(TrimUtf8Bom(body), new() { MaxDepth = 8 });
             var e = envelope.RootElement;
             if (e.GetProperty("schemaVersion").GetInt32() != 1 || e.GetProperty("gameId").GetInt32() != 8954 ||
                 e.GetProperty("source").GetString() != "overwolf-native" ||
@@ -56,8 +56,9 @@ public static class CollectorCaptureReader
                 using var parsed = JsonDocument.Parse(payload, new() { MaxDepth = 64 });
                 rootObject = parsed.RootElement.ValueKind == JsonValueKind.Object;
             }
+            if (!DateTimeOffset.TryParse(e.GetProperty("receivedAt").GetString(), out var receivedAt)) throw Invalid();
             return new(1, 8954, "overwolf-native", sessionId, eventId,
-                e.GetProperty("sequence").GetInt64(), e.GetProperty("receivedAt").GetDateTimeOffset(),
+                e.GetProperty("sequence").GetInt64(), receivedAt,
                 body.Length, "unverified", false, rootObject);
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or
@@ -67,7 +68,32 @@ public static class CollectorCaptureReader
         }
     }
 
+    public static async Task<InventoryEnvelope> ReadEnvelopeAsync(string markerPath,
+        CancellationToken cancellationToken = default)
+    {
+        var probe = await ReadAsync(markerPath, cancellationToken);
+        var absolute = Path.GetFullPath(markerPath);
+        var markerBytes = await ReadBoundedAsync(absolute, 4096, cancellationToken);
+        using var marker = JsonDocument.Parse(markerBytes, new() { MaxDepth = 8 });
+        var fileName = marker.RootElement.GetProperty("fileName").GetString() ?? throw Invalid();
+        var capturePath = Path.Combine(Path.GetDirectoryName(absolute)!, fileName);
+        var body = await ReadBoundedAsync(capturePath, MaximumEnvelopeBytes, cancellationToken);
+        var expectedHash = marker.RootElement.GetProperty("sha256").GetString();
+        if (!string.Equals(Convert.ToHexString(SHA256.HashData(body)), expectedHash, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("CAPTURE_INTEGRITY_FAILED");
+        var envelope = InventoryEnvelopeParser.Parse(TrimUtf8Bom(body));
+        if (envelope.EventId != probe.EventId || envelope.SessionId != probe.SessionId)
+            throw Invalid();
+        return envelope;
+    }
+
     private static InvalidDataException Invalid() => new("CAPTURE_FORMAT_INVALID");
+
+    private static string TrimUtf8Bom(byte[] body)
+    {
+        var text = System.Text.Encoding.UTF8.GetString(body);
+        return text.Length > 0 && text[0] == '\uFEFF' ? text[1..] : text;
+    }
 
     private static async Task<byte[]> ReadBoundedAsync(string path, int maximum,
         CancellationToken cancellationToken)
