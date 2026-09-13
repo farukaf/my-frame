@@ -79,6 +79,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F39: conectar retenção à fronteira de manutenção do SyncHost ([evidências](docs/validacoes/2026-09-13-f39.md)).
 - [x] F40: verificar schema futuro antes de qualquer mutação SQLite ([evidências](docs/validacoes/2026-09-13-f40.md)).
 - [x] F41: ligar cliente Public Export ao SyncHost e publicar registros normalizados ([evidências](docs/validacoes/2026-09-13-f41.md)).
+- [x] F42: ligar cliente World State ao SyncHost e publicar revisão validada ([evidências](docs/validacoes/2026-09-13-f42.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
