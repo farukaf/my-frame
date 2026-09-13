@@ -149,7 +149,7 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings.AlecaFrameDirectory = directory;
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
-        AlecaFrameDirectoryMessage = "Folder saved. Inventory, catalogs, token, and monitoring now use this location.";
+        AlecaFrameDirectoryMessage = "Folder saved. Legacy inventory and catalog import use this location; market credentials stay in My Frame storage.";
         StatusMessage = "AlecaFrame folder configured. Loading data…";
         await RefreshAsync();
     }
