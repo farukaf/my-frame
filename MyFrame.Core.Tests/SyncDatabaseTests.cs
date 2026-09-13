@@ -67,4 +67,19 @@ public sealed class SyncDatabaseTests
         var status = await restored.GetStatusAsync("warframe");
         Assert.Equal("hash", status!.ActiveContentHash);
     }
+
+    [Fact]
+    public async Task HostRecordsFailureWithoutReplacingActiveRevision()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await db.PublishAsync(new SyncBatch("source", "good", "{}", 1));
+        await using var host = new SyncHost(db);
+        var result = await host.RunOnceAsync("source", _ => throw new InvalidDataException("SCHEMA_INVALID"));
+        var status = await db.GetStatusAsync("source");
+        Assert.Null(result);
+        Assert.Equal("good", status!.ActiveContentHash);
+        Assert.Equal("SCHEMA_INVALID", status.ErrorCode);
+        Assert.Equal("failed", status.LastRunState);
+    }
 }
