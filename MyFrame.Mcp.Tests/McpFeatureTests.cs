@@ -449,6 +449,33 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Null(page.NextCursor);
     }
 
+    [Fact]
+    public async Task WarmSearchHandlesTwentyThousandInventoryEntriesWithinBudget()
+    {
+        var values = Enumerable.Range(0, 20_000)
+            .Select(index => ($"/synthetic/item-{index:D5}", $"Synthetic Item {index:D5}"))
+            .ToArray();
+        var service = Service(new FakeProvider(Snapshot("large-snapshot", values)));
+
+        var warm = await service.SearchInventoryAsync(null, null, null, null,
+            "all", false, 100, null, null, default);
+        Assert.Equal(20_000, warm.TotalCount);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        PageResponse<InventoryItemDto>? page = null;
+        for (var index = 0; index < 5; index++)
+            page = await service.SearchInventoryAsync(null, null, null, null,
+                "all", false, 100, null, null, default);
+        stopwatch.Stop();
+
+        Assert.NotNull(page);
+        Assert.Equal(100, page!.Count);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5),
+            $"Warm 20k search exceeded 5 seconds: {stopwatch.Elapsed.TotalMilliseconds:N0} ms.");
+        Assert.True(JsonSerializer.Serialize(page).Length < 128 * 1024,
+            "The paged response exceeded the 128 KiB response budget.");
+    }
+
     private static void AssertTextOnlyError(CallToolResult result, string code, string retryable)
     {
         Assert.True(result.IsError);
