@@ -7,12 +7,13 @@ var publicExportFile = args.Any(argument => string.Equals(argument, "--public-ex
 var publicExportDirectory = args.Any(argument => string.Equals(argument, "--public-export-directory", StringComparison.Ordinal));
 var worldState = args.Any(argument => string.Equals(argument, "--world-state", StringComparison.Ordinal));
 var worldStateFile = args.Any(argument => string.Equals(argument, "--world-state-file", StringComparison.Ordinal));
+var referenceFile = args.Any(argument => string.Equals(argument, "--reference-file", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
 var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -34,6 +35,28 @@ if (statusOnly)
     var statuses = await Task.WhenAll(new[] { "public-export", "worldstate-pc", "overwolf-inventory" }
         .Select(async source => new { source, status = await database.GetStatusAsync(source) }));
     Console.WriteLine(JsonSerializer.Serialize(new { dataRoot = MyFrameStoragePaths.RootDirectory, statuses }));
+    return 0;
+}
+
+if (referenceFile)
+{
+    var referenceIndex = Array.FindIndex(args, argument => string.Equals(argument, "--reference-file", StringComparison.Ordinal));
+    if (referenceIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(args[referenceIndex + 1]))
+    {
+        Console.Error.WriteLine("--reference-file requires a JSON path.");
+        return 2;
+    }
+    var imported = await ReferenceImporter.ImportAsync(args[referenceIndex + 1],
+        Path.Combine(MyFrameStoragePaths.RootDirectory, "references"));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = imported.AlreadyImported ? "already-imported" : "imported",
+        kind = imported.Document.Kind.ToString(),
+        title = imported.Document.Title,
+        revision = imported.Document.Revision,
+        storedFile = imported.StoredFile,
+        trustedForFacts = imported.Document.IsTrustedForFacts
+    }));
     return 0;
 }
 
