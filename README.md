@@ -169,6 +169,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F174 — smoke real do MCP Inspector e dependência DPAPI](docs/validacoes/2026-09-13-f174.md)
 - [Validação F175 — pacote distribuível Windows após hardening do MCP](docs/validacoes/2026-09-13-f175.md)
 - [Validação F176 — instalação limpa e upgrade side-by-side do pacote F175](docs/validacoes/2026-09-13-f176.md)
+- [Validação F177 — prontidão dos clientes MCP](docs/validacoes/2026-09-13-f177.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
