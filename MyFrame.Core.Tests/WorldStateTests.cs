@@ -131,6 +131,22 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task SharedWorldStateRunnerPublishesAndReportsParser()
+    {
+        const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[]}";
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-runner-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new WorldStateSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal("worldstate-official-1", result.ParserVersion);
+        Assert.Equal(0, result.Records);
+    }
+
+    [Fact]
     public async Task OfficialWorldStateFlowsThroughHostAndPersistsProvenance()
     {
         const string json = """

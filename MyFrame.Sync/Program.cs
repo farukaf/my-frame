@@ -35,18 +35,17 @@ if (statusOnly)
 if (worldState)
 {
     using var worldStateClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-    var publication = await host.RunWorldStateOnceAsync(new WorldStateClient(worldStateClient, allowCommunityFallback: false));
-    var status = await database.GetStatusAsync("worldstate-pc");
+    var result = await new WorldStateSyncRunner().RunAsync(database, host, worldStateClient);
     Console.WriteLine(JsonSerializer.Serialize(new
     {
-        state = publication is null ? status?.LastRunState ?? "failed" : "published",
-        records = publication?.RecordCount ?? 0,
-        revisionId = publication?.RevisionId ?? status?.ActiveRevisionId,
-        parserVersion = status?.ParserVersion,
-        errorCode = publication is null ? status?.ErrorCode ?? "SYNC_FAILED" : null,
+        state = result.State,
+        records = result.Records,
+        revisionId = result.RevisionId,
+        parserVersion = result.ParserVersion,
+        errorCode = result.ErrorCode,
         source = "worldstate-pc"
     }));
-    return publication is null ? 1 : 0;
+    return result.State == "published" ? 0 : 1;
 }
 
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
