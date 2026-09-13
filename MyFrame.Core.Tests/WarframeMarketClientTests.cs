@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Runtime.Versioning;
 using MyFrame.Core;
 
 namespace MyFrame.Core.Tests;
 
+[SupportedOSPlatform("windows")]
 public sealed class WarframeMarketClientTests
 {
     [Fact]
@@ -49,6 +51,36 @@ public sealed class WarframeMarketClientTests
         Assert.Equal("Tenno", account?.IngameName);
         Assert.Single(handler.Requests);
         Assert.NotNull(handler.Requests[0].Authorization);
+    }
+
+    [Fact]
+    public async Task ProtectedCredentialStoreEncryptsAndClearsTheToken()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = System.IO.Path.Combine(directory.Path, "market.token");
+        var store = new ProtectedFileMarketTokenStore(path);
+        const string token = "sensitive-market-token";
+
+        await store.SaveAsync(token);
+        var bytes = await File.ReadAllBytesAsync(path);
+        Assert.DoesNotContain(token, Encoding.UTF8.GetString(bytes));
+        Assert.Equal(token, await store.ReadAsync());
+
+        await store.ClearAsync();
+        Assert.Null(await store.ReadAsync());
+    }
+
+    [Fact]
+    public async Task ProtectedCredentialStoreReadsLegacyPlaintextWithoutRewritingIt()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = System.IO.Path.Combine(directory.Path, "market.token");
+        const string token = "legacy-market-token";
+        await File.WriteAllTextAsync(path, token);
+        var store = new ProtectedFileMarketTokenStore(path);
+
+        Assert.Equal(token, await store.ReadAsync());
+        Assert.Equal(token, await File.ReadAllTextAsync(path));
     }
 
     private static string CreateToken(DateTimeOffset expires)

@@ -206,6 +206,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F113 — caches de mercado no SQLite](docs/validacoes/2026-09-13-f113.md)
 - [Validação F114 — settings no SQLite](docs/validacoes/2026-09-13-f114.md)
 - [Validação F115 — instalação limpa sem caches legados](docs/validacoes/2026-09-13-f115.md)
+- [Validação F116 — credencial WFM protegida por usuário Windows](docs/validacoes/2026-09-13-f116.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
