@@ -220,6 +220,7 @@ permitir filtros e paginação previsível.
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
 | `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. |
+| `search_public_export` | Busca local no catálogo oficial sincronizado por uniqueName, nome, alias ou categoria, sem rede e sem raw JSON. |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |

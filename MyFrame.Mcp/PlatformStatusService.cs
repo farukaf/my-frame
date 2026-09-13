@@ -16,6 +16,8 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
+public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
+    string? Description, IReadOnlyDictionary<string, string> Aliases);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
@@ -120,6 +122,34 @@ public sealed class PlatformStatusService
             .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
             .ToArray();
     }
+
+    public async Task<IReadOnlyList<PublicExportItemDto>> SearchPublicExportAsync(
+        string? text = null, string? category = null, int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+        if (text?.Length > 200 || category?.Length > 100)
+            throw new ArgumentException("Search filters exceed their length limit.");
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var normalizedText = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        var normalizedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
+        var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        return records
+            .Where(record => normalizedCategory is null || string.Equals(record.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(record => normalizedText is null || Contains(record.UniqueName, normalizedText) ||
+                Contains(record.Name, normalizedText) || Contains(record.Category, normalizedText) ||
+                record.Aliases.Values.Any(value => Contains(value, normalizedText)))
+            .OrderBy(record => record.Name ?? record.UniqueName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(record => record.UniqueName, StringComparer.Ordinal)
+            .Take(limit)
+            .Select(record => new PublicExportItemDto(record.UniqueName, record.Name, record.Category,
+                record.Description, record.Aliases))
+            .ToArray();
+    }
+
+    private static bool Contains(string? value, string text) =>
+        value?.Contains(text, StringComparison.OrdinalIgnoreCase) == true;
 
     public async Task<IReadOnlyList<InventoryEquipmentDto>> GetInventoryEquipmentAsync(
         string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
