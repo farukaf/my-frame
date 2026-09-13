@@ -69,7 +69,8 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<WorldStateBountiesResponse> GetBounties(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
-        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, cancellationToken);
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, reward, cancellationToken);
 
     [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
