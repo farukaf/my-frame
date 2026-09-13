@@ -150,6 +150,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F110: validar expiração por limite de memória dos snapshots retidos ([evidências](docs/validacoes/2026-09-13-f110.md)).
 - [x] F111: exercitar erro MCP com root limpo, sem rede, escrita ou vazamento ([evidências](docs/validacoes/2026-09-13-f111.md)).
 - [x] F112: reconciliar a matriz com evidências e pendências externas explícitas ([evidências](docs/validacoes/2026-09-13-f112.md)).
+- [x] F113: migrar caches/estado de mercado para SQLite com importação legada não destrutiva ([evidências](docs/validacoes/2026-09-13-f113.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -171,7 +172,7 @@ para a nova matriz e continuam abertas até validação.
 - [x] Centralizar pasta do AlecaFrame e preferências de recomendação em configuração comum.
 - [x] Migrar Preferences e caches pelo app, de forma idempotente e recuperável, preservando origens.
 - [x] Versionar settings/regras/contrato e publicar cada arquivo por substituição atômica.
-- [ ] Garantir gerações consistentes de mercado: proposta de manifesto JSON substituída por SQLite em F2 (DB02–DB06); objetivo ainda pendente.
+- [x] Garantir geração consistente dos caches/estado de mercado: JSON legado importado e novas escritas em SQLite ([F113](docs/validacoes/2026-09-13-f113.md)); settings continuam fora deste escopo.
 - [x] Separar interfaces leitoras/escritoras e remover dependência de rede/token da composição MCP.
 - [x] Ler todas as cotações locais relevantes em lote, separando o orçamento online de 100 slugs.
 - [x] Definir DTOs MCP versionados, sem propriedades de apresentação nem caminhos locais.

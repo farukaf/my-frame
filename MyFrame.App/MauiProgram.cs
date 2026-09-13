@@ -43,11 +43,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
-        builder.Services.AddSingleton(_ => new JsonPriceCache(MyFrameStoragePaths.PriceCachePath));
-        builder.Services.AddSingleton<IPriceCache>(provider => provider.GetRequiredService<JsonPriceCache>());
-        builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<JsonPriceCache>());
-        builder.Services.AddSingleton<IMarketStateStore>(_ => new MarketStateStore(MyFrameStoragePaths.MarketStatePath));
-        builder.Services.AddSingleton<IMarketItemIndexStore>(_ => new MarketItemIndexStore(MyFrameStoragePaths.MarketItemIndexPath));
+        builder.Services.AddSingleton(_ => new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath,
+            MyFrameStoragePaths.PriceCachePath, MyFrameStoragePaths.MarketStatePath,
+            MyFrameStoragePaths.MarketItemIndexPath));
+        builder.Services.AddSingleton<IPriceCache>(provider => provider.GetRequiredService<SqliteMarketStore>());
+        builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<SqliteMarketStore>());
+        builder.Services.AddSingleton<IMarketStateStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
+        builder.Services.AddSingleton<IMarketItemIndexStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
             new HttpClient(), new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
