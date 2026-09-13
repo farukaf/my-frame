@@ -138,6 +138,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F45 — bounties World State no MCP](docs/validacoes/2026-09-13-f45.md)
 - [Validação F46 — estado de disponibilidade de bounties](docs/validacoes/2026-09-13-f46.md)
 - [Validação F47 — skill de farm alinhada ao MCP](docs/validacoes/2026-09-13-f47.md)
+- [Validação F48 — skill de builds alinhada ao loadout](docs/validacoes/2026-09-13-f48.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
