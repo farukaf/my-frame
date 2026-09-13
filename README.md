@@ -150,6 +150,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F57 — sincronização manual do World State](docs/validacoes/2026-09-13-f57.md)
 - [Validação F58 — cobertura explícita de Mother Token](docs/validacoes/2026-09-13-f58.md)
 - [Validação F59 — cobertura World State persistida no MCP](docs/validacoes/2026-09-13-f59.md)
+- [Validação F60 — substituição de cobertura entre revisões](docs/validacoes/2026-09-13-f60.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

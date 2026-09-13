@@ -363,6 +363,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             if (worldState is { } world)
             {
                 await CommandAsync(connection, transaction, "INSERT INTO worldstate_revisions(revision_id, source_timestamp, retrieved_at, is_current) VALUES ($revision, $sourceTimestamp, $retrieved, 1);", cancellationToken, ("$revision", revisionId), ("$sourceTimestamp", (object?)world.Snapshot.SourceTimestamp?.ToString("O") ?? DBNull.Value), ("$retrieved", world.Snapshot.RetrievedAt.ToString("O")));
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='worldstate-pc';", cancellationToken);
                 foreach (var field in world.Snapshot.Coverage)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('worldstate-pc', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
                 foreach (var bounty in world.Snapshot.Bounties)
