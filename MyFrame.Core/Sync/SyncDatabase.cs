@@ -237,7 +237,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT b.bounty_id, b.syndicate, b.activation, b.expiry
+            SELECT b.revision_id, b.bounty_id, b.syndicate, b.activation, b.expiry
             FROM worldstate_bounties b JOIN worldstate_revisions wr ON wr.revision_id=b.revision_id
             JOIN source_revisions r ON r.revision_id=wr.revision_id
             WHERE r.source_id='worldstate-pc' AND r.state='active' AND (b.activation IS NULL OR b.activation <= $now) AND (b.expiry IS NULL OR b.expiry > $now)
@@ -247,7 +247,34 @@ public sealed class SyncDatabase : IAsyncDisposable
         var result = new List<WorldStateBounty>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
-            result.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), ParseDate(reader, 2), ParseDate(reader, 3), []));
+        {
+            var revisionId = reader.GetString(0);
+            var bountyId = reader.GetString(1);
+            var jobs = new List<WorldStateJob>();
+            await using var jobsCommand = connection.CreateCommand();
+            jobsCommand.CommandText = "SELECT job_id, type, unique_name, minimum_mastery_rank, standing_stages_json FROM worldstate_jobs WHERE revision_id=$revision AND bounty_id=$bounty ORDER BY job_id;";
+            jobsCommand.Parameters.AddWithValue("$revision", revisionId);
+            jobsCommand.Parameters.AddWithValue("$bounty", bountyId);
+            await using var jobsReader = await jobsCommand.ExecuteReaderAsync(cancellationToken);
+            while (await jobsReader.ReadAsync(cancellationToken))
+            {
+                var jobId = jobsReader.GetString(0);
+                var stages = JsonSerializer.Deserialize<int[]>(jobsReader.GetString(4)) ?? [];
+                var rewards = new List<WorldStateReward>();
+                await using var rewardsCommand = connection.CreateCommand();
+                rewardsCommand.CommandText = "SELECT item, chance, count, rarity FROM worldstate_rewards WHERE revision_id=$revision AND bounty_id=$bounty AND job_id=$job ORDER BY ordinal;";
+                rewardsCommand.Parameters.AddWithValue("$revision", revisionId);
+                rewardsCommand.Parameters.AddWithValue("$bounty", bountyId);
+                rewardsCommand.Parameters.AddWithValue("$job", jobId);
+                await using var rewardsReader = await rewardsCommand.ExecuteReaderAsync(cancellationToken);
+                while (await rewardsReader.ReadAsync(cancellationToken))
+                    rewards.Add(new(rewardsReader.GetString(0), rewardsReader.IsDBNull(1) ? null : Convert.ToDecimal(rewardsReader.GetValue(1)),
+                        rewardsReader.IsDBNull(2) ? null : rewardsReader.GetInt32(2), rewardsReader.IsDBNull(3) ? null : rewardsReader.GetString(3)));
+                jobs.Add(new(jobId, jobsReader.IsDBNull(1) ? null : jobsReader.GetString(1),
+                    jobsReader.IsDBNull(2) ? null : jobsReader.GetString(2), jobsReader.IsDBNull(3) ? null : jobsReader.GetInt32(3), stages, rewards));
+            }
+            result.Add(new(bountyId, reader.IsDBNull(2) ? null : reader.GetString(2), ParseDate(reader, 3), ParseDate(reader, 4), jobs));
+        }
         return result;
     }
 
