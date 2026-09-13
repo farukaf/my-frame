@@ -154,6 +154,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F159 — status da fonte de referências importadas](docs/validacoes/2026-09-13-f159.md)
 - [Validação F160 — regressão após referências e novo tool MCP](docs/validacoes/2026-09-13-f160.md)
 - [Validação F161 — tentativa de homologação local Overwolf](docs/validacoes/2026-09-13-f161.md)
+- [Validação F162 — hosts oficiais separados do Public Export](docs/validacoes/2026-09-13-f162.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
