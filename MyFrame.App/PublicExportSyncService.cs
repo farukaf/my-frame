@@ -15,8 +15,9 @@ public sealed class PublicExportSyncService(ILogger<PublicExportSyncService> log
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
         try
         {
-            var indexClient = new PublicExportIndexClient(client);
-            var documentClient = new PublicExportDocumentClient(client);
+            var decoder = new LzmaAloneDecoder();
+            var indexClient = new PublicExportIndexClient(client, decoder.Decode);
+            var documentClient = new PublicExportDocumentClient(client, decoder);
             var entries = await indexClient.FetchIndexAsync(cancellationToken: cancellationToken);
             var entry = entries.FirstOrDefault(value =>
                 value.RelativePath.Contains("ExportWeapons_en.json", StringComparison.OrdinalIgnoreCase))
