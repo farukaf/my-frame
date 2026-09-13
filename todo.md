@@ -148,6 +148,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F108: validar chamadas estruturadas reais via MCP Inspector CLI ([evidências](docs/validacoes/2026-09-13-f108.md)).
 - [x] F109: provar paridade de projeção entre Dashboard/UI e MCP no mesmo snapshot ([evidências](docs/validacoes/2026-09-13-f109.md)).
 - [x] F110: validar expiração por limite de memória dos snapshots retidos ([evidências](docs/validacoes/2026-09-13-f110.md)).
+- [x] F111: exercitar erro MCP com root limpo, sem rede, escrita ou vazamento ([evidências](docs/validacoes/2026-09-13-f111.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
