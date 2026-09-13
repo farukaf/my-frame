@@ -73,6 +73,23 @@ public sealed class SyncHost : IAsyncDisposable
             token => client.FetchPublicationAsync(entry, sourceId, baseUri, token), cancellationToken);
     }
 
+    public Task<SyncPublicationResult?> RunPublicExportLatestOnceAsync(string sourceId,
+        PublicExportIndexClient indexClient, PublicExportDocumentClient documentClient,
+        string relativePath, Uri? indexUri = null, Uri? baseUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(indexClient);
+        ArgumentNullException.ThrowIfNull(documentClient);
+        if (string.IsNullOrWhiteSpace(relativePath)) throw new ArgumentException("Export path is required.", nameof(relativePath));
+        return RunCatalogOnceAsync(sourceId, async token =>
+        {
+            var entries = await indexClient.FetchIndexAsync(indexUri, token);
+            var entry = entries.FirstOrDefault(value => string.Equals(value.RelativePath, relativePath, StringComparison.Ordinal));
+            if (entry is null) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
+            return await documentClient.FetchPublicationAsync(entry, sourceId, baseUri, token);
+        }, cancellationToken);
+    }
+
     public async Task<SyncPublicationResult?> RunWorldStateOnceAsync(WorldStateClient client,
         Uri? uri = null, CancellationToken cancellationToken = default)
     {
