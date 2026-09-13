@@ -35,7 +35,7 @@ public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, D
 
 public sealed class PlatformStatusService
 {
-    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "market-public", "references"];
+    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references"];
     public CapabilitiesResponse GetCapabilities() => new(DateTimeOffset.UtcNow,
     [
         new("inventory.overwolf", "pending_external_validation", "Native GEP contract is implemented; real capture and Arsenal comparison are still required."),
