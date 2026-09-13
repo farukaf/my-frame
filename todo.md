@@ -87,6 +87,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F47: alinhar skill de farm ao contrato `get_bounties` e estados World State ([evidências](docs/validacoes/2026-09-13-f47.md)).
 - [x] F48: alinhar skill de builds às consultas `get_loadout`/`get_mods` ([evidências](docs/validacoes/2026-09-13-f48.md)).
 - [x] F49: validar paridade da projeção World State entre SQLite e MCP ([evidências](docs/validacoes/2026-09-13-f49.md)).
+- [x] F50: atualizar contrato docs/MCP.md para as 17 ferramentas implementadas ([evidências](docs/validacoes/2026-09-13-f50.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
