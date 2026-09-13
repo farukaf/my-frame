@@ -181,6 +181,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F143: expor cobertura de fontes públicas no MCP ([evidências](docs/validacoes/2026-09-13-f143.md)).
 - [x] F144: expor busca local do catálogo Public Export no MCP ([evidências](docs/validacoes/2026-09-13-f144.md)).
 - [x] F145: anexar revisão/parser/cobertura à busca Public Export ([evidências](docs/validacoes/2026-09-13-f145.md)).
+- [x] F146: sugerir inbox My Frame na UI do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f146.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

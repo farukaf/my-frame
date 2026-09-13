@@ -6,6 +6,11 @@ const collector = api ? new Collector(api, status => {
 }) : null;
 $("availability").textContent = api ? "Pronto. Clique em iniciar; depois abra o Warframe." :
   "Abra este pacote como extensão local no Overwolf. O navegador comum não oferece GEP.";
+const localAppData = api?.io?.paths?.localAppData;
+if (localAppData) {
+  $("folder").value = `${localAppData.replace(/[\\/]+$/, "")}\\MyFrame\\captures`;
+  $("folder-hint").textContent = "Inbox My Frame sugerida automaticamente; confirme antes de exportar.";
+}
 if (!api) for (const button of document.querySelectorAll("button")) button.disabled = true;
 $("start").onclick = () => collector.start();
 $("stop").onclick = () => { collector.stop(); $("consent").checked = false; };

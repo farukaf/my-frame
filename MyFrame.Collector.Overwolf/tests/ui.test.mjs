@@ -10,11 +10,12 @@ test("UI initializes without reading collector before its constructor returns", 
   const saved = { document: globalThis.document, overwolf: globalThis.overwolf, addEventListener: globalThis.addEventListener };
   try {
     globalThis.document = { getElementById: node, querySelectorAll: () => [] };
-    globalThis.overwolf = { games: {} };
+    globalThis.overwolf = { games: {}, io: { paths: { localAppData: "C:\\Users\\test\\AppData\\Local" } } };
     globalThis.addEventListener = () => {};
     await import(`../ui.mjs?test=${crypto.randomUUID()}`);
     assert.match(node("availability").textContent, /Pronto/);
     assert.equal(JSON.parse(node("status").textContent).state, "stopped");
+    assert.equal(node("folder").value, "C:\\Users\\test\\AppData\\Local\\MyFrame\\captures");
     assert.equal(typeof node("start").onclick, "function");
   } finally {
     for (const [key, value] of Object.entries(saved)) {
