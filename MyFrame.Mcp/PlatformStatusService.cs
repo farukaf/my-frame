@@ -175,15 +175,18 @@ public sealed class PlatformStatusService
             new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray());
     }
 
-    public async Task<WorldStateResponse> GetWorldStateAsync(CancellationToken cancellationToken = default)
+    public async Task<WorldStateResponse> GetWorldStateAsync(int limit = 100,
+        CancellationToken cancellationToken = default)
     {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
         var cycles = await database.GetCurrentWorldStateCyclesAsync(cancellationToken);
         var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode,
-            bounties.Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
+            bounties.Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
                 bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
                         new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
