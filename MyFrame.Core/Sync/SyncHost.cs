@@ -73,6 +73,27 @@ public sealed class SyncHost : IAsyncDisposable
             token => client.FetchPublicationAsync(entry, sourceId, baseUri, token), cancellationToken);
     }
 
+    public async Task<SyncPublicationResult?> RunWorldStateOnceAsync(WorldStateClient client,
+        Uri? uri = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        await StartAsync(cancellationToken);
+        try
+        {
+            var (snapshot, batch) = await client.FetchAsync(uri, cancellationToken);
+            var result = await _database.PublishWorldStateAsync(snapshot, batch, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            await _database.RecordFailureAsync("worldstate-pc", ErrorCode(error), cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return null;
+        }
+    }
+
     public async Task<int> RunMaintenanceAsync(int maximumRevisionsPerSource = 3,
         CancellationToken cancellationToken = default)
     {
