@@ -37,6 +37,13 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
         platform.GetInventoryCoverageAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns field-level coverage for a synchronized source such as public-export, worldstate-pc, or overwolf-inventory. It never returns raw payloads and preserves NotObserved instead of guessing.")]
+    public Task<IReadOnlyList<SourceCoverageDto>> GetSourceCoverage(
+        [Description("Coverage-enabled source id: public-export, worldstate-pc, or overwolf-inventory.")] string sourceId,
+        CancellationToken cancellationToken = default) => platform.GetSourceCoverageAsync(sourceId, cancellationToken);
+
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
