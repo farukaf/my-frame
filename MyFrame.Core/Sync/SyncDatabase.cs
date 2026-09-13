@@ -120,6 +120,21 @@ public sealed class SyncDatabase : IAsyncDisposable
         return records;
     }
 
+    public async Task<IReadOnlyDictionary<string, InventoryFieldState>> GetInventoryCoverageAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal);
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT field_path, state FROM coverage WHERE source_id='overwolf-inventory' ORDER BY field_path;";
+        var result = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            if (Enum.TryParse<InventoryFieldState>(reader.GetString(1), ignoreCase: false, out var state))
+                result[reader.GetString(0)] = state;
+        return result;
+    }
+
     public async Task<IReadOnlyList<InventoryStackableRecord>> GetInventoryStackablesAsync(CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_path)) return [];
@@ -206,6 +221,8 @@ public sealed class SyncDatabase : IAsyncDisposable
                     var unknown = data.Projection.Unknown[index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_unknown(revision_id, ordinal, kind, reason_code, raw_json) VALUES ($revision, $ordinal, $kind, $reason, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$kind", unknown.Kind), ("$reason", unknown.ReasonCode), ("$raw", unknown.RawJson));
                 }
+                foreach (var field in data.Projection.Coverage)
+                    await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('overwolf-inventory', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
             }
             if (worldState is { } world)
             {

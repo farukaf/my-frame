@@ -151,9 +151,11 @@ public sealed class SyncDatabaseTests
         var projection = new InventoryProjection([new InventoryEquipmentRecord("instance-1", "/Lotus/Test", 30, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"instanceId\":\"instance-1\"}")], [], [new InventoryUnknownRecord("futureField", "true", "FIELD_NOT_MAPPED")], new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known });
         await db.PublishInventoryAsync(envelope, projection);
         var stored = await db.GetInventoryEquipmentAsync();
+        var coverage = await db.GetInventoryCoverageAsync();
         Assert.Single(stored);
         Assert.Equal("instance-1", stored[0].InstanceId);
         Assert.Equal(InventoryFieldState.NotObserved, stored[0].ConfigState);
+        Assert.Equal(InventoryFieldState.Known, coverage["equipment"]);
     }
 
     [Fact]
