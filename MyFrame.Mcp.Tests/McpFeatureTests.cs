@@ -5,6 +5,7 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using MyFrame.Core;
+using MyFrame.Core.Sync;
 using MyFrame.Mcp;
 using Xunit.Abstractions;
 
@@ -18,7 +19,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_inventory_coverage", "get_item", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -231,6 +232,14 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                 "..", "..", "..", "..", "MyFrame.Mcp", "bin", configuration, "net10.0", "win-x64", "MyFrame.Mcp.exe"));
         Assert.True(File.Exists(server), $"Server was not built at {server}");
         using var data = new TemporaryFolder();
+        await using (var database = new SyncDatabase(Path.Combine(data.Path, "data.db")))
+        {
+            var payload = "{\"equipment\":[{\"instanceId\":\"instance-f33\",\"typeId\":\"/Lotus/Weapon\",\"rank\":30,\"config\":{\"mods\":[\"/Lotus/Mod\"]}}]}";
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(),
+                1, DateTimeOffset.UtcNow, "test", "verified", payload, "f33-hash");
+            var projection = InventoryPayloadParser.Parse(payload);
+            await database.PublishInventoryAsync(envelope, projection);
+        }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
         environment["MYFRAME_DATA_ROOT"] = data.Path;
         var stderr = new List<string>();
@@ -252,6 +261,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var result = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["includeAccount"] = false });
         var coverageResult = await client.CallToolAsync("get_inventory_coverage");
+        var equipmentResult = await client.CallToolAsync("get_equipment");
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -259,7 +269,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(13, tools.Count);
+        Assert.Equal(14, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
@@ -274,6 +284,9 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotNull(result.StructuredContent);
         Assert.NotEqual(true, coverageResult.IsError);
         Assert.NotNull(coverageResult.StructuredContent);
+        Assert.NotEqual(true, equipmentResult.IsError);
+        Assert.NotNull(equipmentResult.StructuredContent);
+        Assert.Contains("instance-f33", JsonSerializer.Serialize(equipmentResult.StructuredContent));
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
@@ -283,7 +296,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("Check isError", client.ServerInstructions);
         Assert.Contains(result.Content.OfType<TextContentBlock>(), x => x.Text.Contains("snapshotId", StringComparison.Ordinal));
         Assert.DoesNotContain(stderr, line => line.Contains("Authorization", StringComparison.OrdinalIgnoreCase));
-        Assert.Empty(Directory.EnumerateFileSystemEntries(data.Path));
+        Assert.All(Directory.EnumerateFileSystemEntries(data.Path), path =>
+            Assert.Contains(Path.GetFileName(path), new[] { "data.db", "data.db-shm", "data.db-wal" }));
     }
 
     [Fact]

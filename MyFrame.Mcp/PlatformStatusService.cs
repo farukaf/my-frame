@@ -13,6 +13,8 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
+public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
+    string? ConfigJson, string RankState, string ConfigState);
 
 public sealed class PlatformStatusService
 {
@@ -81,6 +83,23 @@ public sealed class PlatformStatusService
         var coverage = await database.GetInventoryCoverageAsync(cancellationToken);
         return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<InventoryEquipmentDto>> GetInventoryEquipmentAsync(
+        string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
+        return equipment
+            .Where(item => string.IsNullOrWhiteSpace(typeId) ||
+                string.Equals(item.TypeId, typeId, StringComparison.OrdinalIgnoreCase))
+            .Take(limit)
+            .Select(item => new InventoryEquipmentDto(item.InstanceId, item.TypeId, item.Rank,
+                item.ConfigJson, item.RankState.ToString(), item.ConfigState.ToString()))
             .ToArray();
     }
 }
