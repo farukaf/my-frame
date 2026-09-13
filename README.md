@@ -129,6 +129,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F36 — loadout agrupado por instância](docs/validacoes/2026-09-13-f36.md)
 - [Validação F37 — retenção segura de revisões SQLite](docs/validacoes/2026-09-13-f37.md)
 - [Validação F38 — compatibilidade explícita de schema](docs/validacoes/2026-09-13-f38.md)
+- [Validação F39 — manutenção do SyncHost](docs/validacoes/2026-09-13-f39.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

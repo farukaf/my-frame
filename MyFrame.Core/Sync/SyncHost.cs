@@ -64,6 +64,15 @@ public sealed class SyncHost : IAsyncDisposable
         }
     }
 
+    public async Task<int> RunMaintenanceAsync(int maximumRevisionsPerSource = 3,
+        CancellationToken cancellationToken = default)
+    {
+        await StartAsync(cancellationToken);
+        var removed = await _database.PruneRetainedAsync(maximumRevisionsPerSource, cancellationToken);
+        _lastRunAt = DateTimeOffset.UtcNow;
+        return removed;
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         await _lifecycle.WaitAsync(cancellationToken);
