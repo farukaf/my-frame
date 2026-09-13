@@ -26,6 +26,9 @@ public sealed record WorldStateBountyDto(string Id, string? Syndicate, DateTimeO
     DateTimeOffset? Expiry, IReadOnlyList<WorldStateJobDto> Jobs);
 public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string State,
     DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties);
+public sealed record WorldStateCycleDto(string Name, string? State, DateTimeOffset? Activation, DateTimeOffset? Expiry);
+public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, DateTimeOffset? LastAttemptAt,
+    string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles);
 
 public sealed class PlatformStatusService
 {
@@ -169,6 +172,21 @@ public sealed class PlatformStatusService
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode, bounties.Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
             bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                 job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
-                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray());
+            new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray());
+    }
+
+    public async Task<WorldStateResponse> GetWorldStateAsync(CancellationToken cancellationToken = default)
+    {
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
+        var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
+        var cycles = await database.GetCurrentWorldStateCyclesAsync(cancellationToken);
+        var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
+        return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode,
+            bounties.Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
+                bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
+                    job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
+                        new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
+            cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray());
     }
 }

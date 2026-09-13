@@ -70,6 +70,12 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, cancellationToken);
 
+    [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns the current World State source status, active bounties with rewards, and supported planetary cycles. It is read-only and never fetches the network.")]
+    public Task<WorldStateResponse> GetWorldState(CancellationToken cancellationToken = default) =>
+        platform.GetWorldStateAsync(cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]
