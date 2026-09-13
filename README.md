@@ -120,6 +120,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F125 — regressão Core/MCP](docs/validacoes/2026-09-13-f125.md)
 - [Validação F126 — runner sequencial da regressão](docs/validacoes/2026-09-13-f126.md)
 - [Validação F127 — distribuição 0.0.8 e pacote Overwolf](docs/validacoes/2026-09-13-f127.md)
+- [Validação F128 — tentativa F1 com Warframe em execução](docs/validacoes/2026-09-13-f128.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
