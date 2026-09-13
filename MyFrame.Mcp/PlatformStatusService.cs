@@ -204,4 +204,7 @@ public sealed class PlatformStatusService
             coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
             status?.ActiveRevisionId);
     }
+
+    public Task<WorldStateResponse> GetActivityAsync(int limit = 100, string? syndicate = null,
+        CancellationToken cancellationToken = default) => GetWorldStateAsync(limit, syndicate, cancellationToken);
 }
