@@ -53,6 +53,8 @@ public sealed class SyncDatabaseTests
         await using var check = verify.CreateCommand();
         check.CommandText = "SELECT value FROM sentinel;";
         Assert.Equal("keep", await check.ExecuteScalarAsync());
+        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='source_revisions';";
+        Assert.Equal(0L, (long)(await check.ExecuteScalarAsync())!);
     }
 
     [Fact]
