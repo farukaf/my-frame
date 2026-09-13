@@ -162,6 +162,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F69 — instalação nova sem caminho AlecaFrame](docs/validacoes/2026-09-13-f69.md)
 - [Validação F70 — UX explicita importação legada opcional](docs/validacoes/2026-09-13-f70.md)
 - [Validação F71 — skill de farm alinhada ao World State v2](docs/validacoes/2026-09-13-f71.md)
+- [Validação F72 — identificador do mercado alinhado no sync status](docs/validacoes/2026-09-13-f72.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
