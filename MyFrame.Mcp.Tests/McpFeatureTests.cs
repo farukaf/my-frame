@@ -434,6 +434,53 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task TwoRealStdioServersServeConcurrentCallsWithinBudget()
+    {
+        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        Assert.True(File.Exists(server), $"Server was not built at {server}");
+
+        using var firstData = new TemporaryFolder();
+        using var secondData = new TemporaryFolder();
+        var firstEnvironment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+        firstEnvironment["MYFRAME_DATA_ROOT"] = firstData.Path;
+        var secondEnvironment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+        secondEnvironment["MYFRAME_DATA_ROOT"] = secondData.Path;
+        var firstTransport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "my-frame-concurrent-1", Command = server, InheritEnvironmentVariables = false,
+            EnvironmentVariables = firstEnvironment, ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        var secondTransport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "my-frame-concurrent-2", Command = server, InheritEnvironmentVariables = false,
+            EnvironmentVariables = secondEnvironment, ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        await using var first = await McpClient.CreateAsync(firstTransport);
+        await using var second = await McpClient.CreateAsync(secondTransport);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var firstCall = first.CallToolAsync("get_capabilities").AsTask();
+        var secondCall = second.CallToolAsync("get_sync_status").AsTask();
+        await Task.WhenAll(firstCall, secondCall);
+        stopwatch.Stop();
+        var firstResult = await firstCall;
+        var secondResult = await secondCall;
+
+        Assert.NotEqual(true, firstResult.IsError);
+        Assert.NotEqual(true, secondResult.IsError);
+        Assert.NotNull(firstResult.StructuredContent);
+        Assert.NotNull(secondResult.StructuredContent);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5),
+            $"Concurrent stdio calls exceeded 5 seconds: {stopwatch.Elapsed.TotalMilliseconds:N0} ms.");
+
+        await first.DisposeAsync();
+        await second.DisposeAsync();
+        await Task.Delay(2_000);
+    }
+
+    [Fact]
     public async Task ValidSearchWithNoMatchesIsAnEmptyPageNotAnError()
     {
         var service = Service(new FakeProvider(Snapshot("snapshot", ("/a", "Alpha"))));
