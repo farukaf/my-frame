@@ -206,6 +206,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F168: expor estado seguro da credencial independente do Warframe Market no MCP ([evidências](docs/validacoes/2026-09-13-f168.md)).
 - [x] F169: classificar indisponibilidade de rede do World State sem confundir com ausência de bounties ([evidências](docs/validacoes/2026-09-13-f169.md)).
 - [x] F170: registrar baseline completo após status WFM e hardening World State ([evidências](docs/validacoes/2026-09-13-f170.md)).
+- [x] F171: vincular o validador F10 aos case IDs oficiais e rejeitar chamadas MCP sem nome ([evidências](docs/validacoes/2026-09-13-f171.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
