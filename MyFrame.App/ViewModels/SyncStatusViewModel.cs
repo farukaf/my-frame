@@ -99,7 +99,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
         {
             var result = await worldStateSync.RunAsync();
             WorldStateSyncMessage = result.State == "published"
-                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}."
+                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}; parser {result.ParserVersion ?? "unknown"}."
                 : $"World State synchronization failed: {result.ErrorCode ?? result.State}.";
             await RefreshSyncStatusAsync();
         }
