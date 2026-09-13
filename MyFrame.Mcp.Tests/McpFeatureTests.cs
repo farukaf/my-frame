@@ -34,6 +34,21 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void McpDocumentationListsEveryRegisteredTool()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !File.Exists(Path.Combine(root.FullName, "docs", "MCP.md")))
+            root = root.Parent;
+        Assert.NotNull(root);
+        var documentation = File.ReadAllText(Path.Combine(root!.FullName, "docs", "MCP.md"));
+        var tools = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .Select(method => method.GetCustomAttribute<McpServerToolAttribute>())
+            .Where(attribute => attribute is not null)
+            .Select(attribute => attribute!.Name);
+        Assert.All(tools, name => Assert.Contains($"`{name}`", documentation, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void CursorIsSignedAndBoundToItsQuery()
     {
         var codec = new CursorCodec(JsonOptions());
