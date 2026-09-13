@@ -158,6 +158,21 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F117: criar serviço de status, validação, gravação e revogação local da credencial WFM ([evidências](docs/validacoes/2026-09-13-f117.md)).
 - [x] F118: adicionar UX de salvar/status/revogar credencial WFM sem expor segredo ([evidências](docs/validacoes/2026-09-13-f118.md)).
 - [x] F119: validar App e MCP ativos lendo a mesma raiz SQLite ([evidências](docs/validacoes/2026-09-13-f119.md)).
+- [x] F120: medir latência, memória e bytes com fixture grande, dois servidores e App ativo ([evidências](docs/validacoes/2026-09-13-f120.md)).
+- [x] F121: executar a matriz mínima de regressão do contrato MCP, incluindo troca de contexto ([evidências](docs/validacoes/2026-09-13-f121.md)).
+- [x] F122: validar atualização com MCP antigo e novo ativos sobre a mesma raiz ([evidências](docs/validacoes/2026-09-13-f122.md)).
+- [x] F123: criar probe não-mutante de readiness Codex/Claude, registrando configuração ausente ([evidências](docs/validacoes/2026-09-13-f123.md)).
+- [x] F125: executar regressão determinística Core/MCP após o hardening ([evidências](docs/validacoes/2026-09-13-f125.md)).
+- [x] F126: criar runner sequencial da regressão da solução sem explosão de workers ([evidências](docs/validacoes/2026-09-13-f126.md)).
+- [x] F127: publicar distribuição 0.0.8 e validar pacote/stdio/Inspector distribuídos ([evidências](docs/validacoes/2026-09-13-f127.md)).
+- [x] F128: repetir tentativa F1 com Warframe real e registrar estado do Overwolf sem declarar captura ([evidências](docs/validacoes/2026-09-13-f128.md)).
+- [x] F130: conectar sincronização manual do Public Export ao App/SyncHost ([evidências](docs/validacoes/2026-09-13-f130.md)).
+- [x] F131: validar disponibilidade HTTP da fonte oficial Public Export sem gravar dados ([evidências](docs/validacoes/2026-09-13-f131.md)).
+- [x] F132: configurar decoder LZMA no fluxo de sincronização do App ([evidências](docs/validacoes/2026-09-13-f132.md)).
+- [x] F133: preservar aliases localizados do Public Export no SQLite ([evidências](docs/validacoes/2026-09-13-f133.md)).
+- [x] F134: oferecer executor local/automatizável de sincronização Public Export ([evidências](docs/validacoes/2026-09-13-f134.md)).
+- [x] F135: expor status sanitizado das fontes no executor local ([evidências](docs/validacoes/2026-09-13-f135.md)).
+- [x] F136: oferecer sincronização automatizável do World State oficial ([evidências](docs/validacoes/2026-09-13-f136.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
