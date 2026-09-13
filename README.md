@@ -113,6 +113,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F20 — status da inbox no MCP](docs/validacoes/2026-09-13-f20.md)
 - [Validação F119 — App e MCP no mesmo SQLite](docs/validacoes/2026-09-13-f119.md)
 - [Validação F120 — desempenho com App e dois MCP](docs/validacoes/2026-09-13-f120.md)
+- [Validação F121 — matriz completa do contrato MCP](docs/validacoes/2026-09-13-f121.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
