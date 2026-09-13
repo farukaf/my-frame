@@ -116,6 +116,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
 - [Validação F24 — histórico de sincronização no MCP](docs/validacoes/2026-09-13-f24.md)
 - [Validação F25 — execução do gate estrutural F10](docs/validacoes/2026-09-13-f25.md)
+- [Validação F26 — artefato distribuível Windows](docs/validacoes/2026-09-13-f26.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
