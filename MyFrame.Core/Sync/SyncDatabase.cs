@@ -29,6 +29,10 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
             CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, PRIMARY KEY(revision_id, unique_name));
             CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
+            CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
+            CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             """);
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -38,14 +42,23 @@ public sealed class SyncDatabase : IAsyncDisposable
     }
 
     public async Task<SyncPublicationResult> PublishAsync(SyncBatch batch, CancellationToken cancellationToken = default)
-        => await PublishInternalAsync(batch, null, cancellationToken);
+        => await PublishInternalAsync(batch, null, null, cancellationToken);
 
     public async Task<SyncPublicationResult> PublishCatalogAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord> records, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(records);
         if (records.Count != batch.RecordCount) throw new ArgumentException("Catalog record count does not match batch.", nameof(records));
         if (records.Select(record => record.UniqueName).Distinct(StringComparer.Ordinal).Count() != records.Count) throw new ArgumentException("Catalog contains duplicate unique names.", nameof(records));
-        return await PublishInternalAsync(batch, records, cancellationToken);
+        return await PublishInternalAsync(batch, records, null, cancellationToken);
+    }
+
+    public async Task<SyncPublicationResult> PublishInventoryAsync(InventoryEnvelope envelope, InventoryProjection projection, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        ArgumentNullException.ThrowIfNull(projection);
+        if (envelope.Completeness is not ("verified" or "unverified")) throw new ArgumentException("Inventory completeness is invalid.", nameof(envelope));
+        var batch = new SyncBatch("overwolf-inventory", envelope.ContentHash, envelope.PayloadJson, projection.Equipment.Count + projection.Stackables.Count, "overwolf-native-1");
+        return await PublishInternalAsync(batch, null, (envelope, projection), cancellationToken);
     }
 
     public async Task<IReadOnlyList<PublicExportRecord>> GetPublicExportItemsAsync(string sourceId, CancellationToken cancellationToken = default)
@@ -70,7 +83,25 @@ public sealed class SyncDatabase : IAsyncDisposable
         return records;
     }
 
-    private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<InventoryEquipmentRecord>> GetInventoryEquipmentAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT e.instance_id, e.type_id, e.rank, e.config_json, e.rank_state, e.config_state, e.raw_json
+            FROM inventory_equipment e JOIN inventory_revisions ir ON ir.revision_id=e.revision_id
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active' ORDER BY e.instance_id;
+            """;
+        var records = new List<InventoryEquipmentRecord>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            records.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetInt32(2), reader.IsDBNull(3) ? null : reader.GetString(3), (InventoryFieldState)reader.GetInt32(4), (InventoryFieldState)reader.GetInt32(5), reader.GetString(6)));
+        return records;
+    }
+
+    private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, (InventoryEnvelope Envelope, InventoryProjection Projection)? inventory, CancellationToken cancellationToken = default)
     {
         Validate(batch);
         await _writer.WaitAsync(cancellationToken);
@@ -103,6 +134,22 @@ public sealed class SyncDatabase : IAsyncDisposable
             if (records is not null)
                 foreach (var record in records)
                     await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name) VALUES ($revision, $unique, $name, $category, $description, $canonical);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)));
+            if (inventory is { } data)
+            {
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));
+                foreach (var equipment in data.Projection.Equipment)
+                    await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
+                for (var index = 0; index < data.Projection.Stackables.Count; index++)
+                {
+                    var stackable = data.Projection.Stackables[index];
+                    await CommandAsync(connection, transaction, "INSERT INTO inventory_stackables(revision_id, ordinal, type_id, quantity, quantity_state, raw_json) VALUES ($revision, $ordinal, $type, $quantity, $state, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$type", (object?)stackable.TypeId ?? DBNull.Value), ("$quantity", (object?)stackable.Quantity ?? DBNull.Value), ("$state", (int)stackable.QuantityState), ("$raw", stackable.RawJson));
+                }
+                for (var index = 0; index < data.Projection.Unknown.Count; index++)
+                {
+                    var unknown = data.Projection.Unknown[index];
+                    await CommandAsync(connection, transaction, "INSERT INTO inventory_unknown(revision_id, ordinal, kind, reason_code, raw_json) VALUES ($revision, $ordinal, $kind, $reason, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$kind", unknown.Kind), ("$reason", unknown.ReasonCode), ("$raw", unknown.RawJson));
+                }
+            }
             await transaction.CommitAsync(cancellationToken);
             return new SyncPublicationResult(runId, revisionId, false, batch.RecordCount);
         }
