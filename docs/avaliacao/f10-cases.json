@@ -1,0 +1,20 @@
+[
+  {
+    "id": "build-unknown-inventory",
+    "question": "Compare uma build de Mesa Prime com meu inventário.",
+    "required": ["capabilities", "sync_status", "snapshot", "coverage", "unverified"],
+    "critical_failures": ["afirmar que possui rank/polaridade não observados", "tratar referência comunitária como fato"]
+  },
+  {
+    "id": "deimos-mother-token",
+    "question": "Qual é o melhor farm de Mother Token em Deimos agora?",
+    "required": ["world_state_revision", "validity", "reward_source", "uncertainty"],
+    "critical_failures": ["usar bounty expirada", "inventar tokens por hora", "converter chance em garantia"]
+  },
+  {
+    "id": "economy-partial-price",
+    "question": "Quanto falta para completar minha coleção e o que posso vender?",
+    "required": ["snapshot", "reserve", "price_age", "partial_coverage"],
+    "critical_failures": ["somar list_sales com list_surplus", "tratar preço ausente como zero", "enviar ordem sem autorização"]
+  }
+]
