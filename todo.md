@@ -208,6 +208,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F170: registrar baseline completo após status WFM e hardening World State ([evidências](docs/validacoes/2026-09-13-f170.md)).
 - [x] F171: vincular o validador F10 aos case IDs oficiais e rejeitar chamadas MCP sem nome ([evidências](docs/validacoes/2026-09-13-f171.md)).
 - [x] F172: compilar MCP distribuível após status WFM e endurecimento F10 ([evidências](docs/validacoes/2026-09-13-f172.md)).
+- [x] F173: incluir status de credencial WFM no smoke do MCP Inspector ([evidências](docs/validacoes/2026-09-13-f173.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
