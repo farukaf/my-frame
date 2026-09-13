@@ -1,9 +1,35 @@
+using Microsoft.Data.Sqlite;
 using MyFrame.Core.Sync;
 
 namespace MyFrame.Core.Tests;
 
 public sealed class SyncDatabaseTests
 {
+    [Fact]
+    public async Task InitializesLegacyCatalogSchemaByAddingRichRawColumn()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-legacy-{Guid.NewGuid():N}");
+        var path = Path.Combine(root, "legacy.db");
+        Directory.CreateDirectory(root);
+
+        await using (var connection = new SqliteConnection($"Data Source={path}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE public_export_items (revision_id TEXT NOT NULL, unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, PRIMARY KEY(revision_id, unique_name));";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        await using var db = new SyncDatabase(path);
+        await db.InitializeAsync();
+
+        await using var verify = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        await verify.OpenAsync();
+        await using var check = verify.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM pragma_table_info('public_export_items') WHERE name='raw_json';";
+        Assert.Equal(1L, (long)(await check.ExecuteScalarAsync())!);
+    }
+
     [Fact]
     public async Task InitializesIdempotentlyAndPublishesStatus()
     {
