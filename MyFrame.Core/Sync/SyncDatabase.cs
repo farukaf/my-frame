@@ -114,6 +114,24 @@ public sealed class SyncDatabase : IAsyncDisposable
         return records;
     }
 
+    public async Task<IReadOnlyList<InventoryStackableRecord>> GetInventoryStackablesAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT s.type_id, s.quantity, s.quantity_state, s.raw_json
+            FROM inventory_stackables s JOIN inventory_revisions ir ON ir.revision_id=s.revision_id
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active' ORDER BY s.ordinal;
+            """;
+        var records = new List<InventoryStackableRecord>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            records.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetInt32(1), (InventoryFieldState)reader.GetInt32(2), reader.GetString(3)));
+        return records;
+    }
+
     public async Task<IReadOnlyList<WorldStateBounty>> GetCurrentWorldStateBountiesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_path)) return [];
