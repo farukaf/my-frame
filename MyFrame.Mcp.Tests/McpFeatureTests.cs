@@ -390,6 +390,51 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task ActiveMcpServerReopensMigratedLegacyDatabase()
+    {
+        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        Assert.True(File.Exists(server), $"Server was not built at {server}");
+
+        using var data = new TemporaryFolder();
+        var databasePath = Path.Combine(data.Path, "data.db");
+        await using (var database = new SyncDatabase(databasePath))
+        {
+            await database.InitializeAsync();
+            await database.PublishAsync(new SyncBatch("worldstate-pc", "legacy-hash", "{}", 0, "legacy-parser-1"));
+        }
+        var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+        environment["MYFRAME_DATA_ROOT"] = data.Path;
+        var stderr = new List<string>();
+        var transport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "my-frame-legacy-upgrade-test",
+            Command = server,
+            InheritEnvironmentVariables = false,
+            EnvironmentVariables = environment,
+            StandardErrorLines = line => stderr.Add(line),
+            ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        await using var client = await McpClient.CreateAsync(transport);
+
+        var migrated = await client.CallToolAsync("get_sync_status");
+        Assert.NotEqual(true, migrated.IsError);
+        var migratedJson = JsonSerializer.Serialize(migrated.StructuredContent);
+        Assert.Contains("legacy-parser-1", migratedJson);
+        Assert.Contains("worldstate-pc", migratedJson);
+
+        var reopened = await client.CallToolAsync("get_sync_status");
+        Assert.NotEqual(true, reopened.IsError);
+        var reopenedJson = JsonSerializer.Serialize(reopened.StructuredContent);
+        Assert.Contains("legacy-parser-1", reopenedJson);
+        Assert.Contains("worldstate-pc", reopenedJson);
+
+        await client.DisposeAsync();
+        await Task.Delay(2_000);
+    }
+
+    [Fact]
     public async Task ValidSearchWithNoMatchesIsAnEmptyPageNotAnError()
     {
         var service = Service(new FakeProvider(Snapshot("snapshot", ("/a", "Alpha"))));
@@ -477,7 +522,30 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         public string Path { get; }
         public void Dispose()
         {
-            if (Directory.Exists(Path)) Directory.Delete(Path, true);
+            for (var attempt = 0; attempt < 50 && Directory.Exists(Path); attempt++)
+            {
+                try
+                {
+                    Directory.Delete(Path, true);
+                }
+                catch (IOException) when (attempt < 49)
+                {
+                    Thread.Sleep(100);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 49)
+                {
+                    Thread.Sleep(100);
+                }
+                catch (IOException)
+                {
+                    // A child process can keep the SQLite handle briefly after stdio shutdown.
+                    return;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return;
+                }
+            }
         }
     }
 }
