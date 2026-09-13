@@ -252,6 +252,31 @@ public sealed class SyncDatabase : IAsyncDisposable
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? null : reader.GetString(6));
     }
 
+    public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
+        string? sourceId = null, int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        limit = Math.Clamp(limit, 1, 100);
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT run_id, source_id, state, started_at, finished_at, records_received,
+                   records_accepted, records_rejected, error_code
+            FROM sync_runs
+            WHERE ($source IS NULL OR source_id=$source)
+            ORDER BY started_at DESC LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$source", (object?)sourceId ?? DBNull.Value);
+        command.Parameters.AddWithValue("$limit", limit);
+        var result = new List<SyncRunSummary>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)),
+                reader.GetInt64(5), reader.GetInt64(6), reader.GetInt64(7), reader.IsDBNull(8) ? null : reader.GetString(8)));
+        return result;
+    }
+
     public async Task RecordFailureAsync(string sourceId, string errorCode, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(sourceId) || string.IsNullOrWhiteSpace(errorCode)) throw new ArgumentException("Source and error code are required.");

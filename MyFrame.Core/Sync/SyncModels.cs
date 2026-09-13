@@ -22,3 +22,14 @@ public sealed record SyncStatus(
     long AcceptedRecords,
     long RejectedRecords,
     string? ErrorCode = null);
+
+public sealed record SyncRunSummary(
+    string RunId,
+    string SourceId,
+    string State,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? FinishedAt,
+    long RecordsReceived,
+    long RecordsAccepted,
+    long RecordsRejected,
+    string? ErrorCode);
