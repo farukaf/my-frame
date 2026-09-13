@@ -26,6 +26,10 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F2: entregar página inicial de status com tentativas, erros e ação corretiva.
 - [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
 - [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
+- [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
+- [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
+- [x] F3: publicar registros Public Export normalizados junto da revisão SQLite em transação única.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.

@@ -36,8 +36,29 @@ public sealed class SyncHost : IAsyncDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
         {
-            var code = error is InvalidDataException data ? data.Message : "SYNC_FAILED";
+            var code = ErrorCode(error);
             await _database.RecordFailureAsync(sourceId, code, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return null;
+        }
+    }
+
+    public async Task<SyncPublicationResult?> RunCatalogOnceAsync(string sourceId, Func<CancellationToken, Task<(SyncBatch Batch, IReadOnlyList<PublicExportRecord> Records)>> fetch, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fetch);
+        await StartAsync(cancellationToken);
+        try
+        {
+            var (batch, records) = await fetch(cancellationToken);
+            if (!string.Equals(batch.SourceId, sourceId, StringComparison.Ordinal)) throw new InvalidDataException("SYNC_SOURCE_MISMATCH");
+            var result = await _database.PublishCatalogAsync(batch, records, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            await _database.RecordFailureAsync(sourceId, ErrorCode(error), cancellationToken);
             _lastRunAt = DateTimeOffset.UtcNow;
             return null;
         }
@@ -51,4 +72,11 @@ public sealed class SyncHost : IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync() { await StopAsync(); _lifecycle.Dispose(); await _database.DisposeAsync(); }
+
+    private static string ErrorCode(Exception error) => error switch
+    {
+        InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
+        HttpRequestException request when request.Message.StartsWith("PUBLIC_EXPORT_HTTP_", StringComparison.Ordinal) => request.Message,
+        _ => "SYNC_FAILED"
+    };
 }
