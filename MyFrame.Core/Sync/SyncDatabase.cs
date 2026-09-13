@@ -284,6 +284,43 @@ public sealed class SyncDatabase : IAsyncDisposable
         finally { _writer.Release(); }
     }
 
+    public async Task RestoreAsync(string sourcePath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath)) throw new ArgumentException("Restore path is required.", nameof(sourcePath));
+        var source = Path.GetFullPath(sourcePath);
+        if (string.Equals(source, _path, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Restore source must be different from the active database.", nameof(sourcePath));
+        if (!File.Exists(source) || (File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0)
+            throw new FileNotFoundException("Restore source was not found or is a link.", source);
+
+        await _writer.WaitAsync(cancellationToken);
+        var temporary = Path.Combine(Path.GetDirectoryName(_path)!, $".{Path.GetFileName(_path)}.restore-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var backupSource = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = source, Mode = SqliteOpenMode.ReadOnly, Cache = SqliteCacheMode.Shared, Pooling = false
+            }.ToString()))
+            await using (var backupTarget = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = temporary, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false
+            }.ToString()))
+            {
+                await backupSource.OpenAsync(cancellationToken);
+                await backupTarget.OpenAsync(cancellationToken);
+                backupSource.BackupDatabase(backupTarget);
+            }
+            File.Move(temporary, _path, true);
+            foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
+                if (File.Exists(sidecar)) File.Delete(sidecar);
+        }
+        finally
+        {
+            if (File.Exists(temporary)) File.Delete(temporary);
+            _writer.Release();
+        }
+    }
+
     public async ValueTask DisposeAsync() { _writer.Dispose(); await Task.CompletedTask; }
 
     private async Task<SqliteConnection> OpenAsync(SqliteOpenMode mode, CancellationToken token)
