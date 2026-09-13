@@ -287,6 +287,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var loadoutResult = await client.CallToolAsync("get_loadout",
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
+        var syncStatusResult = await client.CallToolAsync("get_sync_status");
         var worldStateResult = await client.CallToolAsync("get_world_state",
             new Dictionary<string, object?> { ["limit"] = 50, ["syndicate"] = "entrati" });
         var invalid = await client.CallToolAsync("get_overview",
@@ -322,6 +323,10 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, bountiesResult.IsError);
         Assert.NotNull(bountiesResult.StructuredContent);
+        Assert.NotEqual(true, syncStatusResult.IsError);
+        var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
+        Assert.Contains("activeRevisionId", syncStatusJson);
+        Assert.Contains("acceptedRecords", syncStatusJson);
         var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);
         Assert.Contains("available", bountiesJson);
         Assert.Contains("Entrati", bountiesJson);
