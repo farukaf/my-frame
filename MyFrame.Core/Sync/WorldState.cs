@@ -138,13 +138,21 @@ public sealed class WorldStateClient(HttpClient httpClient)
     public const string CommunityFallbackUrl = "https://api.warframestat.us/pc";
     public async Task<(WorldStateSnapshot Snapshot, SyncBatch Batch)> FetchAsync(Uri? uri = null, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync(uri ?? new Uri(DefaultUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        var endpoint = uri ?? new Uri(DefaultUrl);
+        using var response = await httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"WORLDSTATE_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length == 0 || bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("WORLDSTATE_TOO_LARGE");
         var json = new UTF8Encoding(false, true).GetString(bytes);
         var retrieved = DateTimeOffset.UtcNow;
         var snapshot = WorldStateParser.Parse(json, retrieved);
-        return (snapshot, new SyncBatch("worldstate-pc", snapshot.ContentHash, json, snapshot.Bounties.Count, "worldstate-1"));
+        return (snapshot, new SyncBatch("worldstate-pc", snapshot.ContentHash, json, snapshot.Bounties.Count, ParserVersion(endpoint)));
     }
+
+    private static string ParserVersion(Uri endpoint) => endpoint.Host.ToLowerInvariant() switch
+    {
+        "content.warframe.com" => "worldstate-official-1",
+        "api.warframestat.us" => "worldstate-community-1",
+        _ => "worldstate-1"
+    };
 }
