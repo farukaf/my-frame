@@ -40,6 +40,9 @@ public sealed class CollectorCaptureInboxTests
         Assert.Equal(1, result.Imported);
         Assert.Equal(1, result.Rejected);
         Assert.Contains(result.Items, item => item.State == "rejected" && item.ErrorCode == "CAPTURE_INTEGRITY_FAILED");
+        var status = await database.GetStatusAsync("overwolf-inventory");
+        Assert.Equal("failed", status?.LastRunState);
+        Assert.Equal("CAPTURE_INTEGRITY_FAILED", status?.ErrorCode);
     }
 
     [Fact]
