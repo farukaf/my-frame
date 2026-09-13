@@ -83,6 +83,34 @@ public sealed class WarframeMarketClientTests
         Assert.Equal(token, await File.ReadAllTextAsync(path));
     }
 
+    [Fact]
+    public async Task CredentialServiceValidatesSavesAndRevokesWithoutExposingTheToken()
+    {
+        var store = new MemoryCredentialStore();
+        var service = new MarketCredentialService(store);
+        var token = CreateToken(DateTimeOffset.UtcNow.AddHours(1));
+
+        Assert.Equal(MarketCredentialState.Missing, (await service.GetStatusAsync()).State);
+        var saved = await service.SaveAsync(token);
+        Assert.Equal(MarketCredentialState.Valid, saved.State);
+        Assert.Equal(token, store.Value);
+        Assert.Equal(MarketCredentialState.Valid, (await service.GetStatusAsync()).State);
+
+        await service.RevokeAsync();
+        Assert.Null(store.Value);
+    }
+
+    [Fact]
+    public void CredentialServiceClassifiesExpiredAndMalformedValues()
+    {
+        Assert.Equal(MarketCredentialState.Expired,
+            MarketCredentialService.Classify(CreateToken(DateTimeOffset.UtcNow.AddMinutes(-1))).State);
+        Assert.Equal(MarketCredentialState.Invalid,
+            MarketCredentialService.Classify("not-a-jwt").State);
+        Assert.Throws<ArgumentException>(() => new MarketCredentialService(new MemoryCredentialStore())
+            .SaveAsync("not-a-jwt").GetAwaiter().GetResult());
+    }
+
     private static string CreateToken(DateTimeOffset expires)
     {
         static string Encode(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
@@ -111,5 +139,21 @@ public sealed class WarframeMarketClientTests
     private sealed class StaticTokenStore(string? token) : IMarketTokenStore
     {
         public Task<string?> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(token);
+    }
+
+    private sealed class MemoryCredentialStore : IMarketCredentialStore
+    {
+        public string? Value { get; private set; }
+        public Task<string?> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(Value);
+        public Task SaveAsync(string token, CancellationToken cancellationToken = default)
+        {
+            Value = token;
+            return Task.CompletedTask;
+        }
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+        {
+            Value = null;
+            return Task.CompletedTask;
+        }
     }
 }

@@ -155,6 +155,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F114: migrar settings para SQLite com rollback pelo arquivo legado ([evidências](docs/validacoes/2026-09-13-f114.md)).
 - [x] F115: comprovar instalação limpa sem AlecaFrame/caches legados no MCP ([evidências](docs/validacoes/2026-09-13-f115.md)).
 - [x] F116: proteger credencial WFM com DPAPI independente do AlecaFrame ([evidências](docs/validacoes/2026-09-13-f116.md)).
+- [x] F117: criar serviço de status, validação, gravação e revogação local da credencial WFM ([evidências](docs/validacoes/2026-09-13-f117.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
