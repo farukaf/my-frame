@@ -160,6 +160,24 @@ public sealed class PublicExportTests
         Assert.Equal("Lâmina", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Aliases["pt"]);
     }
 
+    [Fact]
+    public async Task SharedRunnerAggregatesLocalPublicExportDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-directory-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "ExportWeapons_en.json"), "[{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Blade\"}]");
+        await File.WriteAllTextAsync(Path.Combine(root, "ExportWarframes_en.json"), "[{\"uniqueName\":\"/Lotus/Frame\",\"name\":\"Frame\"}]");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new PublicExportSyncRunner().RunDirectoryAsync(database, host, root);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal(2, result.Records);
+        Assert.Equal("public-export-directory-1", result.ParserVersion);
+        Assert.Equal(2, (await database.GetPublicExportItemsAsync("public-export")).Count);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
