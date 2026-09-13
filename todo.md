@@ -119,6 +119,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F79: expor a versão do parser na página/status MCP para rastrear procedência ([evidências](docs/validacoes/2026-09-13-f79.md)).
 - [x] F80: derivar automaticamente a versão do parser pela fonte World State usada ([evidências](docs/validacoes/2026-09-13-f80.md)).
 - [x] F81: habilitar fallback comunitário somente para falhas de transporte da fonte oficial ([evidências](docs/validacoes/2026-09-13-f81.md)).
+- [x] F82: exibir a procedência do parser na página visual de status ([evidências](docs/validacoes/2026-09-13-f82.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
