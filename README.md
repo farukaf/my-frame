@@ -208,6 +208,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F115 — instalação limpa sem caches legados](docs/validacoes/2026-09-13-f115.md)
 - [Validação F116 — credencial WFM protegida por usuário Windows](docs/validacoes/2026-09-13-f116.md)
 - [Validação F117 — serviço local de credencial WFM](docs/validacoes/2026-09-13-f117.md)
+- [Validação F118 — UX de credencial WFM](docs/validacoes/2026-09-13-f118.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

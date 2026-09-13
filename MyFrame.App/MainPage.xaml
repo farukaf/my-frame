@@ -517,6 +517,19 @@
                         </Border>
                         <Border Style="{StaticResource Card}">
                             <VerticalStackLayout Spacing="12">
+                                <Label Text="Warframe.Market credential" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Optional. Public prices work without login. The token is protected for this Windows user and never sent to SQLite, logs or MCP." TextColor="#8995A8" />
+                                <Entry Text="{Binding MarketCredentialTokenInput, Mode=TwoWay}" IsPassword="True"
+                                       Placeholder="Paste current WFM token" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Save securely" Command="{Binding SaveMarketCredentialCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                    <Button Text="Revoke" Command="{Binding RevokeMarketCredentialCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding MarketCredentialStatusText}" Style="{StaticResource Muted}" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="12">
                                 <Label Text="AI / MCP" Style="{StaticResource SectionTitle}" />
                                 <Label Text="Connect Codex or Claude to the inventory covered by My Frame. The server is local and read-only, but your client may send returned data to its AI provider." TextColor="#8995A8" />
                                 <Label Text="Account identity is omitted by default. Prices can be old or incomplete; every response reports its source status and coverage." TextColor="#F3C969" FontSize="12" />
