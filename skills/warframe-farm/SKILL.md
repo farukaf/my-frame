@@ -1,6 +1,6 @@
 ---
 name: warframe-farm
-version: 1
+version: 2
 description: Montar planos de farm e progressão rastreáveis por aquisição, atividade e inventário.
 ---
 
@@ -16,14 +16,19 @@ description: Montar planos de farm e progressão rastreáveis por aquisição, a
 
 1. Normalize o objetivo para um `itemId` técnico e consulte posse/quantidade.
 2. Liste pré-requisitos e componentes faltantes; diferencie tipo desconhecido de quantidade desconhecida.
-3. Consulte `get_bounties` e verifique `state` antes de usar a lista. Só use
-   bounties quando `state=available` e a ativação/expiração cobrir o horário;
-   `not_initialized`/`failed` exige sincronização ou confirmação externa.
+3. Consulte `get_world_state` (preferencialmente com `syndicate` e `limit`)
+   e verifique `state`, `activeRevisionId` e `coverage` antes de usar a lista.
+   Só use bounties quando `state=available` e a ativação/expiração cobrir o
+   horário; `not_initialized`/`failed` exige sincronização ou confirmação
+   externa. `get_bounties` continua como compatibilidade para somente bounties.
 4. Relacione cada recompensa a sua fonte, tier, chance, quantidade e condição.
    `chance` não é garantia nem taxa de tokens por hora.
 5. Compare alternativas por restrições do usuário (solo, tempo, MR, equipamento,
    rotação), sem converter chance em tokens/hora.
-6. Para Mother Tokens, só use quantidade explicitamente atribuída a uma fonte. Se ausente, diga que a taxa/quantidade precisa ser confirmada no jogo ou em tabela permitida.
+6. Para Mother Tokens, consulte `coverage.motherTokens`: `Known` permite usar
+   somente a recompensa explicitamente atribuída na revisão `activeRevisionId`;
+   `NotObserved` exige dizer que quantidade e taxa precisam ser confirmadas no
+   jogo ou em tabela permitida. Nunca derive tokens/hora de `chance`.
 
 ## Saída
 
