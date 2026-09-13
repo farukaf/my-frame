@@ -175,6 +175,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F180 — cadastro real Codex/Claude e verificador corrigido](docs/validacoes/2026-09-13-f180.md)
 - [Validação F181 — smoke real do caso Mother Token com fonte não inicializada](docs/validacoes/2026-09-13-f181.md)
 - [Validação F182 — caso F10 Mother Token com revisão World State publicada](docs/validacoes/2026-09-13-f182.md)
+- [Validação F183 — resposta F10 com validade temporal e ciclo de Deimos](docs/validacoes/2026-09-13-f183.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
