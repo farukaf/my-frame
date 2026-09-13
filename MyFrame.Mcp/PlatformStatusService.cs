@@ -31,7 +31,7 @@ public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string 
 public sealed record WorldStateCycleDto(string Name, string? State, DateTimeOffset? Activation, DateTimeOffset? Expiry);
 public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, DateTimeOffset? LastAttemptAt,
     string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles,
-    IReadOnlyDictionary<string, string> Coverage);
+    IReadOnlyDictionary<string, string> Coverage, string? ActiveRevisionId);
 
 public sealed class PlatformStatusService
 {
@@ -201,6 +201,7 @@ public sealed class PlatformStatusService
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
                         new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
             cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray(),
-            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal));
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
+            status?.ActiveRevisionId);
     }
 }

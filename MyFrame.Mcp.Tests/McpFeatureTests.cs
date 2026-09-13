@@ -337,6 +337,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("cetusCycle", worldStateJson);
         Assert.Contains("Entrati", worldStateJson);
         Assert.Contains("motherTokens", worldStateJson);
+        Assert.Contains("activeRevisionId", worldStateJson);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
