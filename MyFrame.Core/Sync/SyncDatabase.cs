@@ -357,6 +357,7 @@ public sealed class SyncDatabase : IAsyncDisposable
                     var upgrade = data.Projection.Upgrades![index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_upgrades(revision_id, ordinal, owner_instance_id, source_field, upgrade_id, rank, raw_json) VALUES ($revision, $ordinal, $owner, $source, $id, $rank, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$owner", (object?)upgrade.OwnerInstanceId ?? DBNull.Value), ("$source", upgrade.SourceField), ("$id", (object?)upgrade.UpgradeId ?? DBNull.Value), ("$rank", (object?)upgrade.Rank ?? DBNull.Value), ("$raw", upgrade.RawJson));
                 }
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='overwolf-inventory';", cancellationToken);
                 foreach (var field in data.Projection.Coverage)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('overwolf-inventory', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
             }

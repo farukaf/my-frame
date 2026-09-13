@@ -272,6 +272,24 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task NewInventoryRevisionReplacesPreviousCoverage()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-inventory-coverage-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var first = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+            DateTimeOffset.UtcNow, "native", "unverified", "{}", "inventory-coverage-1");
+        var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ContentHash = "inventory-coverage-2" };
+        await db.PublishInventoryAsync(first, new InventoryProjection([], [], [],
+            new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known }));
+        await db.PublishInventoryAsync(second, new InventoryProjection([], [], [],
+            new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.NotObserved }));
+
+        var coverage = await db.GetInventoryCoverageAsync();
+
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["equipment"]);
+    }
+
+    [Fact]
     public async Task SynchronizedReaderProjectsPublishedInventoryAndCatalog()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
