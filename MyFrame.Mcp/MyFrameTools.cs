@@ -17,6 +17,12 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [Description("Returns read-only status for local sources and their last error. It never starts network synchronization or changes the database.")]
     public Task<SyncStatusResponse> GetSyncStatus(CancellationToken cancellationToken = default) => platform.GetSyncStatusAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_capture_inbox_status", Title = "Get capture inbox status", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns read-only metadata about local Overwolf capture markers. It never reads payload contents, imports files, starts synchronization, or exposes the inbox path.")]
+    public Task<CaptureInboxStatusResponse> GetCaptureInboxStatus(CancellationToken cancellationToken = default) =>
+        platform.GetCaptureInboxStatusAsync(cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

@@ -7,6 +7,8 @@ public sealed record CapabilityDto(string Name, string State, string Detail);
 public sealed record CapabilitiesResponse(DateTimeOffset ServedAt, IReadOnlyList<CapabilityDto> Capabilities);
 public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState, DateTimeOffset? LastRunAt, string? ErrorCode);
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
+public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
+    int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode);
 
 public sealed class PlatformStatusService
 {
@@ -34,5 +36,27 @@ public sealed class PlatformStatusService
                 : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt, status.ErrorCode));
         }
         return new(DateTimeOffset.UtcNow, values);
+    }
+
+    public async Task<CaptureInboxStatusResponse> GetCaptureInboxStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var directory = MyFrameStoragePaths.CollectorCaptureDirectory;
+        if (!Directory.Exists(directory))
+            return new(DateTimeOffset.UtcNow, "not_initialized", 0, null, null);
+
+        var markers = Directory.EnumerateFiles(directory, "*.ready.json", SearchOption.TopDirectoryOnly).ToArray();
+        DateTimeOffset? newest = null;
+        foreach (var marker in markers)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var observed = File.GetLastWriteTimeUtc(marker);
+            var value = new DateTimeOffset(DateTime.SpecifyKind(observed, DateTimeKind.Utc));
+            if (newest is null || value > newest) newest = value;
+        }
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var status = await database.GetStatusAsync("overwolf-inventory", cancellationToken);
+        return new(DateTimeOffset.UtcNow, markers.Length == 0 ? "ready" : "pending",
+            markers.Length, newest, status?.ErrorCode);
     }
 }
