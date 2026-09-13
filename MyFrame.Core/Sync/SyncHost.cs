@@ -64,6 +64,15 @@ public sealed class SyncHost : IAsyncDisposable
         }
     }
 
+    public Task<SyncPublicationResult?> RunPublicExportOnceAsync(string sourceId,
+        PublicExportDocumentClient client, PublicExportIndexEntry entry, Uri? baseUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return RunCatalogOnceAsync(sourceId,
+            token => client.FetchPublicationAsync(entry, sourceId, baseUri, token), cancellationToken);
+    }
+
     public async Task<int> RunMaintenanceAsync(int maximumRevisionsPerSource = 3,
         CancellationToken cancellationToken = default)
     {

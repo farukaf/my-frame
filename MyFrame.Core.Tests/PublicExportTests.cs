@@ -69,6 +69,22 @@ public sealed class PublicExportTests
         Assert.Contains("uniqueName", batch.PayloadJson);
     }
 
+    [Fact]
+    public async Task HostPublishesFetchedPublicExportRecordsAtomically()
+    {
+        const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\",\"category\":\"Melee\"}]";
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-export-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        var result = await host.RunPublicExportOnceAsync("public-export", new PublicExportDocumentClient(client),
+            new PublicExportIndexEntry("ExportWeapons_en.json", "fixture"), new Uri("https://fixture.invalid/PublicExport/"));
+
+        Assert.NotNull(result);
+        var records = await database.GetPublicExportItemsAsync("public-export");
+        Assert.Equal("Test", Assert.Single(records).Name);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
