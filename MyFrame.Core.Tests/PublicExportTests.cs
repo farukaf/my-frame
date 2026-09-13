@@ -117,6 +117,26 @@ public sealed class PublicExportTests
         Assert.Equal("Latest", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Name);
     }
 
+    [Fact]
+    public async Task SharedRunnerPublishesOfficiallyShapedFixtureAndReportsSource()
+    {
+        const string compressedIndex = "XQAAgAD//////////wAingoHEY9IBeKEpQlqWyzFq6gupkTDS/nb37Fgs4PDdHpkQjeGTuafd2S/MQTD2NGn53OMefAD//8SYAAA";
+        using var client = new HttpClient(new OfficialShapeFixtureHandler(
+            Convert.FromBase64String(compressedIndex),
+            "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test\",\"pt\":\"Teste\"}}]"));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-runner-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new PublicExportSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal(1, result.Records);
+        Assert.Equal("ExportWarframes_en.json", result.RelativePath);
+        Assert.Equal("00_gFCc6M4iI-LF11CBMzq4FQ", result.RevisionTag);
+        Assert.Equal("Teste", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Aliases["pt"]);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
@@ -131,6 +151,19 @@ public sealed class PublicExportTests
                 ? index : document;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             { Content = new StringContent(payload, System.Text.Encoding.UTF8, "text/plain") });
+        }
+    }
+
+    private sealed class OfficialShapeFixtureHandler(byte[] compressedIndex, string document) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.EndsWith("index_en.txt.lzma", StringComparison.Ordinal) == true)
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(compressedIndex) });
+            var index = "ExportWeapons_en.json!00_fixture";
+            if (request.RequestUri?.AbsolutePath.EndsWith(".json", StringComparison.Ordinal) == true)
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) });
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(index) });
         }
     }
 }
