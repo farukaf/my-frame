@@ -95,4 +95,15 @@ public sealed class SyncDatabaseTests
         Assert.Single(stored);
         Assert.Equal("lamina", PublicExportIdentity.Canonicalize(stored[0].Name!));
     }
+
+    [Fact]
+    public async Task HostPreservesHttpFailureCodeForStatusPage()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await using var host = new SyncHost(db);
+        await host.RunOnceAsync("public-export", _ => throw new HttpRequestException("PUBLIC_EXPORT_HTTP_403"));
+        var status = await db.GetStatusAsync("public-export");
+        Assert.Equal("PUBLIC_EXPORT_HTTP_403", status!.ErrorCode);
+    }
 }
