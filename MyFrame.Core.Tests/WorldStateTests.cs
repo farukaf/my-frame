@@ -92,6 +92,17 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientUsesCommunityFallbackOnlyForOfficialTransportFailure()
+    {
+        const string json = "{\"syndicateMissions\":[]}";
+        using var client = new HttpClient(new FailingOfficialThenCommunityHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+
+        var result = await new WorldStateClient(client, allowCommunityFallback: true).FetchAsync();
+
+        Assert.Equal("worldstate-community-1", result.Batch.ParserVersion);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedWorldStateRevision()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[{\"id\":\"job-1\",\"type\":\"Sample bounty\",\"rewardPoolDrops\":[{\"item\":\"Endo\",\"chance\":50,\"count\":100,\"rarity\":\"Common\"}]}]}] }";
@@ -136,5 +147,17 @@ public sealed class WorldStateTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+    }
+
+    private sealed class FailingOfficialThenCommunityHandler(byte[] payload) : HttpMessageHandler
+    {
+        private int _calls;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _calls) == 1)
+                throw new HttpRequestException("fixture transport failure");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+        }
     }
 }
