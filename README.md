@@ -193,6 +193,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F100 — gate operacional de processo MCP somente leitura](docs/validacoes/2026-09-13-f100.md)
 - [Validação F101 — schema mínimo de resultados da avaliação F10](docs/validacoes/2026-09-13-f101.md)
 - [Validação F102 — dois servidores MCP em paralelo](docs/validacoes/2026-09-13-f102.md)
+- [Validação F103 — memória de dois processos MCP](docs/validacoes/2026-09-13-f103.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
