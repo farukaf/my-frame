@@ -171,6 +171,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F132: configurar decoder LZMA no fluxo de sincronização do App ([evidências](docs/validacoes/2026-09-13-f132.md)).
 - [x] F133: preservar aliases localizados do Public Export no SQLite ([evidências](docs/validacoes/2026-09-13-f133.md)).
 - [x] F134: oferecer executor local/automatizável de sincronização Public Export ([evidências](docs/validacoes/2026-09-13-f134.md)).
+- [x] F135: expor status sanitizado das fontes no executor local ([evidências](docs/validacoes/2026-09-13-f135.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
