@@ -137,6 +137,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F97: automatizar o gate da matriz de contrato MCP ([evidências](docs/validacoes/2026-09-13-f97.md)).
 - [x] F98: validar interoperabilidade local do coletor com o probe .NET ([evidências](docs/validacoes/2026-09-13-f98.md)).
 - [x] F99: medir consulta aquecida com 20 mil entradas e orçamento de resposta ([evidências](docs/validacoes/2026-09-13-f99.md)).
+- [x] F100: demonstrar ausência de sockets TCP e escrita no processo MCP ([evidências](docs/validacoes/2026-09-13-f100.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
