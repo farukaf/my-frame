@@ -112,6 +112,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F19 — falhas da inbox persistidas no SQLite](docs/validacoes/2026-09-13-f19.md)
 - [Validação F20 — status da inbox no MCP](docs/validacoes/2026-09-13-f20.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
+- [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
