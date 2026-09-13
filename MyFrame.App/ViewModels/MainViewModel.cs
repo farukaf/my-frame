@@ -18,7 +18,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
         IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader,
         CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher collectorCaptureWatcher,
-        WorldStateSyncService worldStateSync)
+        WorldStateSyncService worldStateSync, MarketCredentialService marketCredentials)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
@@ -28,7 +28,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SyncStatus = new(syncStatusReader, collectorCaptureInbox, collectorCaptureWatcher, worldStateSync, logger);
         collectorCaptureWatcher.CaptureDetected += (_, _) => SyncStatus.HandleCaptureDetected();
         Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
-            message => GlobalStatus.StatusMessage = message);
+            message => GlobalStatus.StatusMessage = message, marketCredentials);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
         _service.SnapshotUpdated += OnSnapshotUpdated;
         _service.SyncProgressChanged += (_, status) => MainThread.BeginInvokeOnMainThread(() => GlobalStatus.ApplySyncStatus(status));

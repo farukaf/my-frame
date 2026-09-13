@@ -14,13 +14,15 @@ public partial class SettingsViewModel : ObservableObject
     private readonly DashboardSettingsState _settings;
     private readonly Func<Task> _refresh;
     private readonly Action<string>? _setStatus;
+    private readonly MarketCredentialService _marketCredentials;
     public SettingsViewModel(IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         ISettingsStore preferences, LocalSettings localSettings, IFolderPicker folderPicker, DashboardSettingsState settings,
-        Func<Task> refresh, Action<string>? setStatus = null)
+        Func<Task> refresh, Action<string>? setStatus = null, MarketCredentialService? marketCredentials = null)
     {
         _alecaPath = alecaPath; _directorySettings = directorySettings; _preferences = preferences;
         _localSettings = localSettings;
         _folderPicker = folderPicker; _settings = settings; _refresh = refresh; _setStatus = setStatus;
+        _marketCredentials = marketCredentials ?? throw new ArgumentNullException(nameof(marketCredentials));
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         McpExecutablePath = ResolveMcpExecutablePath(AppContext.BaseDirectory);
         var quoted = $"\"{McpExecutablePath.Replace("\"", "\\\"")}\"";
@@ -41,8 +43,53 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string CodexMcpCommand { get; set; } = "";
     [ObservableProperty] public partial string ClaudeMcpCommand { get; set; } = "";
     [ObservableProperty] public partial string McpCopyMessage { get; set; } = "";
+    [ObservableProperty] public partial string MarketCredentialTokenInput { get; set; } = "";
+    [ObservableProperty] public partial string MarketCredentialStatusText { get; set; } = "Checking credential…";
+    [ObservableProperty] public partial bool IsSavingMarketCredential { get; set; }
     public double DucatsPerPlatinum { get => _settings.DucatsPerPlatinum; set => _settings.DucatsPerPlatinum = value; }
     public int UnvaultedPrimeSetsToReserve { get => _settings.UnvaultedPrimeSetsToReserve; set => _settings.UnvaultedPrimeSetsToReserve = value; }
+
+    [RelayCommand]
+    private async Task RefreshMarketCredentialStatusAsync()
+    {
+        var status = await _marketCredentials.GetStatusAsync();
+        MarketCredentialStatusText = status.State switch
+        {
+            MarketCredentialState.Valid => $"Credential valid until {status.ExpiresAt:yyyy-MM-dd HH:mm} UTC.",
+            MarketCredentialState.Expired => "Credential expired. Private orders are disabled.",
+            MarketCredentialState.Invalid => "Credential is invalid. Paste a current token to replace it.",
+            _ => "No private credential configured. Public prices remain available."
+        };
+    }
+
+    [RelayCommand]
+    private async Task SaveMarketCredentialAsync()
+    {
+        if (IsSavingMarketCredential) return;
+        IsSavingMarketCredential = true;
+        try
+        {
+            var status = await _marketCredentials.SaveAsync(MarketCredentialTokenInput);
+            MarketCredentialTokenInput = "";
+            MarketCredentialStatusText = $"Credential saved until {status.ExpiresAt:yyyy-MM-dd HH:mm} UTC.";
+            _setStatus?.Invoke("Market credential saved securely.");
+        }
+        catch (ArgumentException)
+        {
+            MarketCredentialTokenInput = "";
+            MarketCredentialStatusText = "Invalid or expired token; no secret was saved.";
+        }
+        finally { IsSavingMarketCredential = false; }
+    }
+
+    [RelayCommand]
+    private async Task RevokeMarketCredentialAsync()
+    {
+        await _marketCredentials.RevokeAsync();
+        MarketCredentialTokenInput = "";
+        MarketCredentialStatusText = "Private credential revoked. Public prices remain available.";
+        _setStatus?.Invoke("Market credential revoked.");
+    }
 
     [RelayCommand]
     private async Task SelectAlecaFrameDirectoryAsync()
