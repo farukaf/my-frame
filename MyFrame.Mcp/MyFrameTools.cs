@@ -31,6 +31,12 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Optional exact source id, such as overwolf-inventory or public-export.")] string? sourceId = null,
         CancellationToken cancellationToken = default) => platform.GetSyncHistoryAsync(limit, sourceId, cancellationToken);
 
+    [McpServerTool(Name = "get_inventory_coverage", Title = "Get inventory coverage", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns field-level inventory coverage states from the synchronized SQLite projection. It never returns raw payloads or treats unobserved fields as absent.")]
+    public Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
+        platform.GetInventoryCoverageAsync(cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

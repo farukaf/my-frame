@@ -120,6 +120,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F27 — smoke de instalação limpa](docs/validacoes/2026-09-13-f27.md)
 - [Validação F28 — gate MCP read-only](docs/validacoes/2026-09-13-f28.md)
 - [Validação F29 — persistência de cobertura do inventário](docs/validacoes/2026-09-13-f29.md)
+- [Validação F30 — cobertura do inventário no MCP](docs/validacoes/2026-09-13-f30.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
