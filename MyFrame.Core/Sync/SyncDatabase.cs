@@ -445,6 +445,24 @@ public sealed class SyncDatabase : IAsyncDisposable
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
     }
 
+    public async Task<InventoryRevisionStatus?> GetActiveInventoryRevisionStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT ir.capture_mode, ir.completeness, ir.sequence
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active'
+            LIMIT 1;
+            """;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2));
+    }
+
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
         string? sourceId = null, int limit = 20, CancellationToken cancellationToken = default)
     {
