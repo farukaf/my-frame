@@ -250,6 +250,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var prompts = await client.ListPromptsAsync();
         var result = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["includeAccount"] = false });
+        var coverageResult = await client.CallToolAsync("get_inventory_coverage");
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -270,6 +271,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains(resources, x => x.Uri == "myframe://schema");
         Assert.Contains(prompts, x => x.Name == "review_inventory");
         Assert.NotNull(result.StructuredContent);
+        Assert.NotEqual(true, coverageResult.IsError);
+        Assert.NotNull(coverageResult.StructuredContent);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
