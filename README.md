@@ -158,6 +158,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F163 — modo snapshot/delta na captura de inventário](docs/validacoes/2026-09-13-f163.md)
 - [Validação F164 — exposição segura do modo da revisão no MCP](docs/validacoes/2026-09-13-f164.md)
 - [Validação F165 — não projetar delta como inventário completo](docs/validacoes/2026-09-13-f165.md)
+- [Validação F166 — diagnóstico seguro de indisponibilidade do Public Export](docs/validacoes/2026-09-13-f166.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
