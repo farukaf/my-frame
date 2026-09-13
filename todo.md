@@ -115,6 +115,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F75: expor consulta de atividades atuais com revisão World State ([evidências](docs/validacoes/2026-09-13-f75.md)).
 - [x] F76: filtrar atividades World State por texto de recompensa sem inferir ausência ([evidências](docs/validacoes/2026-09-13-f76.md)).
 - [x] F77: manter filtro de recompensa consistente em bounties, atividades e World State ([evidências](docs/validacoes/2026-09-13-f77.md)).
+- [x] F78: adaptar aliases do World State oficial e tornar o endpoint DE a fonte padrão ([evidências](docs/validacoes/2026-09-13-f78.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
