@@ -36,7 +36,7 @@ public sealed class SyncHost : IAsyncDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
         {
-            var code = error is InvalidDataException data ? data.Message : "SYNC_FAILED";
+            var code = ErrorCode(error);
             await _database.RecordFailureAsync(sourceId, code, cancellationToken);
             _lastRunAt = DateTimeOffset.UtcNow;
             return null;
@@ -58,7 +58,7 @@ public sealed class SyncHost : IAsyncDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
         {
-            await _database.RecordFailureAsync(sourceId, error is InvalidDataException data ? data.Message : "SYNC_FAILED", cancellationToken);
+            await _database.RecordFailureAsync(sourceId, ErrorCode(error), cancellationToken);
             _lastRunAt = DateTimeOffset.UtcNow;
             return null;
         }
@@ -72,4 +72,11 @@ public sealed class SyncHost : IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync() { await StopAsync(); _lifecycle.Dispose(); await _database.DisposeAsync(); }
+
+    private static string ErrorCode(Exception error) => error switch
+    {
+        InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
+        HttpRequestException request when request.Message.StartsWith("PUBLIC_EXPORT_HTTP_", StringComparison.Ordinal) => request.Message,
+        _ => "SYNC_FAILED"
+    };
 }
