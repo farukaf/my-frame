@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace MyFrame.Core.Sync;
 
 public sealed record PublicExportSyncOutcome(
@@ -12,6 +15,42 @@ public sealed record PublicExportSyncOutcome(
 /// <summary>Shared orchestration boundary for UI, CLI and future scheduled syncs.</summary>
 public sealed class PublicExportSyncRunner
 {
+    public async Task<PublicExportSyncOutcome> RunFileAsync(
+        SyncDatabase database,
+        SyncHost host,
+        string filePath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(host);
+        if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("Public Export file is required.", nameof(filePath));
+
+        try
+        {
+            var fullPath = Path.GetFullPath(filePath);
+            var info = new FileInfo(fullPath);
+            if (!info.Exists) throw new FileNotFoundException("PUBLIC_EXPORT_FILE_NOT_FOUND", fullPath);
+            if (info.Length is <= 0 or > 64 * 1024 * 1024) throw new InvalidDataException("PUBLIC_EXPORT_DOCUMENT_TOO_LARGE");
+            var json = await File.ReadAllTextAsync(fullPath, Encoding.UTF8, cancellationToken);
+            var records = PublicExportDocumentParser.Parse(json);
+            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json))).ToLowerInvariant();
+            var batch = new SyncBatch("public-export", hash, json, records.Count, "public-export-file-1");
+            var publication = await host.RunCatalogOnceAsync("public-export", _ =>
+                Task.FromResult<(SyncBatch, IReadOnlyList<PublicExportRecord>)>((batch, records)), cancellationToken);
+            var status = await database.GetStatusAsync("public-export", cancellationToken);
+            return publication is not null
+                ? new("published", publication.RecordCount, publication.RevisionId, null, status?.ParserVersion, info.Name)
+                : new(status?.LastRunState ?? "failed", 0, status?.ActiveRevisionId,
+                    status?.ErrorCode ?? "SYNC_FAILED", status?.ParserVersion, info.Name);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            var status = await database.GetStatusAsync("public-export", cancellationToken);
+            return new("failed", 0, status?.ActiveRevisionId, ErrorCode(error), status?.ParserVersion, Path.GetFileName(filePath));
+        }
+    }
+
     public async Task<PublicExportSyncOutcome> RunAsync(
         SyncDatabase database,
         SyncHost host,
