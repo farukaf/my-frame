@@ -42,7 +42,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
 - [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
 - [ ] F6: resolver autenticação WFM independente.
-- [ ] F6: comprovar instalação limpa sem AlecaFrame nem caches legados.
+- [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
 - [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
 - [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
@@ -153,6 +153,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F112: reconciliar a matriz com evidências e pendências externas explícitas ([evidências](docs/validacoes/2026-09-13-f112.md)).
 - [x] F113: migrar caches/estado de mercado para SQLite com importação legada não destrutiva ([evidências](docs/validacoes/2026-09-13-f113.md)).
 - [x] F114: migrar settings para SQLite com rollback pelo arquivo legado ([evidências](docs/validacoes/2026-09-13-f114.md)).
+- [x] F115: comprovar instalação limpa sem AlecaFrame/caches legados no MCP ([evidências](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
