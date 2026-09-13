@@ -52,6 +52,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F12: preferir snapshot SQLite no MCP/app com fallback legado e cobertura parcial ([evidências](docs/validacoes/2026-09-13-f12.md)).
 - [x] F13: preservar raw JSON e projetar campos ricos do Public Export ([evidências](docs/validacoes/2026-09-13-f13.md)).
 - [x] F14: importar captura Overwolf validada no SQLite com consentimento/idempotência ([evidências](docs/validacoes/2026-09-13-f14.md)).
+- [x] F15: expor importação validada como comando operacional do probe ([evidências](docs/validacoes/2026-09-13-f15.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
