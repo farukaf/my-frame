@@ -12,6 +12,12 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [Description("Returns available, partial and externally pending data capabilities. Check this before asking for rich inventory, activities or references.")]
     public CapabilitiesResponse GetCapabilities() => platform.GetCapabilities();
 
+    [McpServerTool(Name = "get_market_credential_status", Title = "Get market credential status", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns only the state and expiry of the independent Warframe Market credential. Never returns the token or starts authentication.")]
+    public Task<MarketCredentialStatusResponse> GetMarketCredentialStatus(CancellationToken cancellationToken = default) =>
+        platform.GetMarketCredentialStatusAsync(cancellationToken);
+
     [McpServerTool(Name = "get_sync_status", Title = "Get synchronization status", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns read-only status for local sources and their last error. It never starts network synchronization or changes the database.")]

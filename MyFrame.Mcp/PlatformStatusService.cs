@@ -6,6 +6,8 @@ namespace MyFrame.Mcp;
 
 public sealed record CapabilityDto(string Name, string State, string Detail);
 public sealed record CapabilitiesResponse(DateTimeOffset ServedAt, IReadOnlyList<CapabilityDto> Capabilities);
+public sealed record MarketCredentialStatusResponse(DateTimeOffset ServedAt, string State,
+    DateTimeOffset? ExpiresAt, bool IsConfigured);
 public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState,
     DateTimeOffset? LastRunAt, string? ErrorCode, string? ActiveRevisionId, string? ParserVersion,
     long AcceptedRecords, long RejectedRecords);
@@ -48,7 +50,11 @@ public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, D
 
 public sealed class PlatformStatusService
 {
+    private readonly IMarketTokenStore _marketTokenStore;
     private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references"];
+    public PlatformStatusService(IMarketTokenStore? marketTokenStore = null) =>
+        _marketTokenStore = marketTokenStore ?? new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath);
+
     public CapabilitiesResponse GetCapabilities() => new(DateTimeOffset.UtcNow,
     [
         new("inventory.overwolf", "pending_external_validation", "Native GEP contract is implemented; real capture and Arsenal comparison are still required."),
@@ -59,6 +65,13 @@ public sealed class PlatformStatusService
         new("references.wiki_overframe", "import_only", "References require an explicitly permitted, attributed import and remain untrusted for facts."),
         new("mcp.domain", "partial", "Current MCP tools remain available; rich inventory/catalog/activity tools are being added incrementally.")
     ]);
+
+    public async Task<MarketCredentialStatusResponse> GetMarketCredentialStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var status = MarketCredentialService.Classify(await _marketTokenStore.ReadAsync(cancellationToken));
+        return new(DateTimeOffset.UtcNow, status.State.ToString().ToLowerInvariant(), status.ExpiresAt, status.IsConfigured);
+    }
 
     public async Task<SyncStatusResponse> GetSyncStatusAsync(CancellationToken cancellationToken = default)
     {

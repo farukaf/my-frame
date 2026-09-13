@@ -203,6 +203,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F165: impedir que o leitor SQLite trate uma captura delta como inventário completo ([evidências](docs/validacoes/2026-09-13-f165.md)).
 - [x] F166: classificar indisponibilidade de rede do Public Export sem vazar detalhes ([evidências](docs/validacoes/2026-09-13-f166.md)).
 - [x] F167: executar regressão completa após proteção contra deltas e diagnóstico de rede ([evidências](docs/validacoes/2026-09-13-f167.md)).
+- [x] F168: expor estado seguro da credencial independente do Warframe Market no MCP ([evidências](docs/validacoes/2026-09-13-f168.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
