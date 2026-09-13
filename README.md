@@ -116,6 +116,8 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F121 — matriz completa do contrato MCP](docs/validacoes/2026-09-13-f121.md)
 - [Validação F122 — atualização com MCP ativo](docs/validacoes/2026-09-13-f122.md)
 - [Validação F123 — readiness não-mutante dos clientes MCP](docs/validacoes/2026-09-13-f123.md)
+- [Validação F124 — gate externo Codex/Claude](docs/validacoes/2026-09-13-f124.md)
+- [Validação F125 — regressão Core/MCP](docs/validacoes/2026-09-13-f125.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
