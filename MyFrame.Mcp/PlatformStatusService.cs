@@ -19,6 +19,11 @@ public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceF
     string? UpgradeId, int? Rank);
 public sealed record LoadoutDto(string InstanceId, string? TypeId, int? Rank, string? ConfigJson,
     string RankState, string ConfigState, IReadOnlyList<InventoryUpgradeDto> Upgrades);
+public sealed record WorldStateRewardDto(string Item, decimal? Chance, int? Count, string? Rarity);
+public sealed record WorldStateJobDto(string Id, string? Type, string? UniqueName,
+    int? MinimumMasteryRank, IReadOnlyList<int> StandingStages, IReadOnlyList<WorldStateRewardDto> Rewards);
+public sealed record WorldStateBountyDto(string Id, string? Syndicate, DateTimeOffset? Activation,
+    DateTimeOffset? Expiry, IReadOnlyList<WorldStateJobDto> Jobs);
 
 public sealed class PlatformStatusService
 {
@@ -147,5 +152,19 @@ public sealed class PlatformStatusService
                         upgrade.UpgradeId, upgrade.Rank))
                     .ToArray()))
             .ToArray();
+    }
+
+    public async Task<IReadOnlyList<WorldStateBountyDto>> GetBountiesAsync(
+        int limit = 100, CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
+        return bounties.Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
+            bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
+                job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
+                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray();
     }
 }

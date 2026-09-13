@@ -135,6 +135,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F42 — publicação integrada do World State](docs/validacoes/2026-09-13-f42.md)
 - [Validação F43 — resolução do índice Public Export](docs/validacoes/2026-09-13-f43.md)
 - [Validação F44 — leitura completa de bounties World State](docs/validacoes/2026-09-13-f44.md)
+- [Validação F45 — bounties World State no MCP](docs/validacoes/2026-09-13-f45.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
