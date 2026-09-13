@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Url = 'https://content.warframe.com/dynamic/worldState.php',
+    [string]$InputPath,
     [ValidateRange(1, 300)] [int]$TimeoutSec = 30
 )
 
@@ -10,10 +11,20 @@ $client = [System.Net.Http.HttpClient]::new($handler)
 $client.Timeout = [TimeSpan]::FromSeconds($TimeoutSec)
 
 try {
-    $response = $client.GetAsync($Url).GetAwaiter().GetResult()
-    $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
-    if (-not $response.IsSuccessStatusCode) {
-        throw "HTTP_$([int]$response.StatusCode)"
+    if ([string]::IsNullOrWhiteSpace($InputPath)) {
+        $response = $client.GetAsync($Url).GetAwaiter().GetResult()
+        $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+        if (-not $response.IsSuccessStatusCode) {
+            throw "HTTP_$([int]$response.StatusCode)"
+        }
+        $transport = 'http'
+        $httpOk = '1'
+    }
+    else {
+        if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) { throw "INPUT_NOT_FOUND=$InputPath" }
+        $body = Get-Content -LiteralPath $InputPath -Raw
+        $transport = 'fixture'
+        $httpOk = 'SKIPPED'
     }
     $root = $body | ConvertFrom-Json
     if ($null -eq $root -or $root -is [array]) { throw 'WORLDSTATE_ROOT_INVALID' }
@@ -38,7 +49,8 @@ try {
         }
     }
 
-    Write-Output 'WORLDSTATE_HTTP_OK=1'
+    Write-Output "WORLDSTATE_HTTP_OK=$httpOk"
+    Write-Output "WORLDSTATE_TRANSPORT=$transport"
     Write-Output "WORLDSTATE_SCHEMA=$schema"
     Write-Output "WORLDSTATE_BYTES=$([Text.Encoding]::UTF8.GetByteCount($body))"
     Write-Output "WORLDSTATE_MISSIONS=$($missions.Count)"
