@@ -106,3 +106,5 @@ para a nova matriz e continuam abertas até validação.
 - [ ] Validar o protocolo com MCP Inspector.
 - [ ] Executar smoke tests reais em Codex e Claude no Windows.
 - [x] Executar restore, build, publicação e suíte completa antes da entrega.
+- [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
+- [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1

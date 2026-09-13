@@ -91,3 +91,4 @@ O aplicativo grava eventos estruturados em JSON Lines em
 a cada hora, com retenção máxima de 168 arquivos e limite de 25 MB por arquivo.
 Os logs registram etapas de inicialização, contagens, resultados de sincronização
 e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
+- [Validação F2 — SQLite e publicação transacional](docs/validacoes/2026-09-13-f2.md)
