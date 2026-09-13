@@ -194,7 +194,7 @@
                     </VerticalStackLayout>
                 </ScrollView>
 
-                <Grid IsVisible="{Binding SyncStatusVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="14">
+                <Grid IsVisible="{Binding SyncStatusVisible}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <VerticalStackLayout Spacing="2">
                             <Label Text="Synchronization status" Style="{StaticResource Title}" />
@@ -208,7 +208,23 @@
                             <Label Text="{Binding SyncStatusMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
-                    <CollectionView Grid.Row="2" ItemsSource="{Binding SyncSources}" SelectionMode="None">
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Overwolf capture inbox" Style="{StaticResource SectionTitle}" />
+                            <Label Text="Copie os .capture.json e .ready.json exportados pelo coletor para esta pasta." Style="{StaticResource Muted}" />
+                            <Entry Text="{Binding CollectorCaptureDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                            <HorizontalStackLayout Spacing="10">
+                                <CheckBox IsChecked="{Binding AllowCollectorRawPayload}" Color="#7DE2D1" />
+                                <Label Text="Autorizar a leitura do payload privado desta importação" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                                <Button Text="Importar capturas" Command="{Binding ImportCollectorCapturesCommand}" BackgroundColor="#167C70" TextColor="White" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <ActivityIndicator IsRunning="{Binding IsImportingCollectorCaptures}" IsVisible="{Binding IsImportingCollectorCaptures}" Color="#7DE2D1" WidthRequest="16" />
+                                <Label Text="{Binding CollectorCaptureMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                    <CollectionView Grid.Row="3" ItemsSource="{Binding SyncSources}" SelectionMode="None">
                         <CollectionView.EmptyView><Label Text="No synchronization sources registered." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
