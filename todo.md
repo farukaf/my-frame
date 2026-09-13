@@ -89,6 +89,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F49: validar paridade da projeção World State entre SQLite e MCP ([evidências](docs/validacoes/2026-09-13-f49.md)).
 - [x] F50: atualizar contrato docs/MCP.md para as 17 ferramentas implementadas ([evidências](docs/validacoes/2026-09-13-f50.md)).
 - [x] F51: automatizar regressão de ferramentas MCP documentadas ([evidências](docs/validacoes/2026-09-13-f51.md)).
+- [x] F52: expor bounties e ciclos em uma consulta World State no MCP ([evidências](docs/validacoes/2026-09-13-f52.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
