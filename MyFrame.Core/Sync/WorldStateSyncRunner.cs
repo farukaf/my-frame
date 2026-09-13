@@ -82,6 +82,7 @@ public sealed class WorldStateSyncRunner
     {
         InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
         HttpRequestException request when request.Message.StartsWith("WORLDSTATE_HTTP_", StringComparison.Ordinal) => request.Message,
+        HttpRequestException => "WORLDSTATE_NETWORK_UNAVAILABLE",
         _ => "SYNC_FAILED"
     };
 }

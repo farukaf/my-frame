@@ -147,6 +147,20 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task SharedWorldStateRunnerClassifiesTransportFailureWithoutLeakingDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-network-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        using var client = new HttpClient(new ThrowingHandler());
+
+        var result = await new WorldStateSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("failed", result.State);
+        Assert.Equal("WORLDSTATE_NETWORK_UNAVAILABLE", result.ErrorCode);
+    }
+
+    [Fact]
     public async Task SharedWorldStateRunnerPublishesLocalFileWithExplicitParserVersion()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-file-{Guid.NewGuid():N}");
@@ -238,5 +252,11 @@ public sealed class WorldStateTests
                 Content = new StringContent("{")
             });
         }
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("proxy details must not escape");
     }
 }
