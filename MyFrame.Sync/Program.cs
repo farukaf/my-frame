@@ -3,12 +3,13 @@ using MyFrame.Core;
 using MyFrame.Core.Sync;
 
 var publicExport = args.Any(argument => string.Equals(argument, "--public-export", StringComparison.Ordinal));
+var publicExportFile = args.Any(argument => string.Equals(argument, "--public-export-file", StringComparison.Ordinal));
 var worldState = args.Any(argument => string.Equals(argument, "--world-state", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (worldState ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + (worldState ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --world-state | --all | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --world-state | --all | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -45,6 +46,27 @@ if (worldState)
         parserVersion = result.ParserVersion,
         errorCode = result.ErrorCode,
         source = "worldstate-pc"
+    }));
+    return result.State == "published" ? 0 : 1;
+}
+
+if (publicExportFile)
+{
+    var fileIndex = Array.FindIndex(args, argument => string.Equals(argument, "--public-export-file", StringComparison.Ordinal));
+    if (fileIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(args[fileIndex + 1]))
+    {
+        Console.Error.WriteLine("--public-export-file requires a JSON path.");
+        return 2;
+    }
+    var result = await new PublicExportSyncRunner().RunFileAsync(database, host, args[fileIndex + 1]);
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = result.State,
+        records = result.Records,
+        revisionId = result.RevisionId,
+        parserVersion = result.ParserVersion,
+        errorCode = result.ErrorCode,
+        source = result.RelativePath
     }));
     return result.State == "published" ? 0 : 1;
 }
