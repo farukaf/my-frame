@@ -148,6 +148,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F55 — inicialização sem dependência de AlecaFrame](docs/validacoes/2026-09-13-f55.md)
 - [Validação F56 — metadados de sincronização no MCP](docs/validacoes/2026-09-13-f56.md)
 - [Validação F57 — sincronização manual do World State](docs/validacoes/2026-09-13-f57.md)
+- [Validação F58 — cobertura explícita de Mother Token](docs/validacoes/2026-09-13-f58.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

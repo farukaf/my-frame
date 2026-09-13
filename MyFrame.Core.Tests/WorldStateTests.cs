@@ -31,6 +31,18 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public void MarksMotherTokenCoverageOnlyWhenRewardIsExplicit()
+    {
+        var json = """
+            {"syndicateMissions":[{"id":"deimos-token","syndicate":"Entrati","jobs":[{"id":"job-token","rewardPoolDrops":[{"item":"Mother Token","count":1}]}]}]}
+            """;
+
+        var snapshot = WorldStateParser.Parse(json, DateTimeOffset.UtcNow);
+
+        Assert.Equal(InventoryFieldState.Known, snapshot.Coverage["motherTokens"]);
+    }
+
+    [Fact]
     public async Task ClientProducesRevisionedSyncBatch()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[]}";

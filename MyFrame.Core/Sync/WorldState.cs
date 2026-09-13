@@ -51,7 +51,10 @@ public static class WorldStateParser
         {
             ["syndicateMissions"] = root.TryGetProperty("syndicateMissions", out var missions) && missions.ValueKind == JsonValueKind.Array ? InventoryFieldState.Known : InventoryFieldState.NotObserved,
             ["bountyRewards"] = bounties.Any(bounty => bounty.Jobs.Any(job => job.Rewards.Count > 0)) ? InventoryFieldState.Known : InventoryFieldState.NotObserved,
-            ["motherTokens"] = InventoryFieldState.NotObserved
+            ["motherTokens"] = bounties.Any(bounty => bounty.Jobs.Any(job => job.Rewards.Any(reward =>
+                reward.Item.Contains("mother token", StringComparison.OrdinalIgnoreCase))))
+                ? InventoryFieldState.Known
+                : InventoryFieldState.NotObserved
         };
         return new(retrievedAt, sourceTimestamp, String(root, "buildLabel"), bounties, cycles, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json))).ToLowerInvariant(), sourceTimestamp is null || sourceTimestamp <= retrievedAt.AddMinutes(5), coverage);
     }
