@@ -18,7 +18,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_item", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_inventory_coverage", "get_item", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -257,7 +257,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(12, tools.Count);
+        Assert.Equal(13, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);

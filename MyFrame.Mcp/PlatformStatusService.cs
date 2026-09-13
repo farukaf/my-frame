@@ -12,6 +12,7 @@ public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string 
 public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
+public sealed record InventoryCoverageDto(string FieldPath, string State);
 
 public sealed class PlatformStatusService
 {
@@ -71,5 +72,15 @@ public sealed class PlatformStatusService
         return runs.Select(run => new SyncRunDto(run.RunId, run.SourceId, run.State,
             run.StartedAt, run.FinishedAt, run.RecordsReceived, run.RecordsAccepted,
             run.RecordsRejected, run.ErrorCode)).ToArray();
+    }
+
+    public async Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverageAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var coverage = await database.GetInventoryCoverageAsync(cancellationToken);
+        return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
+            .ToArray();
     }
 }
