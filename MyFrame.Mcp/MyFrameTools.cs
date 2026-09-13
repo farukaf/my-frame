@@ -23,6 +23,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<CaptureInboxStatusResponse> GetCaptureInboxStatus(CancellationToken cancellationToken = default) =>
         platform.GetCaptureInboxStatusAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_sync_history", Title = "Get synchronization history", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns recent sanitized synchronization attempts from SQLite. It never reads payloads or starts synchronization.")]
+    public Task<IReadOnlyList<SyncRunDto>> GetSyncHistory(
+        [Description("Number of attempts from 1 to 100; default 20.")] int limit = 20,
+        [Description("Optional exact source id, such as overwolf-inventory or public-export.")] string? sourceId = null,
+        CancellationToken cancellationToken = default) => platform.GetSyncHistoryAsync(limit, sourceId, cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

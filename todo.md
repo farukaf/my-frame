@@ -59,6 +59,9 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F19: persistir falhas/rejeições da inbox como tentativas de sincronização no SQLite ([evidências](docs/validacoes/2026-09-13-f19.md)).
 - [x] F20: expor metadados da inbox e último erro no MCP, sem payload nem escrita ([evidências](docs/validacoes/2026-09-13-f20.md)).
 - [x] F21: detectar novas capturas na inbox e avisar a UI sem importar automaticamente ([evidências](docs/validacoes/2026-09-13-f21.md)).
+- [x] F22: implementar restore SQLite a partir de backup validado e testar reabertura ([evidências](docs/validacoes/2026-09-13-f22.md)).
+- [x] F23: exibir histórico recente de tentativas e falhas na página de sincronização ([evidências](docs/validacoes/2026-09-13-f23.md)).
+- [x] F24: expor histórico sanitizado de sincronização no MCP, com filtro e limite ([evidências](docs/validacoes/2026-09-13-f24.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
