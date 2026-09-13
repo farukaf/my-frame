@@ -136,6 +136,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F96: validar MCP ativo lendo banco migrado em chamadas consecutivas ([evidências](docs/validacoes/2026-09-13-f96.md)).
 - [x] F97: automatizar o gate da matriz de contrato MCP ([evidências](docs/validacoes/2026-09-13-f97.md)).
 - [x] F98: validar interoperabilidade local do coletor com o probe .NET ([evidências](docs/validacoes/2026-09-13-f98.md)).
+- [x] F99: medir consulta aquecida com 20 mil entradas e orçamento de resposta ([evidências](docs/validacoes/2026-09-13-f99.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
