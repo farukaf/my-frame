@@ -160,6 +160,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F119: validar App e MCP ativos lendo a mesma raiz SQLite ([evidências](docs/validacoes/2026-09-13-f119.md)).
 - [x] F120: medir latência, memória e bytes com fixture grande, dois servidores e App ativo ([evidências](docs/validacoes/2026-09-13-f120.md)).
 - [x] F121: executar a matriz mínima de regressão do contrato MCP, incluindo troca de contexto ([evidências](docs/validacoes/2026-09-13-f121.md)).
+- [x] F122: validar atualização com MCP antigo e novo ativos sobre a mesma raiz ([evidências](docs/validacoes/2026-09-13-f122.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -210,7 +211,7 @@ para a nova matriz e continuam abertas até validação.
 
 - [x] Distribuir `MyFrame.Mcp.exe` junto com o aplicativo.
 - [x] Criar fluxo de publicação com caminho estável e upgrade de app/MCP juntos.
-- [ ] Validar migração, formato incompatível, rollback e atualização com servidor ativo.
+- [x] Validar migração, formato incompatível, rollback e atualização com servidor ativo ([F22, F38, F40, F104, F122](docs/validacoes/2026-09-13-f122.md)).
 - [x] Adicionar à tela de configurações uma seção MCP com comandos para Codex e Claude.
 - [x] Oferecer botão para copiar cada comando e mostrar o caminho do executável.
 - [x] Documentar cadastro, verificação, atualização e remoção do servidor.
