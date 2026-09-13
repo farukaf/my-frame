@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using System.Net.Http;
 using MyFrame.Core;
@@ -103,6 +104,15 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientDoesNotFallbackWhenOfficialPayloadIsInvalid()
+    {
+        using var client = new HttpClient(new InvalidOfficialHandler());
+
+        await Assert.ThrowsAnyAsync<JsonException>(() =>
+            new WorldStateClient(client, allowCommunityFallback: true).FetchAsync());
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedWorldStateRevision()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[{\"id\":\"job-1\",\"type\":\"Sample bounty\",\"rewardPoolDrops\":[{\"item\":\"Endo\",\"chance\":50,\"count\":100,\"rarity\":\"Common\"}]}]}] }";
@@ -158,6 +168,20 @@ public sealed class WorldStateTests
             if (Interlocked.Increment(ref _calls) == 1)
                 throw new HttpRequestException("fixture transport failure");
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+        }
+    }
+
+    private sealed class InvalidOfficialHandler : HttpMessageHandler
+    {
+        private int _calls;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _calls);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{")
+            });
         }
     }
 }

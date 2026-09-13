@@ -121,6 +121,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F81: habilitar fallback comunitário somente para falhas de transporte da fonte oficial ([evidências](docs/validacoes/2026-09-13-f81.md)).
 - [x] F82: exibir a procedência do parser na página visual de status ([evidências](docs/validacoes/2026-09-13-f82.md)).
 - [x] F83: informar a procedência do parser no resultado imediato do sync World State ([evidências](docs/validacoes/2026-09-13-f83.md)).
+- [x] F84: testar que payload oficial inválido não aciona fallback comunitário ([evidências](docs/validacoes/2026-09-13-f84.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
