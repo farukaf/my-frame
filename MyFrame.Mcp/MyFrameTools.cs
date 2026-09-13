@@ -66,7 +66,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_bounties", Title = "Get active bounties", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns currently active World State bounties with jobs, standing stages and attributed rewards. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
-    public Task<IReadOnlyList<WorldStateBountyDto>> GetBounties(
+    public Task<WorldStateBountiesResponse> GetBounties(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, cancellationToken);
 
