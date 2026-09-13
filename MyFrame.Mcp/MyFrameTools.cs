@@ -79,6 +79,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
         CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, syndicate, cancellationToken);
 
+    [McpServerTool(Name = "get_activity", Title = "Get current activities", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns current bounty activities and planetary cycles using the same World State revision, coverage and validity rules as get_world_state.")]
+    public Task<WorldStateResponse> GetActivity(
+        [Description("Maximum number of active activities from 1 to 200; default 100.")] int limit = 100,
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        CancellationToken cancellationToken = default) => platform.GetActivityAsync(limit, syndicate, cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

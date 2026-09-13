@@ -19,7 +19,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -289,6 +289,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
         var syncStatusResult = await client.CallToolAsync("get_sync_status");
+        var activityResult = await client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["syndicate"] = "Entrati" });
         var worldStateResult = await client.CallToolAsync("get_world_state",
             new Dictionary<string, object?> { ["limit"] = 50, ["syndicate"] = "entrati" });
         var filteredWorldState = await client.CallToolAsync("get_world_state",
@@ -302,7 +304,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(18, tools.Count);
+        Assert.Equal(19, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
@@ -338,6 +340,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("Entrati", bountiesJson);
         Assert.Contains("Endo", bountiesJson);
         Assert.NotEqual(true, worldStateResult.IsError);
+        Assert.NotEqual(true, activityResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(activityResult.StructuredContent));
         var worldStateJson = JsonSerializer.Serialize(worldStateResult.StructuredContent);
         Assert.Contains("cetusCycle", worldStateJson);
         Assert.Contains("Entrati", worldStateJson);
