@@ -79,9 +79,14 @@ public sealed class SyncDatabase : IAsyncDisposable
     {
         if (!File.Exists(_path)) return [];
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        var hasRawJson = await HasColumnAsync(connection, "public_export_items", "raw_json", cancellationToken);
         await using var command = connection.CreateCommand();
-        command.CommandText = """
+        command.CommandText = hasRawJson ? """
             SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name, i.raw_json
+            FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
+            WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
+            """ : """
+            SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name
             FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
             WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
             """;
@@ -92,7 +97,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         {
             var uniqueName = reader.GetString(0);
             var name = reader.IsDBNull(1) ? null : reader.GetString(1);
-            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }, reader.IsDBNull(5) ? null : reader.GetString(5)));
+            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }, hasRawJson && !reader.IsDBNull(5) ? reader.GetString(5) : null));
         }
         return records;
     }
@@ -301,6 +306,15 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var alter = connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE [{table}] ADD COLUMN [{column}] {definition};";
         await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
+    private static async Task<bool> HasColumnAsync(SqliteConnection connection, string table, string column, CancellationToken cancellationToken = default)
+    {
+        await using var check = connection.CreateCommand();
+        check.CommandText = $"PRAGMA table_info([{table}]);";
+        await using var reader = await check.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
     private static DateTimeOffset? ParseDate(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : DateTimeOffset.Parse(reader.GetString(ordinal));
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
