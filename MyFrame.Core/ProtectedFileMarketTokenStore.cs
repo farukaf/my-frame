@@ -10,7 +10,7 @@ namespace MyFrame.Core;
 /// SQLite, logs or MCP responses.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed class ProtectedFileMarketTokenStore : IMarketTokenStore
+public sealed class ProtectedFileMarketTokenStore : IMarketCredentialStore
 {
     private static readonly byte[] Header = Encoding.ASCII.GetBytes("MYFRAME-DPAPI-V1\0");
     private readonly string _path;
