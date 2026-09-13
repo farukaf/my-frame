@@ -97,3 +97,4 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F5 — World State e recompensas](docs/validacoes/2026-09-13-f5.md)
 - [Validação F6 — credencial de mercado independente](docs/validacoes/2026-09-13-f6.md)
 - [Validação F7 — referências Wiki/Overframe](docs/validacoes/2026-09-13-f7.md)
+- [Validação F8 — capacidades e status MCP](docs/validacoes/2026-09-13-f8.md)
