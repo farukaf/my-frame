@@ -69,6 +69,25 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task RestoreReplacesActiveDatabaseFromBackup()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}");
+        var active = Path.Combine(root, "active.db");
+        var backup = Path.Combine(root, "backup.db");
+        await using (var source = new SyncDatabase(Path.Combine(root, "source.db")))
+        {
+            await source.PublishAsync(new SyncBatch("warframe", "restorable", "{}", 1));
+            await source.BackupAsync(backup);
+        }
+        await using var target = new SyncDatabase(active);
+        await target.PublishAsync(new SyncBatch("warframe", "old", "{}", 1));
+        await target.RestoreAsync(backup);
+
+        var status = await target.GetStatusAsync("warframe");
+        Assert.Equal("restorable", status!.ActiveContentHash);
+    }
+
+    [Fact]
     public async Task HostRecordsFailureWithoutReplacingActiveRevision()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
