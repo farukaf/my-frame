@@ -31,6 +31,31 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task RejectsDatabaseSchemaNewerThanThisBuildWithoutResettingIt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-future-{Guid.NewGuid():N}");
+        var path = Path.Combine(root, "future.db");
+        Directory.CreateDirectory(root);
+        await using (var connection = new SqliteConnection($"Data Source={path}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL); INSERT INTO schema_migrations(version, applied_at) VALUES (99, 'future'); CREATE TABLE sentinel(value TEXT NOT NULL); INSERT INTO sentinel(value) VALUES ('keep');";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        await using var db = new SyncDatabase(path);
+        var error = await Assert.ThrowsAsync<NotSupportedException>(() => db.InitializeAsync());
+        Assert.Equal("SYNC_SCHEMA_NEWER", error.Message);
+
+        await using var verify = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        await verify.OpenAsync();
+        await using var check = verify.CreateCommand();
+        check.CommandText = "SELECT value FROM sentinel;";
+        Assert.Equal("keep", await check.ExecuteScalarAsync());
+    }
+
+    [Fact]
     public async Task InitializesIdempotentlyAndPublishesStatus()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
