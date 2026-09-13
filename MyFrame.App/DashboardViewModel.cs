@@ -17,6 +17,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly LocalSettings _localSettings;
     private readonly SyncStatusReader _syncStatusReader;
     private readonly CollectorCaptureInboxService _collectorCaptureInbox;
+    private readonly CollectorCaptureInboxWatcher _collectorCaptureWatcher;
     private bool _initialized;
     private CancellationTokenSource? _settingsDebounce;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
@@ -27,7 +28,8 @@ public partial class DashboardViewModel : ObservableObject
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
-        SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox)
+        SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox,
+        CollectorCaptureInboxWatcher collectorCaptureWatcher)
     {
         _service = service;
         _logger = logger;
@@ -36,6 +38,8 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings = localSettings;
         _syncStatusReader = syncStatusReader;
         _collectorCaptureInbox = collectorCaptureInbox;
+        _collectorCaptureWatcher = collectorCaptureWatcher;
+        _collectorCaptureWatcher.CaptureDetected += OnCollectorCaptureDetected;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
         UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
@@ -75,6 +79,8 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
     [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
+    [ObservableProperty] public partial string CollectorCaptureNotice { get; set; } = "";
+    [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
@@ -125,6 +131,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         if (_initialized) return;
         _initialized = true;
+        _collectorCaptureWatcher.Start();
         _logger.LogInformation("Dashboard view initialized");
         await RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
@@ -174,6 +181,8 @@ public partial class DashboardViewModel : ObservableObject
         try
         {
             var result = await _collectorCaptureInbox.ImportAsync(true);
+            CollectorCaptureNotice = "";
+            CollectorCaptureNoticeVisible = false;
             CollectorCaptureMessage = $"Encontradas {result.Discovered:N0}; novas {result.Imported:N0}; já publicadas {result.AlreadyPublished:N0}; rejeitadas {result.Rejected:N0}.";
             await RefreshSyncStatusAsync();
         }
@@ -187,6 +196,16 @@ public partial class DashboardViewModel : ObservableObject
             AllowCollectorRawPayload = false;
             IsImportingCollectorCaptures = false;
         }
+    }
+
+    private void OnCollectorCaptureDetected(object? sender, EventArgs args)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            CollectorCaptureNotice = "Nova captura detectada. Revise e importe com consentimento explícito.";
+            CollectorCaptureNoticeVisible = true;
+            await RefreshSyncStatusAsync();
+        });
     }
 
     [RelayCommand]

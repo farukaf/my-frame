@@ -32,6 +32,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<SyncStatusReader>();
         builder.Services.AddSingleton<CollectorCaptureInboxService>();
+        builder.Services.AddSingleton<CollectorCaptureInboxWatcher>();
         builder.Services.AddSingleton<WindowPlacementService>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
