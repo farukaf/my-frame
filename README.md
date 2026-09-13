@@ -111,6 +111,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F18 — integração da inbox no aplicativo](docs/validacoes/2026-09-13-f18.md)
 - [Validação F19 — falhas da inbox persistidas no SQLite](docs/validacoes/2026-09-13-f19.md)
 - [Validação F20 — status da inbox no MCP](docs/validacoes/2026-09-13-f20.md)
+- [Validação F119 — App e MCP no mesmo SQLite](docs/validacoes/2026-09-13-f119.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
