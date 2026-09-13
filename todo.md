@@ -176,6 +176,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F137: compartilhar orquestração Public Export entre App e CLI ([evidências](docs/validacoes/2026-09-13-f137.md)).
 - [x] F138: compartilhar orquestração World State entre App e CLI ([evidências](docs/validacoes/2026-09-13-f138.md)).
 - [x] F139: oferecer sincronização conjunta com resultado por fonte ([evidências](docs/validacoes/2026-09-13-f139.md)).
+- [x] F140: documentar agendamento Windows sem instalação automática ([evidências](docs/validacoes/2026-09-13-f140.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
