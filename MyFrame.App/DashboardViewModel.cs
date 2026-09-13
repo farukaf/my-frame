@@ -15,6 +15,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly IAlecaFramePath _alecaPath;
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
+    private readonly SyncStatusReader _syncStatusReader;
     private bool _initialized;
     private CancellationTokenSource? _settingsDebounce;
     private IReadOnlyList<CollectionGoal> _allCollection = [];
@@ -24,13 +25,15 @@ public partial class DashboardViewModel : ObservableObject
     private IReadOnlyList<SurplusRecommendation> _allSurplus = [];
 
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
-        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings)
+        IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
+        SyncStatusReader syncStatusReader)
     {
         _service = service;
         _logger = logger;
         _alecaPath = alecaPath;
         _directorySettings = directorySettings;
         _localSettings = localSettings;
+        _syncStatusReader = syncStatusReader;
         AlecaFrameDirectory = alecaPath.DirectoryPath;
         DucatsPerPlatinum = localSettings.DucatsPerPlatinum;
         UnvaultedPrimeSetsToReserve = localSettings.UnvaultedPrimeSetsToReserve;
@@ -62,6 +65,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool RelicsVisible { get; set; }
     [ObservableProperty] public partial bool SurplusVisible { get; set; }
     [ObservableProperty] public partial bool SettingsVisible { get; set; }
+    [ObservableProperty] public partial bool SyncStatusVisible { get; set; }
+    [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
+    [ObservableProperty] public partial string SyncStatusMessage { get; set; } = "Status not loaded.";
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
@@ -100,6 +106,7 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<SaleRecommendation> Sales { get; } = [];
     public ObservableCollection<RelicRecommendation> Relics { get; } = [];
     public ObservableCollection<SurplusRecommendation> Surplus { get; } = [];
+    public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
     public IReadOnlyList<string> CollectionFilters { get; } = ["In progress", "All", "Not owned", "Owned", "Mastered", "Prime only"];
     public IReadOnlyList<string> CollectionSorts { get; } = ["Closest to completion", "Name", "Category", "Least progress"];
     public IReadOnlyList<string> SalesFilters { get; } = ["All recommendations", "Keep", "Platinum", "Ducats", "Existing orders", "Vaulted items"];
@@ -112,6 +119,7 @@ public partial class DashboardViewModel : ObservableObject
         if (_initialized) return;
         _initialized = true;
         _logger.LogInformation("Dashboard view initialized");
+        await RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
         if (directoryError is not null)
         {
@@ -122,6 +130,27 @@ public partial class DashboardViewModel : ObservableObject
             return;
         }
         await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task RefreshSyncStatusAsync()
+    {
+        if (IsLoadingSyncStatus) return;
+        IsLoadingSyncStatus = true;
+        SyncStatusMessage = "Reading the shared data store…";
+        try
+        {
+            var rows = await _syncStatusReader.ReadAsync();
+            SyncSources.Clear();
+            foreach (var row in rows) SyncSources.Add(row);
+            SyncStatusMessage = "Read-only view of the shared My Frame SQLite store.";
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Sync status read failed");
+            SyncStatusMessage = "Unable to read synchronization status.";
+        }
+        finally { IsLoadingSyncStatus = false; }
     }
 
     [RelayCommand]
@@ -182,6 +211,7 @@ public partial class DashboardViewModel : ObservableObject
         RelicsVisible = section == "Relics";
         SurplusVisible = section == "Surplus";
         SettingsVisible = section == "Settings";
+        SyncStatusVisible = section == "SyncStatus";
     }
 
     // Runs both for a published snapshot and for the cheap progress ticks in between, so the

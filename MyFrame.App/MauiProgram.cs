@@ -29,6 +29,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
+        builder.Services.AddSingleton<SyncStatusReader>();
         builder.Services.AddSingleton<WindowPlacementService>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
