@@ -29,11 +29,14 @@ if (-not (Test-Path -LiteralPath $ResultsDirectory -PathType Container)) {
     throw "Diretório de resultados não encontrado: $ResultsDirectory"
 }
 
+$caseIds = @{}
+foreach ($case in $cases) { $caseIds[[string]$case.id] = $true }
 $resultFiles = @(Get-ChildItem -LiteralPath $ResultsDirectory -Filter '*.json' -File)
 $byId = @{}
 foreach ($file in $resultFiles) {
     $result = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
     if ([string]::IsNullOrWhiteSpace([string]$result.caseId)) { throw "Resultado sem caseId: $($file.Name)" }
+    if (-not $caseIds.ContainsKey([string]$result.caseId)) { throw "Resultado desconhece caseId oficial: $($result.caseId)" }
     if ($byId.ContainsKey([string]$result.caseId)) { throw "Resultado duplicado: $($result.caseId)" }
     foreach ($field in @('snapshotId', 'sourceRevision', 'toolCalls', 'sources', 'coverage', 'criticalFailures', 'model', 'skillVersion', 'latencyMs')) {
         if ($null -eq $result.$field) { throw "Resultado $($file.Name) sem campo '$field'." }
@@ -45,6 +48,9 @@ foreach ($file in $resultFiles) {
         throw "Resultado $($file.Name) possui identidade/revisão/modelo incompletos."
     }
     if (@($result.toolCalls).Count -eq 0) { throw "Resultado $($file.Name) não registrou chamadas MCP." }
+    foreach ($call in @($result.toolCalls)) {
+        if ([string]::IsNullOrWhiteSpace([string]$call.name)) { throw "Resultado $($file.Name) possui chamada MCP sem nome." }
+    }
     if (-not ($result.latencyMs -is [int] -or $result.latencyMs -is [long] -or $result.latencyMs -is [double] -or $result.latencyMs -is [decimal]) -or [double]$result.latencyMs -lt 0) {
         throw "Resultado $($file.Name) possui latencyMs inválido."
     }
