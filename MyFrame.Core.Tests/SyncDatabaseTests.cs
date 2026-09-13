@@ -81,14 +81,19 @@ public sealed class SyncDatabaseTests
             await command.ExecuteNonQueryAsync();
         }
 
-        await using var db = new SyncDatabase(path);
-        await db.BackupAsync(backup);
-        await db.InitializeAsync();
-        Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
-        await db.RestoreAsync(backup);
-        await db.InitializeAsync();
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.BackupAsync(backup);
+            await db.InitializeAsync();
+            Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
+        }
 
-        Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.RestoreAsync(backup);
+            await db.InitializeAsync();
+            Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
+        }
         await using var verify = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
         await verify.OpenAsync();
         await using var check = verify.CreateCommand();
