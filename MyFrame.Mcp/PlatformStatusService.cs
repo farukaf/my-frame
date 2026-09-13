@@ -5,7 +5,9 @@ namespace MyFrame.Mcp;
 
 public sealed record CapabilityDto(string Name, string State, string Detail);
 public sealed record CapabilitiesResponse(DateTimeOffset ServedAt, IReadOnlyList<CapabilityDto> Capabilities);
-public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState, DateTimeOffset? LastRunAt, string? ErrorCode);
+public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState,
+    DateTimeOffset? LastRunAt, string? ErrorCode, string? ActiveRevisionId,
+    long AcceptedRecords, long RejectedRecords);
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
 public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
     int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode);
@@ -52,8 +54,9 @@ public sealed class PlatformStatusService
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
             values.Add(status is null
-                ? new(sourceId, "not_initialized", null, null, null)
-                : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt, status.ErrorCode));
+                ? new(sourceId, "not_initialized", null, null, null, null, 0, 0)
+                : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
+                    status.ErrorCode, status.ActiveRevisionId, status.AcceptedRecords, status.RejectedRecords));
         }
         return new(DateTimeOffset.UtcNow, values);
     }
