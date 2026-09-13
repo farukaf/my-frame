@@ -171,6 +171,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F176 — instalação limpa e upgrade side-by-side do pacote F175](docs/validacoes/2026-09-13-f176.md)
 - [Validação F177 — prontidão dos clientes MCP](docs/validacoes/2026-09-13-f177.md)
 - [Validação F178 — diagnóstico de caminho do servidor MCP](docs/validacoes/2026-09-13-f178.md)
+- [Validação F179 — regressão após diagnóstico de clientes MCP](docs/validacoes/2026-09-13-f179.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
