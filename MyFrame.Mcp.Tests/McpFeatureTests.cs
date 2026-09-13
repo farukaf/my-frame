@@ -257,7 +257,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                 DateTimeOffset.UtcNow.AddMinutes(55), [new WorldStateJob("job-f33", "Sample bounty", null, 3,
                     [100], [new WorldStateReward("Endo", 50, 100, "Common")])]);
             var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
-                [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true, new Dictionary<string, InventoryFieldState>());
+                [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true,
+                new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved });
             await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1));
         }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
@@ -335,6 +336,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var worldStateJson = JsonSerializer.Serialize(worldStateResult.StructuredContent);
         Assert.Contains("cetusCycle", worldStateJson);
         Assert.Contains("Entrati", worldStateJson);
+        Assert.Contains("motherTokens", worldStateJson);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),

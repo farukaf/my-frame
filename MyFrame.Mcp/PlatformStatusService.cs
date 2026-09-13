@@ -30,7 +30,8 @@ public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string 
     DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties);
 public sealed record WorldStateCycleDto(string Name, string? State, DateTimeOffset? Activation, DateTimeOffset? Expiry);
 public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, DateTimeOffset? LastAttemptAt,
-    string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles);
+    string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles,
+    IReadOnlyDictionary<string, string> Coverage);
 
 public sealed class PlatformStatusService
 {
@@ -190,6 +191,7 @@ public sealed class PlatformStatusService
         var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
         var cycles = await database.GetCurrentWorldStateCyclesAsync(cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync("worldstate-pc", cancellationToken);
         var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode,
             bounties.Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
@@ -198,6 +200,7 @@ public sealed class PlatformStatusService
                 bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
                         new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
-            cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray());
+            cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray(),
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal));
     }
 }
