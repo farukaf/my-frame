@@ -328,6 +328,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
         Assert.Contains("activeRevisionId", syncStatusJson);
         Assert.Contains("acceptedRecords", syncStatusJson);
+        Assert.Contains("warframe-market", syncStatusJson);
         var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);
         Assert.Contains("available", bountiesJson);
         Assert.Contains("Entrati", bountiesJson);
