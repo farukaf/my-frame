@@ -150,6 +150,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F155 — regressão após os fluxos locais](docs/validacoes/2026-09-13-f155.md)
 - [Validação F156 — busca MCP de referências importadas](docs/validacoes/2026-09-13-f156.md)
 - [Validação F157 — importação operacional de referências](docs/validacoes/2026-09-13-f157.md)
+- [Validação F158 — skill de pesquisa atribuída](docs/validacoes/2026-09-13-f158.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)

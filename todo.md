@@ -193,6 +193,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F155: executar regressão completa após os fluxos locais ([evidências](docs/validacoes/2026-09-13-f155.md)).
 - [x] F156: expor busca MCP de referências Wiki/Overframe importadas com atribuição ([evidências](docs/validacoes/2026-09-13-f156.md)).
 - [x] F157: importar referências validadas pelo Sync CLI com hash e idempotência ([evidências](docs/validacoes/2026-09-13-f157.md)).
+- [x] F158: criar skill de pesquisa atribuída para Wiki/Overframe ([evidências](docs/validacoes/2026-09-13-f158.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
