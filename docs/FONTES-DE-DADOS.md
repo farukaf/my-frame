@@ -29,11 +29,20 @@ documentação e versões antes do desenvolvimento: esta pesquisa não congela A
 | OW2 | [Warframe GEP — Electron](https://dev.overwolf.com/ow-electron/live-game-data-gep/supported-games/warframe/) | Mesmos domínios, envelope diferente do Native. Escolher runtime e testar callbacks reais; não reutilizar envelopes sem adaptação. |
 | OW3 | [Overwolf events sample app](https://github.com/overwolf/events-sample-app) | Repositório oficial de exemplo para começar o spike. Não comprova distribuição do nosso app nem todos os campos de Warframe. |
 | OW4 | [Verifying events for your app](https://dev.overwolf.com/ow-native/live-game-data-gep/verifying-events-for-your-app/) | Referência de verificação da disponibilidade dos eventos; embasar status e diagnóstico do coletor. |
+| OW5 | [Manifesto Native](https://dev.overwolf.com/ow-native/reference/manifest/manifest-json/) e [validação](https://dev.overwolf.com/ow-native/reference/manifest/validate-your-manifest-json) | `game_events` deve declarar o jogo; o schema oficial é a fonte para validar `manifest.json`. A extensão local requer fluxo de desenvolvimento Overwolf e usuário autorizado. |
+| OW6 | [overwolf.games.events](https://dev.overwolf.com/ow-native/reference/games/events/) e [overwolf.games](https://dev.overwolf.com/ow-native/reference/games/ow-games/) | O coletor Native usa `onInfoUpdates2`, `setRequiredFeatures`, `getInfo`, `onError`, `onGameInfoUpdated` e `getRunningGameInfo2`. Eventos de estado do jogo não são os mesmos que eventos GEP em tempo real. |
+| OW7 | [overwolf.io](https://dev.overwolf.com/ow-native/reference/io/ow-io/) e [extensions.io](https://dev.overwolf.com/ow-native/reference/extensions/io-api/) | O transporte F1 usa escrita explícita em pasta escolhida; marker/hash só fica pronto após o corpo. Não é sincronização automática nem autenticação. |
 
 Os exemplos de `inventory` não constituem schema exaustivo. `highlighted` mostra
 identidade do item e `riven_details`, mas array vazio não demonstra estrutura dos
 atributos de Riven. Não há eventos específicos documentados nessas páginas para
 início/fim de missão, dano, kills, habilidades ou conclusão de bounty.
+
+Implementação inicial em `MyFrame.Collector.Overwolf` usa Native, jogo 8954 e features
+sem chat. A extensão exporta diagnóstico sanitizado por padrão; inventário bruto só
+é copiado após consentimento explícito. `completeness` permanece `unverified` até a
+homologação comparar o evento com o Arsenal. O verificador .NET rejeita marker/body
+incompleto ou adulterado e nunca publica a captura.
 
 Pendências F1: acesso real, requisitos de aprovação/distribuição, transporte local,
 snapshot completo versus fragmento/delta, eventos perdidos e cobertura por campo.
