@@ -20,6 +20,7 @@ public sealed class SyncDatabase : IAsyncDisposable
     {
         await using var connection = await OpenAsync(SqliteOpenMode.ReadWriteCreate, cancellationToken);
         await ExecuteAsync(connection, "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
+        await EnsureSchemaCompatibilityAsync(connection, cancellationToken);
         await ExecuteAsync(connection, """
             CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS sources(source_id TEXT PRIMARY KEY, kind TEXT NOT NULL, display_name TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
@@ -41,7 +42,6 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
-        await EnsureSchemaCompatibilityAsync(connection, cancellationToken);
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -54,6 +54,8 @@ public sealed class SyncDatabase : IAsyncDisposable
         CancellationToken cancellationToken)
     {
         await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations' LIMIT 1;";
+        if (await command.ExecuteScalarAsync(cancellationToken) is null) return;
         command.CommandText = "SELECT MAX(version) FROM schema_migrations;";
         var value = await command.ExecuteScalarAsync(cancellationToken);
         if (value is not null && value is not DBNull && Convert.ToInt32(value) > SchemaVersion)
