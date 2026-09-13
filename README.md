@@ -181,6 +181,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F88 — detecção explícita de Mother Token](docs/validacoes/2026-09-13-f88.md)
 - [Validação F89 — leitura concorrente app/MCP](docs/validacoes/2026-09-13-f89.md)
 - [Validação F90 — skill de farm com procedência de fonte](docs/validacoes/2026-09-13-f90.md)
+- [Validação F91 — skill de builds com procedência do arsenal](docs/validacoes/2026-09-13-f91.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
