@@ -61,6 +61,42 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task LegacyMigrationCanBeRolledBackFromBackupAndReapplied()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-legacy-rollback-{Guid.NewGuid():N}");
+        var path = Path.Combine(root, "legacy.db");
+        var backup = Path.Combine(root, "backup", "legacy.db");
+        Directory.CreateDirectory(root);
+
+        await using (var connection = new SqliteConnection($"Data Source={path}"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE sources(source_id TEXT PRIMARY KEY, kind TEXT NOT NULL, display_name TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+                CREATE TABLE source_revisions(revision_id TEXT PRIMARY KEY, source_id TEXT NOT NULL, content_hash TEXT NOT NULL, payload_json TEXT NOT NULL, record_count INTEGER NOT NULL, state TEXT NOT NULL, retrieved_at TEXT NOT NULL, published_at TEXT);
+                INSERT INTO sources(source_id, kind, display_name, created_at) VALUES ('legacy', 'fixture', 'Legacy', '2026-09-13T12:00:00Z');
+                INSERT INTO source_revisions(revision_id, source_id, content_hash, payload_json, record_count, state, retrieved_at, published_at) VALUES ('legacy-revision', 'legacy', 'legacy-hash', '{}', 0, 'active', '2026-09-13T12:00:00Z', '2026-09-13T12:00:00Z');
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        await using var db = new SyncDatabase(path);
+        await db.BackupAsync(backup);
+        await db.InitializeAsync();
+        Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
+        await db.RestoreAsync(backup);
+        await db.InitializeAsync();
+
+        Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
+        await using var verify = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        await verify.OpenAsync();
+        await using var check = verify.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM source_revisions WHERE revision_id='legacy-revision';";
+        Assert.Equal(1L, (long)(await check.ExecuteScalarAsync())!);
+    }
+
+    [Fact]
     public async Task RejectsDatabaseSchemaNewerThanThisBuildWithoutResettingIt()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-future-{Guid.NewGuid():N}");
