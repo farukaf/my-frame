@@ -53,7 +53,15 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Optional source array filter, such as mods, upgrades, or RawUpgrades.")] string? sourceField = null,
         [Description("Maximum number of entries from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetInventoryUpgradesAsync(
-            ownerInstanceId, sourceField, limit, cancellationToken);
+        ownerInstanceId, sourceField, limit, cancellationToken);
+
+    [McpServerTool(Name = "get_loadout", Title = "Get equipment loadouts", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns each observed equipment instance together with its observed rank/configuration and explicitly attributed mods/upgrades. Missing relations remain empty or unknown; no build compatibility is inferred.")]
+    public Task<IReadOnlyList<LoadoutDto>> GetLoadout(
+        [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
+        [Description("Maximum number of loadouts from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetLoadoutsAsync(typeId, limit, cancellationToken);
 
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]

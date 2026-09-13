@@ -19,7 +19,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -264,6 +264,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var equipmentResult = await client.CallToolAsync("get_equipment");
         var modsResult = await client.CallToolAsync("get_mods",
             new Dictionary<string, object?> { ["ownerInstanceId"] = "instance-f33" });
+        var loadoutResult = await client.CallToolAsync("get_loadout",
+            new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -271,7 +273,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(15, tools.Count);
+        Assert.Equal(16, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
@@ -292,6 +294,9 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotEqual(true, modsResult.IsError);
         Assert.NotNull(modsResult.StructuredContent);
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(modsResult.StructuredContent));
+        Assert.NotEqual(true, loadoutResult.IsError);
+        Assert.NotNull(loadoutResult.StructuredContent);
+        Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
