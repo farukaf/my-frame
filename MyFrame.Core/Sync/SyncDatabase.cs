@@ -5,7 +5,7 @@ namespace MyFrame.Core.Sync;
 
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -31,7 +31,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
             CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, aliases_json TEXT NOT NULL DEFAULT '{}', PRIMARY KEY(revision_id, unique_name));
             CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
-            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot');
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -45,6 +45,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "public_export_items", "aliases_json", "TEXT NOT NULL DEFAULT '{}'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "capture_mode", "TEXT NOT NULL DEFAULT 'snapshot'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -374,7 +375,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             }
             if (inventory is { } data)
             {
-                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode) VALUES ($revision, $session, $event, $sequence, $completeness, $mode);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode));
                 foreach (var equipment in data.Projection.Equipment)
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
                 for (var index = 0; index < data.Projection.Stackables.Count; index++)
