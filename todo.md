@@ -82,6 +82,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F42: ligar cliente World State ao SyncHost e publicar revisão validada ([evidências](docs/validacoes/2026-09-13-f42.md)).
 - [x] F43: resolver índice Public Export antes de baixar e publicar documento ([evidências](docs/validacoes/2026-09-13-f43.md)).
 - [x] F44: preservar jobs e recompensas na leitura SQLite do World State ([evidências](docs/validacoes/2026-09-13-f44.md)).
+- [x] F45: expor bounties ativas e recompensas no MCP ([evidências](docs/validacoes/2026-09-13-f45.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
