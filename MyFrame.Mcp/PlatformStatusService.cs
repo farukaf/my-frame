@@ -17,6 +17,8 @@ public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, in
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
     string? UpgradeId, int? Rank);
+public sealed record LoadoutDto(string InstanceId, string? TypeId, int? Rank, string? ConfigJson,
+    string RankState, string ConfigState, IReadOnlyList<InventoryUpgradeDto> Upgrades);
 
 public sealed class PlatformStatusService
 {
@@ -122,6 +124,28 @@ public sealed class PlatformStatusService
             .Take(limit)
             .Select(item => new InventoryUpgradeDto(item.OwnerInstanceId, item.SourceField,
                 item.UpgradeId, item.Rank))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<LoadoutDto>> GetLoadoutsAsync(
+        string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
+        var upgrades = await database.GetInventoryUpgradesAsync(cancellationToken);
+        return equipment
+            .Where(item => string.IsNullOrWhiteSpace(typeId) ||
+                string.Equals(item.TypeId, typeId, StringComparison.OrdinalIgnoreCase))
+            .Take(limit)
+            .Select(item => new LoadoutDto(item.InstanceId, item.TypeId, item.Rank, item.ConfigJson,
+                item.RankState.ToString(), item.ConfigState.ToString(), upgrades
+                    .Where(upgrade => string.Equals(upgrade.OwnerInstanceId, item.InstanceId, StringComparison.Ordinal))
+                    .Select(upgrade => new InventoryUpgradeDto(upgrade.OwnerInstanceId, upgrade.SourceField,
+                        upgrade.UpgradeId, upgrade.Rank))
+                    .ToArray()))
             .ToArray();
     }
 }
