@@ -309,6 +309,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F271: atualizar e verificar Codex/Claude contra o MCP distribuído 0.0.24 ([evidências](docs/validacoes/2026-09-14-f271.md)).
 - [x] F272: executar smoke real Codex/Claude no MCP 0.0.24 com ferramenta read-only ([evidências](docs/validacoes/2026-09-14-f272.md)).
 - [x] F273: orientar skills sobre histórico/diferenças de inventário e estados parciais ([evidências](docs/validacoes/2026-09-14-f273.md)).
+- [x] F274: validar get_inventory_changes em Codex e Claude reais ([evidências](docs/validacoes/2026-09-14-f274.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
