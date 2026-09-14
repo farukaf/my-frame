@@ -43,6 +43,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F219: regressão da solução após cobertura de aquisição](docs/validacoes/2026-09-13-f219.md)
 - [F220: reconciliação do plano e pendências externas](docs/validacoes/2026-09-14-f220.md)
 - [Contrato atual do coletor Overwolf](docs/COLETOR-OVERWOLF.md)
+- [F222: diagnóstico sanitizado na UI](docs/validacoes/2026-09-14-f222.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

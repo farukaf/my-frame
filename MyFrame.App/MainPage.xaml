@@ -200,7 +200,10 @@
                             <Label Text="Synchronization status" Style="{StaticResource Title}" />
                             <Label Text="Read-only health of the shared SQLite data store used by My Frame and MCP." TextColor="#8995A8" />
                         </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="Refresh status" Command="{Binding RefreshSyncStatusCommand}" BackgroundColor="#167C70" TextColor="White" />
+                        <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                            <Button Text="Refresh status" Command="{Binding RefreshSyncStatusCommand}" BackgroundColor="#167C70" TextColor="White" />
+                            <Button Text="Copy diagnostics" Command="{Binding CopySyncDiagnosticsCommand}" BackgroundColor="#33415C" TextColor="White" />
+                        </HorizontalStackLayout>
                     </Grid>
                     <Border Grid.Row="1" Style="{StaticResource Card}" Padding="12">
                         <HorizontalStackLayout Spacing="8">
