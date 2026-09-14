@@ -290,6 +290,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F252: atualizar skills para consultar detalhe de referência com atribuição ([evidências](docs/validacoes/2026-09-14-f252.md)).
 - [x] F253: executar regressão Core/MCP após detalhe de referências ([evidências](docs/validacoes/2026-09-14-f253.md)).
 - [x] F254: publicar 0.0.19, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f254.md)).
+- [x] F255: executar smoke real de get_reference_section em Codex e Claude ([evidências](docs/validacoes/2026-09-14-f255.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
