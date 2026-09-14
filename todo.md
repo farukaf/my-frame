@@ -33,6 +33,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F280: retornar metadados técnicos, receitas e relíquias na busca Public Export ([evidências](docs/validacoes/2026-09-14-f280.md)).
 - [x] F281: validar distribuição 0.0.26 e smoke stdio do catálogo rico ([evidências](docs/validacoes/2026-09-14-f281.md)).
 - [x] F282: consultar item Public Export sem exigir inventário Overwolf ([evidências](docs/validacoes/2026-09-14-f282.md)).
+- [x] F283: alinhar skills para escolher consulta catalog-only ou contextual ([evidências](docs/validacoes/2026-09-14-f283.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.

@@ -2,7 +2,7 @@
 name: warframe-farm
 description: Montar planos de farm e progressão rastreáveis por aquisição, atividade e inventário.
 metadata:
-  version: "4"
+  version: "5"
 ---
 
 # Farm and progression
@@ -20,7 +20,9 @@ metadata:
 ## Procedimento
 
 1. Normalize o objetivo para um `itemId` técnico e consulte posse/quantidade.
-2. Consulte `get_source_coverage("public-export")` antes de listar pré-requisitos;
+2. Se a pergunta não depender de posse, consulte `get_public_export_item` pelo
+   `itemId`, nome ou alias para obter receita e relíquias sem exigir captura
+   Overwolf. Consulte `get_source_coverage("public-export")` antes de listar pré-requisitos;
    só use componentes e relíquias quando esses campos estiverem `Known`.
    Diferencie tipo desconhecido de quantidade desconhecida.
 3. Para um item com `itemId` estável, prefira `get_acquisition` para consolidar componentes, relíquias e bounties na mesma resposta. Quando precisar explorar atividades, consulte `get_world_state` ou `get_activity` (preferencialmente com `syndicate`, `reward` e `limit` quando procurar uma recompensa específica)
