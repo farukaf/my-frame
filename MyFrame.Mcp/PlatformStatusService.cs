@@ -33,7 +33,9 @@ public sealed record InventoryChangeDto(string Kind, string Key, string Change,
 public sealed record InventoryChangesResponse(DateTimeOffset ServedAt, string State,
     string? FromRevisionId, string? ToRevisionId, IReadOnlyList<InventoryChangeDto> Items);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
-public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items);
+public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items,
+    DateTimeOffset? ServedAt = null, string? State = null, string? ActiveRevisionId = null,
+    string? ParserVersion = null);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
     string? Description, IReadOnlyDictionary<string, string> Aliases);
 public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
@@ -275,13 +277,17 @@ public sealed class PlatformStatusService
                 ["rejectedDocuments"] = rejectedState
             };
             return new(values.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString())).ToArray());
+                .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString())).ToArray(),
+                DateTimeOffset.UtcNow, rejected > 0 ? "partial" : accepted > 0 ? "available" : "not_initialized");
         }
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
+        var status = await database.GetStatusAsync(sourceId, cancellationToken);
         return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
-            .ToArray());
+            .ToArray(), DateTimeOffset.UtcNow,
+            status is null ? "not_initialized" : status.LastRunState ?? "unknown",
+            status?.ActiveRevisionId, status?.ParserVersion);
     }
 
     public async Task<PublicExportSearchResponse> SearchPublicExportAsync(
