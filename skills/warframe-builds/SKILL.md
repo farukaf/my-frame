@@ -9,7 +9,8 @@ metadata:
 
 ## Pré-condições
 
-- Execute o contrato comum em `skills/README.md`.
+- Execute o contrato comum em `../README.md` quando a skill estiver instalada
+  no diretório de skills do cliente.
 - Consulte `get_capabilities` e `get_sync_status` antes do arsenal; registre a revisão ativa e `parserVersion` de `overwolf-inventory`.
 - Consulte `get_capture_inbox_status` antes de usar o arsenal; sem
   `state=ready`, `heartbeatFresh=true` e `validMarkers>0`, qualquer posse,

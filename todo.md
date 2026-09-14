@@ -275,6 +275,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F237: executar smoke real Codex/Claude no MCP 0.0.15 ([evidências](docs/validacoes/2026-09-14-f237.md)).
 - [x] F238: corrigir roteamento/instalação das skills após smoke Mother Token ([evidências](docs/validacoes/2026-09-14-f238.md)).
 - [x] F239: reconciliar checklist de clientes reais e gate F1 ([evidências](docs/validacoes/2026-09-14-f239.md)).
+- [x] F240: incluir contrato comum no pacote instalável das skills ([evidências](docs/validacoes/2026-09-14-f240.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
