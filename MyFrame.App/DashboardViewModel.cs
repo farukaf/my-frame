@@ -329,9 +329,17 @@ public partial class DashboardViewModel : ObservableObject
         try
         {
             var status = await _collectorCaptureInbox.ReadStatusAsync();
+            var eventSummary = status.EventCounts is { Count: > 0 }
+                ? string.Join(", ", status.EventCounts.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                    .Select(pair => $"{pair.Key}={pair.Value:N0}"))
+                : "none";
+            var featureSummary = status.SupportedFeatures is { Count: > 0 }
+                ? string.Join(", ", status.SupportedFeatures)
+                : "none";
             CollectorCaptureStatusText = $"Collector: {status.State}; Overwolf {status.OverwolfRunning}; Warframe {status.WarframeRunning}; " +
                 $"heartbeat {status.HeartbeatState ?? "missing"} (fresh {status.HeartbeatFresh}); markers {status.ReadyMarkers:N0} " +
-                $"({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid).";
+                $"({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid); collector {status.CollectorState ?? "unknown"}; " +
+                $"features {featureSummary}; events {eventSummary}; last {status.LastEventFeature ?? "none"} @ {status.LastEventAt?.ToLocalTime():HH:mm:ss}.";
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
         {
