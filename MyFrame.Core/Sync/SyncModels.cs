@@ -47,3 +47,8 @@ public sealed record InventoryRevisionSummary(
     string Completeness,
     string CaptureMode,
     DateTimeOffset RetrievedAt);
+
+public sealed record InventoryRevisionData(
+    InventoryRevisionSummary Summary,
+    IReadOnlyList<InventoryEquipmentRecord> Equipment,
+    IReadOnlyList<InventoryStackableRecord> Stackables);

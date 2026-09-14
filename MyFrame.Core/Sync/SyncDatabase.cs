@@ -623,6 +623,50 @@ public sealed class SyncDatabase : IAsyncDisposable
         return result;
     }
 
+    public async Task<InventoryRevisionData?> GetInventoryRevisionDataAsync(
+        string revisionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revisionId) || !File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var summaryCommand = connection.CreateCommand();
+        summaryCommand.CommandText = """
+            SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
+                   ir.capture_mode, r.retrieved_at
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
+              AND r.revision_id=$revision LIMIT 1;
+            """;
+        summaryCommand.Parameters.AddWithValue("$revision", revisionId);
+        await using var summaryReader = await summaryCommand.ExecuteReaderAsync(cancellationToken);
+        if (!await summaryReader.ReadAsync(cancellationToken)) return null;
+        var summary = new InventoryRevisionSummary(summaryReader.GetString(0), summaryReader.GetString(1),
+            summaryReader.GetInt64(2), summaryReader.GetString(3), summaryReader.GetString(4),
+            DateTimeOffset.Parse(summaryReader.GetString(5)));
+        var equipment = new List<InventoryEquipmentRecord>();
+        await using (var equipmentCommand = connection.CreateCommand())
+        {
+            equipmentCommand.CommandText = "SELECT instance_id, type_id, rank, config_json, rank_state, config_state, raw_json FROM inventory_equipment WHERE revision_id=$revision ORDER BY instance_id;";
+            equipmentCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await equipmentCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                equipment.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetInt32(2), reader.IsDBNull(3) ? null : reader.GetString(3),
+                    (InventoryFieldState)reader.GetInt32(4), (InventoryFieldState)reader.GetInt32(5), reader.GetString(6)));
+        }
+        var stackables = new List<InventoryStackableRecord>();
+        await using (var stackableCommand = connection.CreateCommand())
+        {
+            stackableCommand.CommandText = "SELECT type_id, quantity, quantity_state, raw_json FROM inventory_stackables WHERE revision_id=$revision ORDER BY ordinal;";
+            stackableCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await stackableCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                stackables.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetInt32(1), (InventoryFieldState)reader.GetInt32(2), reader.GetString(3)));
+        }
+        return new(summary, equipment, stackables);
+    }
+
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
         string? sourceId = null, int limit = 20, CancellationToken cancellationToken = default)
     {
