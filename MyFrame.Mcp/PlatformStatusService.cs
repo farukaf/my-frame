@@ -16,7 +16,10 @@ public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string 
     int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode,
     string? ActiveCaptureMode = null, string? ActiveCompleteness = null, long? ActiveSequence = null,
     bool OverwolfRunning = false, bool WarframeRunning = false, string? HeartbeatState = null,
-    bool HeartbeatFresh = false, int ValidMarkers = 0, int InvalidMarkers = 0);
+    bool HeartbeatFresh = false, int ValidMarkers = 0, int InvalidMarkers = 0,
+    string? CollectorState = null, IReadOnlyList<string>? SupportedFeatures = null,
+    IReadOnlyDictionary<string, int>? EventCounts = null, string? LastEventFeature = null,
+    DateTimeOffset? LastEventAt = null);
 public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
@@ -140,7 +143,10 @@ public sealed class PlatformStatusService
         if (!probe.DirectoryExists)
             return new(DateTimeOffset.UtcNow, "not_initialized", 0, null, null,
                 OverwolfRunning: probe.OverwolfRunning, WarframeRunning: probe.WarframeRunning,
-                HeartbeatState: probe.HeartbeatState, HeartbeatFresh: probe.HeartbeatFresh);
+                HeartbeatState: probe.HeartbeatState, HeartbeatFresh: probe.HeartbeatFresh,
+                CollectorState: probe.CollectorState, SupportedFeatures: probe.SupportedFeatures,
+                EventCounts: probe.EventCounts, LastEventFeature: probe.LastEventFeature,
+                LastEventAt: probe.LastEventAt);
 
         var markers = Directory.EnumerateFiles(directory, "*.ready.json", SearchOption.TopDirectoryOnly).ToArray();
         DateTimeOffset? newest = null;
@@ -159,7 +165,8 @@ public sealed class PlatformStatusService
             markers.Length, newest, status?.ErrorCode, revision?.CaptureMode,
             revision?.Completeness, revision?.Sequence, probe.OverwolfRunning,
             probe.WarframeRunning, probe.HeartbeatState, probe.HeartbeatFresh,
-            probe.ValidMarkers, probe.InvalidMarkers);
+            probe.ValidMarkers, probe.InvalidMarkers, probe.CollectorState,
+            probe.SupportedFeatures, probe.EventCounts, probe.LastEventFeature, probe.LastEventAt);
     }
 
     public async Task<SyncHistoryResponse> GetSyncHistoryAsync(
