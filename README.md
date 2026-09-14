@@ -46,6 +46,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F222: diagnóstico sanitizado na UI](docs/validacoes/2026-09-14-f222.md)
 - [F223: serializer testável de diagnósticos](docs/validacoes/2026-09-14-f223.md)
 - [F224: regressão após extração dos diagnósticos](docs/validacoes/2026-09-14-f224.md)
+- [F225: probe read-only do inbox Overwolf](docs/validacoes/2026-09-14-f225.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
