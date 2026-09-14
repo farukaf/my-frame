@@ -261,6 +261,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F223: testar serializer de diagnóstico sem dados sensíveis ([evidências](docs/validacoes/2026-09-14-f223.md)).
 - [x] F224: executar regressão Core/MCP após extração dos diagnósticos ([evidências](docs/validacoes/2026-09-14-f224.md)).
 - [x] F225: adicionar probe read-only do inbox Overwolf para homologação ([evidências](docs/validacoes/2026-09-14-f225.md)).
+- [x] F226: integrar status do coletor à página de sincronização ([evidências](docs/validacoes/2026-09-14-f226.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
