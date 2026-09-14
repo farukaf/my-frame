@@ -85,6 +85,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F261: comparação segura entre snapshots do inventário](docs/validacoes/2026-09-14-f261.md)
 - [F262: distribuição 0.0.22 com comparação de inventário](docs/validacoes/2026-09-14-f262.md)
 - [F263: teste de regressão da comparação de inventário](docs/validacoes/2026-09-14-f263.md)
+- [F264: preflight reproduzível do coletor Overwolf](docs/validacoes/2026-09-14-f264.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
