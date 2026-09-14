@@ -220,7 +220,7 @@ permitir filtros e paginação previsível.
 | `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
-| `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. |
+| `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. No Public Export inclui `components`, `relics`, `marketIdentity`, `imageName` e `productCategory`. |
 | `search_public_export` | Busca local no catálogo oficial por uniqueName, nome, alias ou categoria, retornando revisão/parser/cobertura, sem rede e sem raw JSON. |
 | `search_references` | Busca referências Wiki/Overframe importadas localmente, com URL, revisão, autoria/licença e marcação de conteúdo não confiável para fatos. |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
