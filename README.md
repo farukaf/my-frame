@@ -34,6 +34,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F210: probe read-only do Public Export](docs/validacoes/2026-09-13-f210.md)
 - [F211: gate read-only do probe Public Export](docs/validacoes/2026-09-13-f211.md)
 - [F212: componentes Public Export normalizados no SQLite](docs/validacoes/2026-09-13-f212.md)
+- [F213: fontes de relíquia Public Export normalizadas no SQLite](docs/validacoes/2026-09-13-f213.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
