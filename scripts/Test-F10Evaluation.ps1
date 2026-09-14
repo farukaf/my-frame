@@ -1,11 +1,13 @@
 [CmdletBinding()]
 param(
-    [string]$CasesPath = (Join-Path $PSScriptRoot '..\docs\avaliacao\f10-cases.json'),
+    [string]$CasesPath,
     [string]$ResultsDirectory
 )
 
 $ErrorActionPreference = 'Stop'
-$cases = @(Get-Content -LiteralPath $CasesPath -Raw | ConvertFrom-Json)
+if ([string]::IsNullOrWhiteSpace($CasesPath)) { $CasesPath = Join-Path $PSScriptRoot '..\docs\avaliacao\f10-cases.json' }
+$parsedCases = Get-Content -LiteralPath $CasesPath -Raw | ConvertFrom-Json
+$cases = @($parsedCases)
 if ($cases.Count -lt 3) { throw 'F10 precisa de pelo menos três casos.' }
 
 foreach ($case in $cases) {
