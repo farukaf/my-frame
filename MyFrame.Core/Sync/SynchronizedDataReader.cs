@@ -60,7 +60,7 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
     }
 }
 
-internal static class PublicExportCatalogMapper
+public static class PublicExportCatalogMapper
 {
     public static CatalogItem Map(PublicExportRecord record,
         IReadOnlyList<PublicExportComponentRow>? normalizedComponents = null,
