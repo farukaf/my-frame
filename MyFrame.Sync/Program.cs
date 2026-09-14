@@ -12,12 +12,13 @@ var worldStateFile = args.Any(argument => string.Equals(argument, "--world-state
 var overwolfInventoryDirectory = args.Any(argument => string.Equals(argument, "--overwolf-inventory-directory", StringComparison.Ordinal));
 var allowRaw = args.Any(argument => string.Equals(argument, "--allow-raw", StringComparison.Ordinal));
 var referenceFile = args.Any(argument => string.Equals(argument, "--reference-file", StringComparison.Ordinal));
+var referenceUrl = args.Any(argument => string.Equals(argument, "--reference-url", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
 var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (overwolfInventoryProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (overwolfInventoryProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (referenceUrl ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --overwolf-inventory-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --overwolf-inventory-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --reference-url <https-url> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -116,6 +117,38 @@ if (referenceFile)
         trustedForFacts = imported.Document.IsTrustedForFacts
     }));
     return 0;
+}
+
+if (referenceUrl)
+{
+    var referenceIndex = Array.FindIndex(args, argument => string.Equals(argument, "--reference-url", StringComparison.Ordinal));
+    if (referenceIndex + 1 >= args.Length || !Uri.TryCreate(args[referenceIndex + 1], UriKind.Absolute, out var sourceUri))
+    {
+        Console.Error.WriteLine("--reference-url requires an absolute HTTPS Wiki/Overframe URL.");
+        return 2;
+    }
+    using var referenceClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+    try
+    {
+        var imported = await new ReferenceSyncRunner().FetchAsync(referenceClient, sourceUri,
+            Path.Combine(MyFrameStoragePaths.RootDirectory, "references"));
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            state = imported.AlreadyImported ? "already-imported" : "imported",
+            kind = imported.Document.Kind.ToString(),
+            title = imported.Document.Title,
+            revision = imported.Document.Revision,
+            sourceUrl = imported.Document.Url,
+            storedFile = imported.StoredFile,
+            trustedForFacts = imported.Document.IsTrustedForFacts
+        }));
+        return 0;
+    }
+    catch (Exception error) when (error is HttpRequestException or InvalidDataException or TaskCanceledException)
+    {
+        Console.WriteLine(JsonSerializer.Serialize(new { state = "failed", errorCode = error.Message }));
+        return 1;
+    }
 }
 
 if (worldState)

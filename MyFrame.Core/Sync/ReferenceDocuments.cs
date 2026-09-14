@@ -24,6 +24,11 @@ public sealed record ReferenceHit(string SectionId, string? Title, string Snippe
 public static class ReferenceDocumentParser
 {
     public const int MaximumDocumentBytes = 16 * 1024 * 1024;
+    public static bool IsAllowedSourceUri(Uri uri) => uri.Scheme == Uri.UriSchemeHttps &&
+        (uri.Host.Equals("wiki.warframe.com", StringComparison.OrdinalIgnoreCase) ||
+         uri.Host.EndsWith(".wiki.warframe.com", StringComparison.OrdinalIgnoreCase) ||
+         uri.Host.Equals("overframe.gg", StringComparison.OrdinalIgnoreCase) ||
+         uri.Host.EndsWith(".overframe.gg", StringComparison.OrdinalIgnoreCase));
     public static ReferenceDocument Parse(string json, DateTimeOffset retrievedAt)
     {
         if (string.IsNullOrWhiteSpace(json) || Encoding.UTF8.GetByteCount(json) > MaximumDocumentBytes) throw new InvalidDataException("REFERENCE_DOCUMENT_TOO_LARGE");
