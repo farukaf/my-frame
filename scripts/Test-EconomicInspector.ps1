@@ -1,8 +1,16 @@
 param(
-  [string]$SyncPath = 'artifacts/MyFrame-0.0.8-win-x64/MyFrame.Sync.exe',
-  [string]$ServerPath = 'MyFrame.Mcp/bin/Debug/net10.0/win-x64/MyFrame.Mcp.exe'
+  [string]$SyncPath,
+  [string]$ServerPath
 )
 $ErrorActionPreference='Stop'
+if ([string]::IsNullOrWhiteSpace($SyncPath) -or [string]::IsNullOrWhiteSpace($ServerPath)) {
+  $artifactRoot = Join-Path $PSScriptRoot '..\artifacts'
+  $latest = Get-ChildItem -LiteralPath $artifactRoot -Directory -Filter 'MyFrame-*-win-x64' |
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($null -eq $latest) { throw 'MCP_DISTRIBUTION_NOT_FOUND' }
+  if ([string]::IsNullOrWhiteSpace($SyncPath)) { $SyncPath = Join-Path $latest.FullName 'MyFrame.Sync.exe' }
+  if ([string]::IsNullOrWhiteSpace($ServerPath)) { $ServerPath = Join-Path $latest.FullName 'MyFrame.Mcp.exe' }
+}
 $sync=(Resolve-Path -LiteralPath $SyncPath).Path
 $suffix=[guid]::NewGuid().ToString('N'); $now=(Get-Date).ToUniversalTime().ToString('O'); $root=Join-Path ([IO.Path]::GetTempPath()) "my-frame-econ-$suffix"; $inv=Join-Path $root 'inventory'; $pub=Join-Path $root 'public'; New-Item -ItemType Directory -Path $inv,$pub | Out-Null
 try {
