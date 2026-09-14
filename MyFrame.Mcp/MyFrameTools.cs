@@ -75,6 +75,13 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum results from 1 to 200; default 50.")] int limit = 50,
         CancellationToken cancellationToken = default) => platform.SearchPublicExportAsync(text, category, limit, cancellationToken);
 
+    [McpServerTool(Name = "get_public_export_item", Title = "Get Public Export item", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns one normalized official Public Export item by uniqueName, name, or localized alias without requiring an inventory snapshot. Includes observed technical metadata, recipe components, relic sources and market identity; never fetches the network or returns raw JSON.")]
+    public Task<PublicExportItemResponse> GetPublicExportItem(
+        [Description("UniqueName, name, or localized alias; maximum 512 characters.")] string itemId,
+        CancellationToken cancellationToken = default) => platform.GetPublicExportItemAsync(itemId, cancellationToken);
+
     [McpServerTool(Name = "search_references", Title = "Search imported Wiki and Overframe references", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Searches explicitly imported Wiki/Overframe JSON references under the local data root. Results retain URL, revision, author/license and are untrusted for game facts; no network access occurs.")]
