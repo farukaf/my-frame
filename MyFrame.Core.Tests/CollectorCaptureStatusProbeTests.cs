@@ -64,6 +64,23 @@ public sealed class CollectorCaptureStatusProbeTests
         Assert.False(result.HeartbeatFresh);
     }
 
+    [Fact]
+    public async Task DoesNotTreatStoppedHeartbeatAsFresh()
+    {
+        using var folder = new TemporaryFolder();
+        await File.WriteAllTextAsync(Path.Combine(folder.Path, "collector-status.json"), JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1, kind = "my-frame-collector", state = "stopped",
+            timestampUtc = DateTimeOffset.UtcNow
+        }));
+
+        var result = await CollectorCaptureStatusProbe.ReadAsync(folder.Path);
+
+        Assert.Equal("idle", result.State);
+        Assert.Equal("stopped", result.HeartbeatState);
+        Assert.False(result.HeartbeatFresh);
+    }
+
     private sealed class TemporaryFolder : IDisposable
     {
         public TemporaryFolder()
