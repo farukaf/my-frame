@@ -88,6 +88,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F264: preflight reproduzível do coletor Overwolf](docs/validacoes/2026-09-14-f264.md)
 - [F265: erro sanitizado no probe Public Export](docs/validacoes/2026-09-14-f265.md)
 - [F266: distribuição 0.0.23 com probe sanitizado](docs/validacoes/2026-09-14-f266.md)
+- [F267: erro sanitizado na ingestão Wiki/Overframe](docs/validacoes/2026-09-14-f267.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

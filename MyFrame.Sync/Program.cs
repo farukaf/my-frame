@@ -151,7 +151,11 @@ if (referenceUrl)
     }
     catch (Exception error) when (error is HttpRequestException or InvalidDataException or TaskCanceledException)
     {
-        Console.WriteLine(JsonSerializer.Serialize(new { state = "failed", errorCode = error.Message }));
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            state = "failed",
+            errorCode = ReferenceFetchErrorCode(error)
+        }));
         return 1;
     }
 }
@@ -313,6 +317,14 @@ static string PublicExportProbeErrorCode(Exception error) => error switch
     InvalidDataException => "PUBLIC_EXPORT_INVALID_DATA",
     NotSupportedException => "PUBLIC_EXPORT_UNSUPPORTED",
     _ => "PUBLIC_EXPORT_PROBE_FAILED"
+};
+
+static string ReferenceFetchErrorCode(Exception error) => error switch
+{
+    HttpRequestException => "REFERENCE_NETWORK_UNAVAILABLE",
+    TaskCanceledException => "REFERENCE_TIMEOUT",
+    InvalidDataException => "REFERENCE_INVALID_DATA",
+    _ => "REFERENCE_FETCH_FAILED"
 };
 
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
