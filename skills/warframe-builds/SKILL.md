@@ -2,7 +2,7 @@
 name: warframe-builds
 description: Comparar requisitos de uma build com o arsenal observado sem inventar slots, ranks ou polaridades.
 metadata:
-  version: "4"
+  version: "5"
 ---
 
 # Build analysis
@@ -21,8 +21,11 @@ metadata:
 ## Procedimento
 
 1. Identifique o equipamento por `itemId`, nunca por nome traduzido.
-2. Consulte o inventário e o detalhe do item no mesmo `snapshotId`.
-3. Consulte `get_inventory_coverage` e `get_loadout`; registre a revisão/estado
+2. Se não houver pergunta sobre posse, rank ou loadout, consulte
+   `get_public_export_item` para obter o catálogo sem bloquear por falta de
+   captura. Caso contrário, consulte o inventário e o detalhe do item no mesmo
+   `snapshotId`.
+3. Consulte `get_inventory_coverage` e `get_loadout` quando houver inventário; registre a revisão/estado
   da fonte antes de interpretar qualquer campo. Consulte também
   `get_source_coverage("public-export")` e confirme `components`/`productCategory`
   antes de calcular requisitos de catálogo. Separe tipo possuído, instância,
