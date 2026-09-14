@@ -53,7 +53,8 @@ public sealed record CatalogItem(
     string? MarketSlug,
     IReadOnlyList<CatalogComponent> Components,
     IReadOnlyList<RelicSource> Relics,
-    string ItemType = "")
+    string ItemType = "",
+    string? Description = null)
 {
     public string ImageUrl => string.IsNullOrWhiteSpace(ImageName) ? "" :
         $"https://cdn.warframestat.us/img/{Uri.EscapeDataString(ImageName)}";

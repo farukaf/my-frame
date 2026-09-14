@@ -92,7 +92,8 @@ public sealed record ItemDto(
     PriceDto? Price,
     IReadOnlyList<ComponentDto> Components,
     IReadOnlyList<string> Relics,
-    IReadOnlyList<EvidenceDto> Recommendations);
+    IReadOnlyList<EvidenceDto> Recommendations,
+    string? Description = null);
 
 public sealed record EvidenceDto(string ReasonCode, string Explanation,
     IReadOnlyDictionary<string, string> Evidence);

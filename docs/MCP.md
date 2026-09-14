@@ -231,7 +231,7 @@ permitir filtros e paginação previsível.
 | `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, validade e cobertura do World State; pode filtrar texto da recompensa. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
 | `search_inventory` | Busca inventário agregado suportado por texto, tipo, categoria, quantidade conhecida e estado built/stackable. |
-| `get_item` | Detalhe por `itemId`, com posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
+| `get_item` | Detalhe por `itemId`, com descrição atribuída do catálogo, posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
 | `list_collection` | Lista coleção por estado, Prime, vaulted, categoria e progresso. |
 | `list_farm` | Lista metas por texto, `targetItemId`, vaulted e unidades/tipos de peças faltantes; custos com cobertura. |
 | `list_sales` | Lista decisões de manter, vender ou trocar, incluindo reservas e justificativa. |

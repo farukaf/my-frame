@@ -243,6 +243,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F205: recompilar e testar pacote distribuível após F202–F204 ([evidências](docs/validacoes/2026-09-13-f205.md)).
 - [x] F206: documentar campos ricos de cobertura no contrato MCP ([evidências](docs/validacoes/2026-09-13-f206.md)).
 - [x] F207: exibir cobertura por fonte na página de status do App ([evidências](docs/validacoes/2026-09-13-f207.md)).
+- [x] F208: projetar descrição atribuída no detalhe `get_item` ([evidências](docs/validacoes/2026-09-13-f208.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

@@ -80,7 +80,8 @@ internal static class PublicExportCatalogMapper
                 String(root, "marketSlug"),
                 components,
                 relics,
-                String(root, "itemType") ?? "");
+                String(root, "itemType") ?? "",
+                record.Description ?? String(root, "description"));
         }
         catch (JsonException) { return Minimal(record); }
     }
