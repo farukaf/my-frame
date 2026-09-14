@@ -7,6 +7,9 @@ $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($SkillsRoot)) { $SkillsRoot = Join-Path $PSScriptRoot '..\skills' }
 $root = (Resolve-Path -LiteralPath $SkillsRoot).Path
 $common = Get-Content -LiteralPath (Join-Path $root 'README.md') -Raw
+if ($common -notmatch '\(v5,') {
+    throw 'Skills README must advertise the current skill version 5.'
+}
 if ($common -notmatch 'get_capture_inbox_status' -or
     $common -notmatch 'heartbeatFresh' -or
     $common -notmatch 'validMarkers') {

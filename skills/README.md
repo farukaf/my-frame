@@ -35,6 +35,6 @@ do jogador, use `get_public_export_item` por uniqueName, nome ou alias; ele não
 exige inventário. Use `get_item` apenas quando a resposta precisar combinar
 catálogo com posse, loadout ou recomendações.
 
-Skills disponíveis: `warframe-builds`, `warframe-farm` (v4, World State com
+Skills disponíveis: `warframe-builds`, `warframe-farm` (v5, World State com
 revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
 e `warframe-research` (v2, referências importadas com atribuição e detalhe).
