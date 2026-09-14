@@ -1,10 +1,12 @@
 [CmdletBinding()]
 param(
-    [string]$CollectorRoot = (Join-Path $PSScriptRoot '..\artifacts\collector-overwolf'),
-    [string]$CaptureDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MyFrame\captures')
+    [string]$CollectorRoot,
+    [string]$CaptureDirectory
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($CollectorRoot)) { $CollectorRoot = Join-Path $PSScriptRoot '..\artifacts\collector-overwolf' }
+if ([string]::IsNullOrWhiteSpace($CaptureDirectory)) { $CaptureDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MyFrame\captures' }
 $resolvedCollector = if (Test-Path -LiteralPath $CollectorRoot) { (Resolve-Path -LiteralPath $CollectorRoot).Path } else { $null }
 $overwolf = @(Get-Process -Name Overwolf -ErrorAction SilentlyContinue)
 $warframe = @(Get-Process -Name Warframe.x64 -ErrorAction SilentlyContinue)

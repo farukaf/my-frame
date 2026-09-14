@@ -1,11 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$IconPath = (Join-Path $PSScriptRoot '..\MyFrame.Collector.Overwolf\icon.png'),
-    [string]$CollectorRoot = (Join-Path $PSScriptRoot '..\artifacts\collector-overwolf'),
-    [string]$CaptureDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MyFrame\captures')
+    [string]$IconPath,
+    [string]$CollectorRoot,
+    [string]$CaptureDirectory
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($IconPath)) { $IconPath = Join-Path $PSScriptRoot '..\MyFrame.Collector.Overwolf\icon.png' }
+if ([string]::IsNullOrWhiteSpace($CollectorRoot)) { $CollectorRoot = Join-Path $PSScriptRoot '..\artifacts\collector-overwolf' }
+if ([string]::IsNullOrWhiteSpace($CaptureDirectory)) { $CaptureDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MyFrame\captures' }
 $buildScript = Join-Path $PSScriptRoot 'Build-Collector.ps1'
 $packageTest = Join-Path $PSScriptRoot 'Test-CollectorPackage.ps1'
 $readinessTest = Join-Path $PSScriptRoot 'Test-OverwolfCollectorReadiness.ps1'
