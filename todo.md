@@ -257,6 +257,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F219: executar regressão completa após cobertura de aquisição ([evidências](docs/validacoes/2026-09-13-f219.md)).
 - [x] F220: reconciliar checklist com evidências e bloqueios externos ([evidências](docs/validacoes/2026-09-14-f220.md)).
 - [x] F221: documentar contrato e limites atuais do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f221.md)).
+- [x] F222: adicionar exportação de diagnóstico sanitizado na página de status ([evidências](docs/validacoes/2026-09-14-f222.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

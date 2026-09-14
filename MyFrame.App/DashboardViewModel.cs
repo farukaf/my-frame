@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
@@ -249,6 +250,46 @@ public partial class DashboardViewModel : ObservableObject
             SyncStatusMessage = "Unable to read synchronization status.";
         }
         finally { IsLoadingSyncStatus = false; }
+    }
+
+    [RelayCommand]
+    private async Task CopySyncDiagnosticsAsync()
+    {
+        if (IsLoadingSyncStatus) return;
+        try
+        {
+            var rows = await _syncStatusReader.ReadAsync();
+            var attempts = await _syncStatusReader.ReadRecentRunsAsync();
+            var diagnostics = new
+            {
+                schemaVersion = 1,
+                generatedAtUtc = DateTimeOffset.UtcNow,
+                sources = rows.Select(row => new
+                {
+                    sourceId = row.SourceId,
+                    state = row.State,
+                    detail = row.Detail,
+                    revision = row.Revision,
+                    lastRun = row.LastRun,
+                    parserVersion = row.ParserVersion,
+                    coverage = row.Coverage
+                }),
+                attempts = attempts.Select(attempt => new
+                {
+                    sourceId = attempt.SourceId,
+                    state = attempt.State,
+                    startedAt = attempt.StartedAt,
+                    detail = attempt.Detail
+                })
+            };
+            await Clipboard.Default.SetTextAsync(JsonSerializer.Serialize(diagnostics, new JsonSerializerOptions { WriteIndented = true }));
+            SyncStatusMessage = "Sanitized diagnostics copied. Payloads, tokens and local paths were omitted.";
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Sync diagnostics export failed");
+            SyncStatusMessage = "Unable to copy sanitized diagnostics.";
+        }
     }
 
     [RelayCommand]
