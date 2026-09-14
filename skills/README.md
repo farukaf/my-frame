@@ -16,6 +16,9 @@ Contrato comum:
 Para decisões de aquisição/build, `get_source_coverage("public-export")` é a
 verificação de cobertura do catálogo: `NotObserved` para componentes, relíquias,
 categoria ou identidade de mercado impede uma conclusão definitiva.
+Quando houver um `itemId` estável, `get_acquisition` consolida componentes,
+relíquias e bounties ativas; seu `state` e as revisões ainda precisam ser
+verificados antes de recomendar uma atividade.
 
 Skills disponíveis: `warframe-builds`, `warframe-farm` (v3, World State com
 revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)

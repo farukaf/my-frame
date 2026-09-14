@@ -14,6 +14,23 @@ namespace MyFrame.Mcp.Tests;
 public sealed class McpFeatureTests(ITestOutputHelper output)
 {
     [Fact]
+    public async Task AcquisitionReportsUnavailableSourcesWithoutInventingRows()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-acquisition-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var response = await new PlatformStatusService().GetAcquisitionAsync("/Lotus/Unknown");
+            Assert.Equal("not_initialized", response.State);
+            Assert.Empty(response.Components);
+            Assert.Empty(response.Relics);
+            Assert.Empty(response.Bounties);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
@@ -61,7 +78,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
+        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -417,7 +434,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(23, tools.Count);
+        Assert.Equal(24, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
