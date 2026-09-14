@@ -96,6 +96,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F272: smoke real Codex/Claude no MCP 0.0.24](docs/validacoes/2026-09-14-f272.md)
 - [F273: skills alinhadas ao histórico de inventário](docs/validacoes/2026-09-14-f273.md)
 - [F274: smoke real de get_inventory_changes](docs/validacoes/2026-09-14-f274.md)
+- [F275: runbook F1 confirmado pela documentação oficial do Overwolf](docs/validacoes/2026-09-14-f275.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
