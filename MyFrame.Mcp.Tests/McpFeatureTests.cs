@@ -55,6 +55,37 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task InventoryChangesCompareCompleteSnapshotsWithoutRawPayloads()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-inventory-changes-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+            {
+                var first = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                    DateTimeOffset.UtcNow.AddMinutes(-1), "native", "complete", "{}", "changes-1");
+                var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow, ContentHash = "changes-2" };
+                await database.PublishInventoryAsync(first, new InventoryProjection(
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}")],
+                    [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+                await database.PublishInventoryAsync(second, new InventoryProjection(
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}")],
+                    [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+            }
+
+            var response = await new PlatformStatusService().GetInventoryChangesAsync();
+            Assert.Equal("available", response.State);
+            Assert.Equal(2, response.Items.Count);
+            Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Change == "changed" && value.AfterRank == 20);
+            Assert.Contains(response.Items, value => value.Kind == "stackable" && value.Key == "/Lotus/New" && value.Change == "added");
+            Assert.DoesNotContain("private", JsonSerializer.Serialize(response), StringComparison.Ordinal);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
