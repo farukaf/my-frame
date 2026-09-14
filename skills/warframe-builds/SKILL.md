@@ -2,7 +2,7 @@
 name: warframe-builds
 description: Comparar requisitos de uma build com o arsenal observado sem inventar slots, ranks ou polaridades.
 metadata:
-  version: "3"
+  version: "4"
 ---
 
 # Build analysis
@@ -11,6 +11,9 @@ metadata:
 
 - Execute o contrato comum em `skills/README.md`.
 - Consulte `get_capabilities` e `get_sync_status` antes do arsenal; registre a revisão ativa e `parserVersion` de `overwolf-inventory`.
+- Consulte `get_capture_inbox_status` antes de usar o arsenal; sem
+  `state=ready`, `heartbeatFresh=true` e `validMarkers>0`, qualquer posse,
+  rank ou loadout atual deve permanecer `unverified`.
 - Se `inventory.overwolf` estiver `pending_external_validation` ou a cobertura do campo for `NotObserved`, não afirme que a build é equipável.
 - Uma referência Wiki/Overframe é inspiração comunitária e deve manter URL, revisão e `IsTrustedForFacts=false`.
 
