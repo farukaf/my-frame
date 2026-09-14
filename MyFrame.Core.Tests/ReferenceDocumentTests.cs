@@ -41,4 +41,30 @@ public sealed class ReferenceDocumentTests
         Assert.True(File.Exists(first.StoredFile));
         Assert.False(first.Document.IsTrustedForFacts);
     }
+
+    [Fact]
+    public async Task SyncRunnerFetchesOnlyAllowedAttributedReferenceAndIsIdempotent()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-sync-{Guid.NewGuid():N}");
+        var payload = "{\"kind\":\"overframe\",\"url\":\"https://overframe.gg/build/123\",\"title\":\"Example build\",\"revision\":\"rev-2\",\"license\":\"community\",\"sections\":[{\"id\":\"mods\",\"content\":\"Use Serration.\"}]}";
+        using var client = new HttpClient(new StubHandler(payload));
+        var runner = new ReferenceSyncRunner();
+
+        var first = await runner.FetchAsync(client, new Uri("https://overframe.gg/build/123"), root);
+        var second = await runner.FetchAsync(client, new Uri("https://overframe.gg/build/123"), root);
+
+        Assert.False(first.AlreadyImported);
+        Assert.True(second.AlreadyImported);
+        Assert.Equal("rev-2", first.Document.Revision);
+        await Assert.ThrowsAsync<InvalidDataException>(() => runner.FetchAsync(client, new Uri("https://example.com/x"), root));
+    }
+
+    private sealed class StubHandler(string payload) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+            });
+    }
 }
