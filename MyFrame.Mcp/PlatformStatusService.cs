@@ -170,9 +170,36 @@ public sealed class PlatformStatusService
     {
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
             throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
-        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc" };
+        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "references" };
         if (!allowed.Contains(sourceId, StringComparer.OrdinalIgnoreCase))
             throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
+        if (string.Equals(sourceId, "references", StringComparison.OrdinalIgnoreCase))
+        {
+            var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+            var accepted = 0;
+            var rejected = 0;
+            if (Directory.Exists(directory))
+                foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); accepted++; }
+                    catch (InvalidDataException) { rejected++; }
+                    catch (JsonException) { rejected++; }
+                }
+            var state = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
+            var attribution = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
+            var sections = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
+            var rejectedState = rejected > 0 ? InventoryFieldState.Invalid : InventoryFieldState.NotObserved;
+            var values = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal)
+            {
+                ["documents"] = state,
+                ["attribution"] = attribution,
+                ["sections"] = sections,
+                ["rejectedDocuments"] = rejectedState
+            };
+            return new(values.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString())).ToArray());
+        }
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
         return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
