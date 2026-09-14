@@ -63,6 +63,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F239: checklist de clientes reais reconciliado](docs/validacoes/2026-09-14-f239.md)
 - [F240: contrato comum no pacote das skills](docs/validacoes/2026-09-14-f240.md)
 - [F241: dashboard atualizado após captura](docs/validacoes/2026-09-14-f241.md)
+- [F242: distribuição 0.0.16 e clientes atualizados](docs/validacoes/2026-09-14-f242.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
