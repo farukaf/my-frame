@@ -24,8 +24,8 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F2: validar backup/reabertura e serialização do escritor em testes concorrentes.
 - [x] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
-- [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
-- [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [x] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
+- [x] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
 - [x] F276: expor cobertura Public Export para nomes localizados e metadados técnicos ([evidências](docs/validacoes/2026-09-14-f276.md)).
 - [x] F277: incluir estado, revisão e parser na resposta MCP de cobertura ([evidências](docs/validacoes/2026-09-14-f277.md)).
 - [x] F278: distribuir 0.0.25 e validar `get_source_coverage` no Codex e Claude ([evidências](docs/validacoes/2026-09-14-f278.md)).
@@ -57,7 +57,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F8: expor capacidades e status de sincronização somente leitura no MCP.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
-- [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
+- [x] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão ([evidências F182–F219](docs/validacoes/2026-09-14-f220.md)).
 - [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
 - [x] F6: resolver autenticação WFM independente ([evidências F116–F118/F168](docs/validacoes/2026-09-13-f168.md)).
 - [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
@@ -354,6 +354,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F316: fortalecer teste de normalização com fonte populada ([evidências](docs/validacoes/2026-09-14-f316.md)).
 - [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
 - [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
+- [x] F319: reconciliar marcos implementados F3/F5 no checklist ([evidências](docs/validacoes/2026-09-14-f319.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
