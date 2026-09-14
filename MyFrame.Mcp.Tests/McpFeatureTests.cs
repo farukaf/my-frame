@@ -283,6 +283,35 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task InventoryChangesRejectsDifferentContexts()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-inventory-context-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+            {
+                var first = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                    DateTimeOffset.UtcNow.AddMinutes(-1), "native", "verified", "{}", "context-1", "snapshot", "account-a");
+                var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow,
+                    ContentHash = "context-2", ContextId = "account-b" };
+                var projection = new InventoryProjection(
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null,
+                        InventoryFieldState.Known, InventoryFieldState.NotObserved, "{}")], [], [],
+                    new Dictionary<string, InventoryFieldState>());
+                await database.PublishInventoryAsync(first, projection);
+                await database.PublishInventoryAsync(second, projection);
+            }
+
+            var response = await new PlatformStatusService().GetInventoryChangesAsync();
+            Assert.Equal("context_mismatch", response.State);
+            Assert.Empty(response.Items);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");

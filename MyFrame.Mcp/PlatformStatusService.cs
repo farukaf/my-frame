@@ -221,6 +221,9 @@ public sealed class PlatformStatusService
         var before = await database.GetInventoryRevisionDataAsync(from.RevisionId, cancellationToken);
         var after = await database.GetInventoryRevisionDataAsync(to.RevisionId, cancellationToken);
         if (before is null || after is null) return new(DateTimeOffset.UtcNow, "not_found", from.RevisionId, to.RevisionId, []);
+        if (before.Summary.ContextId is not null && after.Summary.ContextId is not null &&
+            !string.Equals(before.Summary.ContextId, after.Summary.ContextId, StringComparison.Ordinal))
+            return new(DateTimeOffset.UtcNow, "context_mismatch", from.RevisionId, to.RevisionId, []);
         if (before.Summary.CaptureMode == "delta" || after.Summary.CaptureMode == "delta")
             return new(DateTimeOffset.UtcNow, "partial", from.RevisionId, to.RevisionId, []);
 

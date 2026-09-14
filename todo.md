@@ -438,3 +438,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
 - [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
 - [x] F328: distribuir 0.0.31 com contexto de inventário e validar upgrade/read-only
+- [x] F329: rejeitar comparações MCP entre contextos de inventário diferentes
