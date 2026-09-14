@@ -44,6 +44,9 @@ public sealed record PublicExportItemDto(string UniqueName, string? Name, string
 public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
     string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
     IReadOnlyList<PublicExportItemDto> Items);
+public sealed record PublicExportItemResponse(DateTimeOffset ServedAt, string State,
+    string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
+    PublicExportItemDto? Item);
 public sealed record ReferenceSearchHitDto(string Kind, string Title, string SectionId,
     string? SectionTitle, string Snippet, double Score, string Url, string Revision,
     string? License, string? Author, bool TrustedForFacts);
@@ -313,20 +316,41 @@ public sealed class PlatformStatusService
             .OrderBy(record => record.Name ?? record.UniqueName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(record => record.UniqueName, StringComparer.Ordinal)
             .Take(limit)
-            .Select(record =>
-            {
-                var item = PublicExportCatalogMapper.Map(record);
-                return new PublicExportItemDto(record.UniqueName, item.Name, item.Category,
-                    item.Description, record.Aliases, item.ProductCategory, item.ImageName,
-                    item.Masterable, item.Prime, item.Tradable, item.Vaulted, item.MarketId,
-                    item.MarketSlug, item.ItemType, item.Components, item.Relics);
-            })
+            .Select(ToPublicExportItem)
             .ToArray();
         var status = await database.GetStatusAsync("public-export", cancellationToken);
         var coverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
         return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" : status.LastRunState ?? "unknown",
             status?.ActiveRevisionId, status?.ParserVersion,
             coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal), items);
+    }
+
+    public async Task<PublicExportItemResponse> GetPublicExportItemAsync(
+        string itemId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || itemId.Length > 512)
+            throw new ArgumentException("itemId is required and limited to 512 characters.", nameof(itemId));
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var status = await database.GetStatusAsync("public-export", cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
+        var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        var normalized = itemId.Trim();
+        var match = records.FirstOrDefault(record =>
+            string.Equals(record.UniqueName, normalized, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(record.Name, normalized, StringComparison.OrdinalIgnoreCase) ||
+            record.Aliases.Values.Any(alias => string.Equals(alias, normalized, StringComparison.OrdinalIgnoreCase)));
+        return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" :
+            status.LastRunState ?? "unknown", status?.ActiveRevisionId, status?.ParserVersion,
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
+            match is null ? null : ToPublicExportItem(match));
+    }
+
+    private static PublicExportItemDto ToPublicExportItem(PublicExportRecord record)
+    {
+        var item = PublicExportCatalogMapper.Map(record);
+        return new(record.UniqueName, item.Name, item.Category, item.Description, record.Aliases,
+            item.ProductCategory, item.ImageName, item.Masterable, item.Prime, item.Tradable,
+            item.Vaulted, item.MarketId, item.MarketSlug, item.ItemType, item.Components, item.Relics);
     }
 
     public Task<ReferenceSearchResponse> SearchReferencesAsync(

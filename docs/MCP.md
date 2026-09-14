@@ -224,6 +224,7 @@ permitir filtros e paginação previsível.
 | `get_inventory_changes` | Compara duas revisões completas e retorna somente alterações de equipamento/quantidade, sem payload bruto. |
 | `get_source_coverage` | Estado, revisão/parser ativos e cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. No Public Export inclui `components`, `relics`, `marketIdentity`, `imageName`, `productCategory`, `localizedNames` e `technicalMetadata`. |
 | `search_public_export` | Busca local no catálogo oficial por uniqueName, nome, alias ou categoria, retornando revisão/parser/cobertura e metadados técnicos, componentes de receita, identidade de mercado e fontes de relíquia observadas, sem rede e sem raw JSON. |
+| `get_public_export_item` | Consulta um item Public Export por uniqueName, nome ou alias sem exigir inventário, retornando metadados normalizados e estado/revisão da fonte. |
 | `search_references` | Busca referências Wiki/Overframe importadas localmente, com URL, revisão, autoria/licença e marcação de conteúdo não confiável para fatos. |
 | `get_reference_section` | Recupera uma seção atribuída de uma referência importada, sem rede e sem aceitar URL fora das fontes permitidas. |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
