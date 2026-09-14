@@ -62,9 +62,9 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F6: resolver autenticação WFM independente ([evidências F116–F118/F168](docs/validacoes/2026-09-13-f168.md)).
 - [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
-- [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
-- [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
-- [ ] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede.
+- [x] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado ([evidências F156–F160/F248](docs/validacoes/2026-09-14-f248.md)).
+- [x] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes ([evidências F121/F220](docs/validacoes/2026-09-13-f121.md)).
+- [x] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede ([evidências F121/F304](docs/validacoes/2026-09-13-f121.md)).
 - [x] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis ([skills](skills/README.md), [evidências](docs/validacoes/2026-09-13-f9.md)).
 - [x] F10: definir casos e protocolo reproduzível de avaliação antes/depois ([fixtures](docs/avaliacao/f10-cases.json), [protocolo](docs/avaliacao/2026-09-13-f10.md)).
 - [x] F11: exibir status de sincronização SQLite em página somente leitura ([evidências](docs/validacoes/2026-09-13-f11.md)).
@@ -353,6 +353,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F315: executar runbook e polling real do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f315.md)).
 - [x] F316: fortalecer teste de normalização com fonte populada ([evidências](docs/validacoes/2026-09-14-f316.md)).
 - [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
+- [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
