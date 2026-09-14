@@ -3,9 +3,21 @@ using System.Text.Json;
 
 namespace MyFrame.Core.Sync;
 
+public sealed record PublicExportComponentRow(
+    string RevisionId,
+    string ParentUniqueName,
+    int Ordinal,
+    string UniqueName,
+    string Name,
+    int RequiredCount,
+    int Ducats,
+    bool Tradable,
+    string? ImageName,
+    string RawJson);
+
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -31,6 +43,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
             CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, aliases_json TEXT NOT NULL DEFAULT '{}', PRIMARY KEY(revision_id, unique_name));
             CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
+            CREATE TABLE IF NOT EXISTS public_export_components(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), parent_unique_name TEXT NOT NULL, ordinal INTEGER NOT NULL, unique_name TEXT NOT NULL, name TEXT NOT NULL, required_count INTEGER NOT NULL, ducats INTEGER NOT NULL, tradable INTEGER NOT NULL, image_name TEXT, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, parent_unique_name, ordinal));
+            CREATE INDEX IF NOT EXISTS ix_public_export_components_unique_name ON public_export_components(unique_name);
             CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot');
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -126,7 +140,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             foreach (var candidate in candidates)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                foreach (var table in new[] { "public_export_items", "inventory_equipment", "inventory_stackables", "inventory_unknown", "inventory_upgrades", "inventory_revisions", "worldstate_rewards", "worldstate_jobs", "worldstate_bounties", "worldstate_cycles", "worldstate_revisions" })
+                foreach (var table in new[] { "public_export_components", "public_export_items", "inventory_equipment", "inventory_stackables", "inventory_unknown", "inventory_upgrades", "inventory_revisions", "worldstate_rewards", "worldstate_jobs", "worldstate_bounties", "worldstate_cycles", "worldstate_revisions" })
                     await CommandAsync(connection, transaction, $"DELETE FROM {table} WHERE revision_id=$revision;", cancellationToken, ("$revision", candidate.RevisionId));
                 await CommandAsync(connection, transaction, "DELETE FROM source_revisions WHERE revision_id=$revision AND state='retained';", cancellationToken, ("$revision", candidate.RevisionId));
             }
@@ -179,6 +193,30 @@ public sealed class SyncDatabase : IAsyncDisposable
             records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), aliases, hasRawJson && !reader.IsDBNull(5) ? reader.GetString(5) : null));
         }
         return records;
+    }
+
+    public async Task<IReadOnlyList<PublicExportComponentRow>> GetPublicExportComponentsAsync(
+        string sourceId = "public-export", CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT c.revision_id, c.parent_unique_name, c.ordinal, c.unique_name, c.name,
+                   c.required_count, c.ducats, c.tradable, c.image_name, c.raw_json
+            FROM public_export_components c
+            JOIN source_revisions r ON r.revision_id=c.revision_id
+            WHERE r.source_id=$source AND r.state='active'
+            ORDER BY c.parent_unique_name, c.ordinal;
+            """;
+        command.Parameters.AddWithValue("$source", sourceId);
+        var result = new List<PublicExportComponentRow>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3),
+                reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6), reader.GetInt64(7) != 0,
+                reader.IsDBNull(8) ? null : reader.GetString(8), reader.GetString(9)));
+        return result;
     }
 
     public async Task<IReadOnlyList<InventoryEquipmentRecord>> GetInventoryEquipmentAsync(CancellationToken cancellationToken = default)
@@ -357,7 +395,14 @@ public sealed class SyncDatabase : IAsyncDisposable
             if (records is not null)
             {
                 foreach (var record in records)
+                {
                     await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, aliases_json, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $aliases, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$aliases", JsonSerializer.Serialize(record.Aliases)), ("$raw", (object?)record.RawJson ?? "{}"));
+                    foreach (var component in ParseComponents(record.RawJson))
+                        await CommandAsync(connection, transaction, "INSERT INTO public_export_components(revision_id, parent_unique_name, ordinal, unique_name, name, required_count, ducats, tradable, image_name, raw_json) VALUES ($revision, $parent, $ordinal, $unique, $name, $required, $ducats, $tradable, $image, $raw);", cancellationToken,
+                            ("$revision", revisionId), ("$parent", record.UniqueName), ("$ordinal", component.Ordinal), ("$unique", component.UniqueName),
+                            ("$name", component.Name), ("$required", component.RequiredCount), ("$ducats", component.Ducats),
+                            ("$tradable", component.Tradable ? 1 : 0), ("$image", (object?)component.ImageName ?? DBNull.Value), ("$raw", component.RawJson));
+                }
                 await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='public-export';", cancellationToken);
                 var catalogFields = new[]
                 {
@@ -655,5 +700,32 @@ public sealed class SyncDatabase : IAsyncDisposable
         return false;
     }
     private static DateTimeOffset? ParseDate(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : DateTimeOffset.Parse(reader.GetString(ordinal));
+    private sealed record ParsedComponent(int Ordinal, string UniqueName, string Name, int RequiredCount, int Ducats, bool Tradable, string? ImageName, string RawJson);
+    private static IReadOnlyList<ParsedComponent> ParseComponents(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return [];
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            if (!document.RootElement.TryGetProperty("components", out var values) || values.ValueKind != JsonValueKind.Array) return [];
+            var result = new List<ParsedComponent>();
+            var ordinal = 0;
+            foreach (var value in values.EnumerateArray())
+            {
+                var unique = String(value, "uniqueName") ?? String(value, "unique_name");
+                var name = String(value, "name");
+                if (string.IsNullOrWhiteSpace(unique) || string.IsNullOrWhiteSpace(name)) { ordinal++; continue; }
+                result.Add(new(ordinal++, unique, name,
+                    Math.Max(1, Int(value, "itemCount") ?? Int(value, "count") ?? 1),
+                    Math.Max(0, Int(value, "ducats") ?? 0), Bool(value, "tradable") ?? false,
+                    String(value, "imageName") ?? String(value, "image_name"), value.GetRawText()));
+            }
+            return result;
+        }
+        catch (JsonException) { return []; }
+    }
+    private static string? String(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String ? property.GetString() : null;
+    private static int? Int(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var result) ? result : null;
+    private static bool? Bool(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind is JsonValueKind.True or JsonValueKind.False ? property.GetBoolean() : null;
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
 }
