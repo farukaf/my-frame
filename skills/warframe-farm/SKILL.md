@@ -48,7 +48,8 @@ metadata:
    remoções ou alterações como completas quando as duas revisões forem
    `complete`, nunca quando a resposta estiver `partial`. Se houver `contextId`,
    use-o para confirmar que as revisões pertencem ao mesmo contexto; contexto
-   ausente não deve ser inventado.
+   ausente não deve ser inventado. Se a ferramenta retornar `context_mismatch`,
+   não compare progresso nem some alterações entre as revisões.
 
 ## Saída
 

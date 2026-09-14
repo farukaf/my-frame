@@ -52,7 +52,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_inventory_changes", Title = "Compare inventory revisions", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Compares two complete inventory snapshot revisions, including equipment configuration and attributed mods/upgrades, without exposing raw payloads. Delta captures return partial and produce no inferred additions/removals.")]
+    [Description("Compares two complete inventory snapshot revisions, including equipment configuration and attributed mods/upgrades, without exposing raw payloads. Delta captures return partial; known different contextIds return context_mismatch and no inferred changes.")]
     public Task<InventoryChangesResponse> GetInventoryChanges(
         [Description("Optional previous revision id from get_inventory_history.")] string? fromRevisionId = null,
         [Description("Optional target revision id from get_inventory_history.")] string? toRevisionId = null,
