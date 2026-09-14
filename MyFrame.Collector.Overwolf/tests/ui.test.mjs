@@ -34,6 +34,7 @@ test("UI initializes without reading collector before its constructor returns", 
     assert.equal(writes.length, 1);
     assert.equal(writes[0].path, "C:\\Users\\test\\AppData\\Local\\MyFrame\\captures\\collector-status.json");
     assert.equal(JSON.parse(writes[0].text).state, "started");
+    node("stop").onclick();
   } finally {
     for (const [key, value] of Object.entries(saved)) {
       if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
