@@ -332,6 +332,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F294: rejeitar redirecionamentos e respostas não-JSON na sincronização Wiki/Overframe ([evidências](docs/validacoes/2026-09-14-f294.md)).
 - [x] F295: aceitar media types JSON estruturados na sincronização de referências ([evidências](docs/validacoes/2026-09-14-f295.md)).
 - [x] F296: tornar o preflight Overwolf acionável com caminhos e próxima ação ([evidências](docs/validacoes/2026-09-14-f296.md)).
+- [x] F297: impedir redirect cross-host no sincronizador World State ([evidências](docs/validacoes/2026-09-14-f297.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
