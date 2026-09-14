@@ -388,7 +388,7 @@ public sealed class SyncDatabaseTests
             await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-hash", "[]", 1),
                 [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
                     new Dictionary<string, string>(),
-                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"description\":\"Observed description\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}]}" )]);
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"description\":\"Observed description\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}],\"relics\":[{\"relicName\":\"Lith A1\",\"rarity\":\"Rare\",\"chance\":0.1,\"rewardName\":\"Test Weapon\"}]}" )]);
             var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
                 DateTimeOffset.UtcNow, "native", "unverified", "{}", "inventory-hash");
             var projection = new InventoryProjection(
@@ -416,6 +416,12 @@ public sealed class SyncDatabaseTests
         Assert.Equal(2, component.RequiredCount);
         Assert.Equal(15, component.Ducats);
         Assert.True(component.Tradable);
+        var relics = await componentDb.GetPublicExportRelicsAsync();
+        var relic = Assert.Single(relics);
+        Assert.Equal("/Lotus/Weapon", relic.RewardUniqueName);
+        Assert.Equal("Lith A1", relic.RelicName);
+        Assert.Equal(0.1, relic.Chance);
+        Assert.Equal("Test Weapon", relic.RewardName);
     }
 
     [Fact]
