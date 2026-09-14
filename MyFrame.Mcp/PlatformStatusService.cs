@@ -304,6 +304,15 @@ public sealed class PlatformStatusService
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var catalogStatus = await database.GetStatusAsync("public-export", cancellationToken);
         var worldStatus = await database.GetStatusAsync("worldstate-pc", cancellationToken);
+        var catalogCoverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
+        var worldCoverage = await database.GetSourceCoverageAsync("worldstate-pc", cancellationToken);
+        var coverage = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["catalog.components"] = catalogCoverage.GetValueOrDefault("components", InventoryFieldState.NotObserved).ToString(),
+            ["catalog.relics"] = catalogCoverage.GetValueOrDefault("relics", InventoryFieldState.NotObserved).ToString(),
+            ["worldstate.bountyRewards"] = worldCoverage.GetValueOrDefault("bountyRewards", InventoryFieldState.NotObserved).ToString(),
+            ["worldstate.motherTokens"] = worldCoverage.GetValueOrDefault("motherTokens", InventoryFieldState.NotObserved).ToString()
+        };
         var items = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
         var item = items.FirstOrDefault(value => string.Equals(value.UniqueName, itemId, StringComparison.OrdinalIgnoreCase));
         if (item is null)
@@ -313,7 +322,7 @@ public sealed class PlatformStatusService
                 catalogState == "published" ? "item_not_found" : "catalog_unavailable";
             return new(DateTimeOffset.UtcNow, resultState,
                 catalogStatus?.ErrorCode, catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId,
-                itemId, null, [], [], []);
+                itemId, null, [], [], [], coverage);
         }
 
         var components = (await database.GetPublicExportComponentsAsync("public-export", cancellationToken))
@@ -338,7 +347,7 @@ public sealed class PlatformStatusService
         var state = catalogAvailable && worldAvailable ? "available" : catalogAvailable ? "partial" : "catalog_unavailable";
         return new(DateTimeOffset.UtcNow, state, worldStatus?.ErrorCode ?? catalogStatus?.ErrorCode,
             catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId, item.UniqueName, item.Name,
-            components, relics, matchedBounties);
+            components, relics, matchedBounties, coverage);
     }
 
     private static WorldStateBountyDto ToBountyDto(WorldStateBounty bounty) =>
