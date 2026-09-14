@@ -26,6 +26,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
 - [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [x] F276: expor cobertura Public Export para nomes localizados e metadados técnicos ([evidências](docs/validacoes/2026-09-14-f276.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.

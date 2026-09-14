@@ -450,6 +450,7 @@ public sealed class SyncDatabase : IAsyncDisposable
                     (Path: "uniqueName", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.UniqueName))),
                     (Path: "name", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Name))),
                     (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
+                    (Path: "localizedNames", Observed: records.Any(record => record.Aliases.Keys.Any(key => !string.Equals(key, "en", StringComparison.OrdinalIgnoreCase)))),
                     (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
                     (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
                     (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson))),
@@ -457,7 +458,9 @@ public sealed class SyncDatabase : IAsyncDisposable
                     (Path: "relics", Observed: records.Any(record => HasJsonArray(record.RawJson, "relics"))),
                     (Path: "marketIdentity", Observed: records.Any(record => HasJsonProperties(record.RawJson, "marketId", "marketSlug"))),
                     (Path: "imageName", Observed: records.Any(record => HasJsonString(record.RawJson, "imageName", "image_name"))),
-                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category")))
+                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category"))),
+                    (Path: "technicalMetadata", Observed: records.Any(record => HasAnyJsonProperty(record.RawJson,
+                        "masterable", "masterableType", "prime", "tradable", "vaulted", "itemType")))
                 };
                 foreach (var field in catalogFields)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
@@ -564,6 +567,11 @@ public sealed class SyncDatabase : IAsyncDisposable
         !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
         properties.All(property => root.TryGetProperty(property, out var value) &&
             value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
+
+    private static bool HasAnyJsonProperty(string? rawJson, params string[] properties) =>
+        !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
+        properties.Any(property => root.TryGetProperty(property, out var value) &&
+            value.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined);
 
     private static bool TryParseJson(string rawJson, out JsonElement root)
     {
