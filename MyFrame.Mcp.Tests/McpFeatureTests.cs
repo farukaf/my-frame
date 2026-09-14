@@ -55,6 +55,41 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task WorldStateQueriesExposeRevisionAndParserProvenance()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-worldstate-provenance-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var retrieved = DateTimeOffset.UtcNow;
+            var snapshot = new WorldStateSnapshot(retrieved, retrieved, "fixture", [], [],
+                "worldstate-provenance-hash", true,
+                new Dictionary<string, InventoryFieldState>
+                {
+                    ["bountyRewards"] = InventoryFieldState.Known,
+                    ["motherTokens"] = InventoryFieldState.NotObserved
+                });
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+            {
+                await database.PublishWorldStateAsync(snapshot,
+                    new SyncBatch("worldstate-pc", snapshot.ContentHash, "{}", 0, "worldstate-official-1"));
+            }
+
+            var response = await new PlatformStatusService().GetWorldStateAsync();
+            Assert.Equal("available", response.State);
+            Assert.Equal("worldstate-official-1", response.ParserVersion);
+            Assert.NotNull(response.ActiveRevisionId);
+            Assert.Equal("NotObserved", response.Coverage["motherTokens"]);
+
+            var bounties = await new PlatformStatusService().GetBountiesAsync();
+            Assert.Equal("worldstate-official-1", bounties.ParserVersion);
+            Assert.Equal(response.ActiveRevisionId, bounties.ActiveRevisionId);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task CaptureInboxStatusReturnsSanitizedCallbackDiagnostics()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
