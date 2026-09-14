@@ -59,6 +59,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F235: distribuição 0.0.15 e upgrade side-by-side](docs/validacoes/2026-09-14-f235.md)
 - [F236: smoke read-only do MCP distribuído](docs/validacoes/2026-09-14-f236.md)
 - [F237: smoke real Codex/Claude no MCP 0.0.15](docs/validacoes/2026-09-14-f237.md)
+- [F238: roteamento e instalação das skills](docs/validacoes/2026-09-14-f238.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
