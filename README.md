@@ -73,6 +73,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F249: distribuição 0.0.18 com SyncHost de referências](docs/validacoes/2026-09-14-f249.md)
 - [F250: tentativa de ingestão real da Wiki](docs/validacoes/2026-09-14-f250.md)
 - [F251: detalhe atribuído de referências no MCP](docs/validacoes/2026-09-14-f251.md)
+- [F252: skills com detalhe de referência atribuído](docs/validacoes/2026-09-14-f252.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
