@@ -13,6 +13,10 @@ Contrato comum:
 6. separar fatos observados, cálculos determinísticos, referência comunitária e hipótese;
 7. citar fonte/revisão e declarar o que falta confirmar.
 
+Para decisões de aquisição/build, `get_source_coverage("public-export")` é a
+verificação de cobertura do catálogo: `NotObserved` para componentes, relíquias,
+categoria ou identidade de mercado impede uma conclusão definitiva.
+
 Skills disponíveis: `warframe-builds`, `warframe-farm` (v3, World State com
 revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
 e `warframe-research` (v1, referências importadas com atribuição).
