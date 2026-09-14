@@ -19,7 +19,9 @@ metadata:
 1. Identifique o equipamento por `itemId`, nunca por nome traduzido.
 2. Consulte o inventário e o detalhe do item no mesmo `snapshotId`.
 3. Consulte `get_inventory_coverage` e `get_loadout`; registre a revisão/estado
-   da fonte antes de interpretar qualquer campo. Separe tipo possuído, instância,
+  da fonte antes de interpretar qualquer campo. Consulte também
+  `get_source_coverage("public-export")` e confirme `components`/`productCategory`
+  antes de calcular requisitos de catálogo. Separe tipo possuído, instância,
    rank, configuração, mods e polaridades; cada campo pode ter cobertura diferente.
    Quando necessário, use `get_mods` filtrado pela `ownerInstanceId`.
    Se a revisão estiver ausente ou o parser/source status estiver em fallback,
