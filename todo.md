@@ -59,7 +59,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
 - [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
-- [ ] F6: resolver autenticação WFM independente.
+- [x] F6: resolver autenticação WFM independente ([evidências F116–F118/F168](docs/validacoes/2026-09-13-f168.md)).
 - [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
 - [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
@@ -352,6 +352,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F314: instruir skill de farm sobre procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f314.md)).
 - [x] F315: executar runbook e polling real do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f315.md)).
 - [x] F316: fortalecer teste de normalização com fonte populada ([evidências](docs/validacoes/2026-09-14-f316.md)).
+- [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
