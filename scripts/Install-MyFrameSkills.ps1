@@ -36,4 +36,10 @@ foreach ($target in $targets) {
             Write-Output "SKILL_INSTALLED=$to"
         }
     }
+    $contract = Join-Path $target 'README.md'
+    if ($PSCmdlet.ShouldProcess($contract, 'Install common My Frame skills contract')) {
+        New-Item -ItemType Directory -Path $target -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $source 'README.md') -Destination $contract -Force
+        Write-Output "SKILLS_CONTRACT_INSTALLED=$contract"
+    }
 }
