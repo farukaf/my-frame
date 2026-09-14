@@ -90,6 +90,38 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task AcquisitionPreservesWorldStateParserProvenance()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-acquisition-provenance-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+            {
+                await database.PublishCatalogAsync(
+                    new SyncBatch("public-export", "catalog-acquisition-provenance", "[]", 1,
+                        "public-export-1"),
+                    [new PublicExportRecord("/Lotus/Test", "Test Weapon", "Weapon", null,
+                        new Dictionary<string, string> { ["en"] = "Test Weapon" }, "{\"uniqueName\":\"/Lotus/Test\"}")]);
+                var now = DateTimeOffset.UtcNow;
+                var snapshot = new WorldStateSnapshot(now, now, "fixture", [], [],
+                    "worldstate-acquisition-provenance", true,
+                    new Dictionary<string, InventoryFieldState>());
+                await database.PublishWorldStateAsync(snapshot,
+                    new SyncBatch("worldstate-pc", snapshot.ContentHash, "{}", 0,
+                        "worldstate-community-1"));
+            }
+
+            var response = await new PlatformStatusService().GetAcquisitionAsync("/Lotus/Test");
+            Assert.Equal("available", response.State);
+            Assert.Equal("worldstate-community-1", response.WorldStateParserVersion);
+            Assert.NotNull(response.WorldStateRevisionId);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task CaptureInboxStatusReturnsSanitizedCallbackDiagnostics()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
