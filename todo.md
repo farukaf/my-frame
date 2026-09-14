@@ -233,6 +233,10 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F195: concluir carregamento manual da extensão e captura real no Overwolf ([evidências](docs/validacoes/2026-09-13-f195.md)).
 - [x] F196: adicionar runbook local para validar e preparar o carregamento unpacked do coletor ([evidências](docs/validacoes/2026-09-13-f196.md)).
 - [x] F197: validar ingestão e busca local de referência Overframe com autoria/licença e isolamento de confiança ([evidências](docs/validacoes/2026-09-13-f197.md)).
+- [x] F198: corrigir endpoint versionado do Public Export e preservar `revisionTag` ([evidências](docs/validacoes/2026-09-13-f198.md)).
+- [x] F199: adicionar retry limitado para falhas transitórias do Public Export ([evidências](docs/validacoes/2026-09-13-f199.md)).
+- [x] F200: compartilhar retry entre Public Export e World State ([evidências](docs/validacoes/2026-09-13-f200.md)).
+- [x] F201: agregar documentos JSON do Public Export em uma revisão única ([evidências](docs/validacoes/2026-09-13-f201.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
