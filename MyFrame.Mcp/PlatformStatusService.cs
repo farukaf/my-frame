@@ -18,8 +18,11 @@ public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string 
 public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
+public sealed record SyncHistoryResponse(IReadOnlyList<SyncRunDto> Items);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
+public sealed record InventoryCoverageResponse(IReadOnlyList<InventoryCoverageDto> Items);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
+public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
     string? Description, IReadOnlyDictionary<string, string> Aliases);
 public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
@@ -32,10 +35,13 @@ public sealed record ReferenceSearchResponse(DateTimeOffset ServedAt, string Sta
     int Documents, int RejectedDocuments, IReadOnlyList<ReferenceSearchHitDto> Hits);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
+public sealed record InventoryEquipmentResponse(IReadOnlyList<InventoryEquipmentDto> Items);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
     string? UpgradeId, int? Rank);
+public sealed record InventoryUpgradesResponse(IReadOnlyList<InventoryUpgradeDto> Items);
 public sealed record LoadoutDto(string InstanceId, string? TypeId, int? Rank, string? ConfigJson,
     string RankState, string ConfigState, IReadOnlyList<InventoryUpgradeDto> Upgrades);
+public sealed record LoadoutResponse(IReadOnlyList<LoadoutDto> Items);
 public sealed record WorldStateRewardDto(string Item, decimal? Chance, int? Count, string? Rarity);
 public sealed record WorldStateJobDto(string Id, string? Type, string? UniqueName,
     int? MinimumMasteryRank, IReadOnlyList<int> StandingStages, IReadOnlyList<WorldStateRewardDto> Rewards);
@@ -128,27 +134,27 @@ public sealed class PlatformStatusService
             revision?.Completeness, revision?.Sequence);
     }
 
-    public async Task<IReadOnlyList<SyncRunDto>> GetSyncHistoryAsync(
+    public async Task<SyncHistoryResponse> GetSyncHistoryAsync(
         int limit = 20, string? sourceId = null, CancellationToken cancellationToken = default)
     {
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var runs = await database.GetRecentRunsAsync(sourceId, Math.Clamp(limit, 1, 100), cancellationToken);
-        return runs.Select(run => new SyncRunDto(run.RunId, run.SourceId, run.State,
+        return new(runs.Select(run => new SyncRunDto(run.RunId, run.SourceId, run.State,
             run.StartedAt, run.FinishedAt, run.RecordsReceived, run.RecordsAccepted,
-            run.RecordsRejected, run.ErrorCode)).ToArray();
+            run.RecordsRejected, run.ErrorCode)).ToArray());
     }
 
-    public async Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverageAsync(
+    public async Task<InventoryCoverageResponse> GetInventoryCoverageAsync(
         CancellationToken cancellationToken = default)
     {
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var coverage = await database.GetInventoryCoverageAsync(cancellationToken);
-        return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+        return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
-            .ToArray();
+            .ToArray());
     }
 
-    public async Task<IReadOnlyList<SourceCoverageDto>> GetSourceCoverageAsync(
+    public async Task<SourceCoverageResponse> GetSourceCoverageAsync(
         string sourceId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
@@ -158,9 +164,9 @@ public sealed class PlatformStatusService
             throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
-        return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+        return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
-            .ToArray();
+            .ToArray());
     }
 
     public async Task<PublicExportSearchResponse> SearchPublicExportAsync(
@@ -228,7 +234,7 @@ public sealed class PlatformStatusService
     private static bool Contains(string? value, string text) =>
         value?.Contains(text, StringComparison.OrdinalIgnoreCase) == true;
 
-    public async Task<IReadOnlyList<InventoryEquipmentDto>> GetInventoryEquipmentAsync(
+    public async Task<InventoryEquipmentResponse> GetInventoryEquipmentAsync(
         string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
@@ -236,16 +242,16 @@ public sealed class PlatformStatusService
 
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
-        return equipment
+        return new(equipment
             .Where(item => string.IsNullOrWhiteSpace(typeId) ||
                 string.Equals(item.TypeId, typeId, StringComparison.OrdinalIgnoreCase))
             .Take(limit)
             .Select(item => new InventoryEquipmentDto(item.InstanceId, item.TypeId, item.Rank,
                 item.ConfigJson, item.RankState.ToString(), item.ConfigState.ToString()))
-            .ToArray();
+            .ToArray());
     }
 
-    public async Task<IReadOnlyList<InventoryUpgradeDto>> GetInventoryUpgradesAsync(
+    public async Task<InventoryUpgradesResponse> GetInventoryUpgradesAsync(
         string? ownerInstanceId = null, string? sourceField = null, int limit = 100,
         CancellationToken cancellationToken = default)
     {
@@ -254,7 +260,7 @@ public sealed class PlatformStatusService
 
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var upgrades = await database.GetInventoryUpgradesAsync(cancellationToken);
-        return upgrades
+        return new(upgrades
             .Where(item => string.IsNullOrWhiteSpace(ownerInstanceId) ||
                 string.Equals(item.OwnerInstanceId, ownerInstanceId, StringComparison.Ordinal))
             .Where(item => string.IsNullOrWhiteSpace(sourceField) ||
@@ -262,10 +268,10 @@ public sealed class PlatformStatusService
             .Take(limit)
             .Select(item => new InventoryUpgradeDto(item.OwnerInstanceId, item.SourceField,
                 item.UpgradeId, item.Rank))
-            .ToArray();
+            .ToArray());
     }
 
-    public async Task<IReadOnlyList<LoadoutDto>> GetLoadoutsAsync(
+    public async Task<LoadoutResponse> GetLoadoutsAsync(
         string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
@@ -274,7 +280,7 @@ public sealed class PlatformStatusService
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
         var upgrades = await database.GetInventoryUpgradesAsync(cancellationToken);
-        return equipment
+        return new(equipment
             .Where(item => string.IsNullOrWhiteSpace(typeId) ||
                 string.Equals(item.TypeId, typeId, StringComparison.OrdinalIgnoreCase))
             .Take(limit)
@@ -284,7 +290,7 @@ public sealed class PlatformStatusService
                     .Select(upgrade => new InventoryUpgradeDto(upgrade.OwnerInstanceId, upgrade.SourceField,
                         upgrade.UpgradeId, upgrade.Rank))
                     .ToArray()))
-            .ToArray();
+            .ToArray());
     }
 
     public async Task<WorldStateBountiesResponse> GetBountiesAsync(

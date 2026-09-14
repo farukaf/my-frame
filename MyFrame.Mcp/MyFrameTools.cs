@@ -32,7 +32,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_sync_history", Title = "Get synchronization history", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns recent sanitized synchronization attempts from SQLite. It never reads payloads or starts synchronization.")]
-    public Task<IReadOnlyList<SyncRunDto>> GetSyncHistory(
+    public Task<SyncHistoryResponse> GetSyncHistory(
         [Description("Number of attempts from 1 to 100; default 20.")] int limit = 20,
         [Description("Optional exact source id, such as overwolf-inventory or public-export.")] string? sourceId = null,
         CancellationToken cancellationToken = default) => platform.GetSyncHistoryAsync(limit, sourceId, cancellationToken);
@@ -40,13 +40,13 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_inventory_coverage", Title = "Get inventory coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns field-level inventory coverage states from the synchronized SQLite projection. It never returns raw payloads or treats unobserved fields as absent.")]
-    public Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
+    public Task<InventoryCoverageResponse> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
         platform.GetInventoryCoverageAsync(cancellationToken);
 
     [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns field-level coverage for a synchronized source such as public-export, worldstate-pc, or overwolf-inventory. It never returns raw payloads and preserves NotObserved instead of guessing.")]
-    public Task<IReadOnlyList<SourceCoverageDto>> GetSourceCoverage(
+    public Task<SourceCoverageResponse> GetSourceCoverage(
         [Description("Coverage-enabled source id: public-export, worldstate-pc, or overwolf-inventory.")] string sourceId,
         CancellationToken cancellationToken = default) => platform.GetSourceCoverageAsync(sourceId, cancellationToken);
 
@@ -70,7 +70,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
-    public Task<IReadOnlyList<InventoryEquipmentDto>> GetEquipment(
+    public Task<InventoryEquipmentResponse> GetEquipment(
         [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
         [Description("Maximum number of instances from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetInventoryEquipmentAsync(typeId, limit, cancellationToken);
@@ -78,7 +78,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_mods", Title = "Get observed mods and upgrades", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed mod/upgrade metadata attributed to an equipment instance when the capture supplied that relation. Missing attribution remains null; no build capacity or polarity is inferred.")]
-    public Task<IReadOnlyList<InventoryUpgradeDto>> GetMods(
+    public Task<InventoryUpgradesResponse> GetMods(
         [Description("Optional exact equipment instanceId filter.")] string? ownerInstanceId = null,
         [Description("Optional source array filter, such as mods, upgrades, or RawUpgrades.")] string? sourceField = null,
         [Description("Maximum number of entries from 1 to 200; default 100.")] int limit = 100,
@@ -88,7 +88,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [McpServerTool(Name = "get_loadout", Title = "Get equipment loadouts", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns each observed equipment instance together with its observed rank/configuration and explicitly attributed mods/upgrades. Missing relations remain empty or unknown; no build compatibility is inferred.")]
-    public Task<IReadOnlyList<LoadoutDto>> GetLoadout(
+    public Task<LoadoutResponse> GetLoadout(
         [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
         [Description("Maximum number of loadouts from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetLoadoutsAsync(typeId, limit, cancellationToken);
