@@ -249,6 +249,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F211: automatizar o gate de não mutação do probe Public Export ([evidências](docs/validacoes/2026-09-13-f211.md)).
 - [x] F212: normalizar componentes Public Export em relação SQLite ([evidências](docs/validacoes/2026-09-13-f212.md)).
 - [x] F213: normalizar fontes de relíquia Public Export em SQLite ([evidências](docs/validacoes/2026-09-13-f213.md)).
+- [x] F214: projetar componentes e relíquias normalizados no read model ([evidências](docs/validacoes/2026-09-13-f214.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
