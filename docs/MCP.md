@@ -220,9 +220,12 @@ permitir filtros e paginação previsível.
 | `get_capture_inbox_status` | Status read-only da inbox Overwolf: estado, processos, heartbeat/frescor e marcadores válidos/inválidos; não retorna caminho nem payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
+| `get_inventory_history` | Revisões recentes do inventário, com sequência, completude, modo de captura e retenção. |
+| `get_inventory_changes` | Compara duas revisões completas e retorna somente alterações de equipamento/quantidade, sem payload bruto. |
 | `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. No Public Export inclui `components`, `relics`, `marketIdentity`, `imageName` e `productCategory`. |
 | `search_public_export` | Busca local no catálogo oficial por uniqueName, nome, alias ou categoria, retornando revisão/parser/cobertura, sem rede e sem raw JSON. |
 | `search_references` | Busca referências Wiki/Overframe importadas localmente, com URL, revisão, autoria/licença e marcação de conteúdo não confiável para fatos. |
+| `get_reference_section` | Recupera uma seção atribuída de uma referência importada, sem rede e sem aceitar URL fora das fontes permitidas. |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
