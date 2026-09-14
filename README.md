@@ -40,6 +40,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F216: smoke MCP de aquisição com catálogo e World State](docs/validacoes/2026-09-13-f216.md)
 - [F217: distribuição 0.0.14 com aquisição MCP](docs/validacoes/2026-09-13-f217.md)
 - [F218: cobertura explícita na aquisição MCP](docs/validacoes/2026-09-13-f218.md)
+- [F219: regressão da solução após cobertura de aquisição](docs/validacoes/2026-09-13-f219.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
