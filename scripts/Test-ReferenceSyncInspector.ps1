@@ -1,10 +1,18 @@
 [CmdletBinding()]
 param(
-    [string]$SyncPath = 'artifacts/MyFrame-0.0.9-win-x64/MyFrame.Sync.exe',
-    [string]$ServerPath = 'artifacts/MyFrame-0.0.9-win-x64/MyFrame.Mcp.exe'
+    [string]$SyncPath,
+    [string]$ServerPath
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($SyncPath) -or [string]::IsNullOrWhiteSpace($ServerPath)) {
+    $artifactRoot = Join-Path $PSScriptRoot '..\artifacts'
+    $latest = Get-ChildItem -LiteralPath $artifactRoot -Directory -Filter 'MyFrame-*-win-x64' |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($null -eq $latest) { throw 'MCP_DISTRIBUTION_NOT_FOUND' }
+    if ([string]::IsNullOrWhiteSpace($SyncPath)) { $SyncPath = Join-Path $latest.FullName 'MyFrame.Sync.exe' }
+    if ([string]::IsNullOrWhiteSpace($ServerPath)) { $ServerPath = Join-Path $latest.FullName 'MyFrame.Mcp.exe' }
+}
 $sync = (Resolve-Path -LiteralPath $SyncPath).Path
 $server = (Resolve-Path -LiteralPath $ServerPath).Path
 $root = Join-Path ([IO.Path]::GetTempPath()) ("my-frame-reference-smoke-" + [guid]::NewGuid().ToString('N'))
