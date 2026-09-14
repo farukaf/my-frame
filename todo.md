@@ -272,6 +272,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F234: adicionar verificador local do contrato das skills ([evidências](docs/validacoes/2026-09-14-f234.md)).
 - [x] F235: publicar distribuição 0.0.15 e validar upgrade side-by-side ([evidências](docs/validacoes/2026-09-14-f235.md)).
 - [x] F236: executar smoke read-only no MCP distribuído ([evidências](docs/validacoes/2026-09-14-f236.md)).
+- [x] F237: executar smoke real Codex/Claude no MCP 0.0.15 ([evidências](docs/validacoes/2026-09-14-f237.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
