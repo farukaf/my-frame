@@ -182,6 +182,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F187 — ferramentas de inventário/cobertura presentes no MCP real](docs/validacoes/2026-09-13-f187.md)
 - [Validação F188 — pacote 0.0.8 com contrato MCP completo](docs/validacoes/2026-09-13-f188.md)
 - [Validação F189 — smoke completo de inventário no MCP 0.0.8](docs/validacoes/2026-09-13-f189.md)
+- [Validação F190 — regressão após envelopes estruturados do MCP](docs/validacoes/2026-09-13-f190.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
