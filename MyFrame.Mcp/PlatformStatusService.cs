@@ -521,7 +521,11 @@ public sealed class PlatformStatusService
             ["worldstate.motherTokens"] = worldCoverage.GetValueOrDefault("motherTokens", InventoryFieldState.NotObserved).ToString()
         };
         var items = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
-        var item = items.FirstOrDefault(value => string.Equals(value.UniqueName, itemId, StringComparison.OrdinalIgnoreCase));
+        var normalizedItemId = itemId.Trim();
+        var item = items.FirstOrDefault(value =>
+            PublicExportIdentity.Equivalent(value.UniqueName, normalizedItemId) ||
+            (!string.IsNullOrWhiteSpace(value.Name) && PublicExportIdentity.Equivalent(value.Name, normalizedItemId)) ||
+            value.Aliases.Values.Any(alias => PublicExportIdentity.Equivalent(alias, normalizedItemId)));
         if (item is null)
         {
             var catalogState = catalogStatus is null ? "not_initialized" : catalogStatus.LastRunState ?? "unknown";
@@ -543,10 +547,11 @@ public sealed class PlatformStatusService
             .Select(value => new AcquisitionRelicDto(value.RelicName, value.Rarity, value.Chance,
                 value.Vaulted, value.RewardName)).ToArray();
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
-        var rewardNames = new[] { item.Name, item.UniqueName }.OfType<string>()
+        var rewardNames = new[] { item.Name, item.UniqueName }.Concat(item.Aliases.Values)
+            .OfType<string>()
             .Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
         var matchedBounties = bounties.Where(bounty => bounty.Jobs.Any(job => job.Rewards.Any(reward =>
-                rewardNames.Any(name => reward.Item.Contains(name, StringComparison.OrdinalIgnoreCase)))))
+                RewardMatches(reward.Item, rewardNames))))
             .Take(limit)
             .Select(ToBountyDto).ToArray();
         var catalogAvailable = catalogStatus?.LastRunState == "published";
@@ -562,6 +567,18 @@ public sealed class PlatformStatusService
             bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type, job.UniqueName,
                 job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
                     new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray());
+
+    private static bool RewardMatches(string reward, IReadOnlyList<string> names)
+    {
+        var normalizedReward = PublicExportIdentity.Canonicalize(reward);
+        return names.Any(name =>
+        {
+            var normalizedName = PublicExportIdentity.Canonicalize(name);
+            return normalizedName.Length > 0 &&
+                (string.Equals(normalizedReward, normalizedName, StringComparison.Ordinal) ||
+                 normalizedReward.Contains(normalizedName, StringComparison.Ordinal));
+        });
+    }
 
     public async Task<WorldStateBountiesResponse> GetBountiesAsync(
         int limit = 100, string? syndicate = null, string? reward = null,
