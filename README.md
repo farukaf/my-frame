@@ -201,6 +201,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F206 — cobertura rica documentada no contrato MCP](docs/validacoes/2026-09-13-f206.md)
 - [Validação F207 — cobertura de fonte visível na página de status](docs/validacoes/2026-09-13-f207.md)
 - [Validação F208 — descrição atribuída no detalhe MCP](docs/validacoes/2026-09-13-f208.md)
+- [Validação F209 — avaliação F10 executável no Windows PowerShell](docs/validacoes/2026-09-13-f209.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
