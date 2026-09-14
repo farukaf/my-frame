@@ -442,3 +442,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F330: distribuir 0.0.32 com isolamento de contexto e validar upgrade/read-only
 - [x] F331: reconciliar evidências históricas da suíte MCP após restauração autorizada
 - [x] F332: documentar `context_mismatch` no MCP e skill de farm
+- [x] F333: executar regressão integrada atual do coletor, Core e MCP
