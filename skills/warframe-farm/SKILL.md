@@ -31,7 +31,10 @@ metadata:
    horário; `not_initialized`/`failed` exige sincronização ou confirmação
    externa. `get_bounties` continua como compatibilidade para somente bounties.
    Se `parserVersion=worldstate-community-1`, identifique a resposta como
-   fallback comunitário; não a apresente como confirmação oficial da DE.
+   fallback comunitário; se `parserVersion=worldstate-1`, identifique-a como
+   fixture/adaptador genérico; nenhuma das duas deve ser apresentada como
+   confirmação oficial da DE. `worldstate-official-1` identifica o parser do
+   endpoint oficial, mas ainda cite `activeRevisionId` e o horário servido.
 4. Relacione cada recompensa a sua fonte, tier, chance, quantidade e condição.
    `chance` não é garantia nem taxa de tokens por hora.
 5. Compare alternativas por restrições do usuário (solo, tempo, MR, equipamento,

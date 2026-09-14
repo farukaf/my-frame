@@ -16,12 +16,17 @@ if ($common -notmatch 'get_capture_inbox_status' -or
 foreach ($name in @('warframe-builds', 'warframe-farm')) {
     $path = Join-Path $root "$name\SKILL.md"
     $text = Get-Content -LiteralPath $path -Raw
-    if ($text -notmatch '(?ms)^metadata:\s*\r?\n\s+version:\s+"4"') {
-        throw "$name must declare skill version 4."
+    if ($text -notmatch '(?ms)^metadata:\s*\r?\n\s+version:\s+"5"') {
+        throw "$name must declare skill version 5."
     }
     foreach ($required in @('get_capture_inbox_status', 'state=ready', 'heartbeatFresh=true', 'validMarkers>0', 'unverified')) {
         if ($text -notmatch [regex]::Escape($required)) {
             throw "$name is missing readiness requirement: $required"
+        }
+    }
+    foreach ($required in @('activeRevisionId', 'parserVersion', 'worldstate-community-1', 'worldstate-1')) {
+        if ($text -notmatch [regex]::Escape($required)) {
+            throw "$name is missing World State provenance requirement: $required"
         }
     }
 }
