@@ -38,6 +38,10 @@ metadata:
    somente a recompensa explicitamente atribuída na revisão `activeRevisionId`;
    `NotObserved` exige dizer que quantidade e taxa precisam ser confirmadas no
    jogo ou em tabela permitida. Nunca derive tokens/hora de `chance`.
+7. Se o objetivo envolver progresso desde a última captura, consulte
+   `get_inventory_history` e `get_inventory_changes`; só trate adições,
+   remoções ou alterações como completas quando as duas revisões forem
+   `complete`, nunca quando a resposta estiver `partial`.
 
 ## Saída
 

@@ -15,6 +15,9 @@ Contrato comum:
 8. citar fonte/revisão e declarar o que falta confirmar. Para referências, use
    `search_references` e então `get_reference_section`; nunca faça fetch de URL
    ou caminho local pelo MCP.
+9. quando a pergunta pedir mudanças de inventário, chamar `get_inventory_history`
+   e depois `get_inventory_changes` usando revisões compatíveis; se o estado for
+   `partial` ou `insufficient_history`, declarar que a comparação não é completa.
 
 Se `get_capture_inbox_status.state` não for `ready`, ou se `heartbeatFresh` for
 falso/`validMarkers` for zero, o inventário não deve ser descrito como captura
