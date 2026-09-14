@@ -64,6 +64,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F240: contrato comum no pacote das skills](docs/validacoes/2026-09-14-f240.md)
 - [F241: dashboard atualizado após captura](docs/validacoes/2026-09-14-f241.md)
 - [F242: distribuição 0.0.16 e clientes atualizados](docs/validacoes/2026-09-14-f242.md)
+- [F243: warning de captura ausente no snapshot SQLite](docs/validacoes/2026-09-14-f243.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

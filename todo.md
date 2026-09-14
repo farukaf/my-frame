@@ -278,6 +278,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F240: incluir contrato comum no pacote instalável das skills ([evidências](docs/validacoes/2026-09-14-f240.md)).
 - [x] F241: atualizar dashboard após importação de captura ([evidências](docs/validacoes/2026-09-14-f241.md)).
 - [x] F242: publicar 0.0.16 e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f242.md)).
+- [x] F243: sinalizar inventário SQLite sem captura Overwolf pronta ([evidências](docs/validacoes/2026-09-14-f243.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
