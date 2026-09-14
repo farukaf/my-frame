@@ -161,11 +161,12 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         try
         {
             Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
-            var response = await new PlatformStatusService().GetSourceCoverageAsync("warframe-market");
+            var response = await new PlatformStatusService().GetSourceCoverageAsync(" WARFRAME-MARKET ");
 
             Assert.Equal("not_initialized", response.State);
             Assert.Null(response.ActiveRevisionId);
             Assert.Null(response.ParserVersion);
+            Assert.All(response.Items, item => Assert.Equal("warframe-market", item.SourceId));
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }

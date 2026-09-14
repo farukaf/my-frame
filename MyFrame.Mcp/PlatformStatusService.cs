@@ -263,10 +263,11 @@ public sealed class PlatformStatusService
     {
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
             throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
+        var normalizedSourceId = sourceId.Trim().ToLowerInvariant();
         var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references" };
-        if (!allowed.Contains(sourceId, StringComparer.OrdinalIgnoreCase))
+        if (!allowed.Contains(normalizedSourceId, StringComparer.Ordinal))
             throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
-        if (string.Equals(sourceId, "references", StringComparison.OrdinalIgnoreCase))
+        if (normalizedSourceId == "references")
         {
             var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
             var accepted = 0;
@@ -291,14 +292,14 @@ public sealed class PlatformStatusService
                 ["rejectedDocuments"] = rejectedState
             };
             return new(values.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString())).ToArray(),
+                .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString())).ToArray(),
                 DateTimeOffset.UtcNow, rejected > 0 ? "partial" : accepted > 0 ? "available" : "not_initialized");
         }
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
-        var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
-        var status = await database.GetStatusAsync(sourceId, cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync(normalizedSourceId, cancellationToken);
+        var status = await database.GetStatusAsync(normalizedSourceId, cancellationToken);
         return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
+            .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString()))
             .ToArray(), DateTimeOffset.UtcNow,
             status is null ? "not_initialized" : status.LastRunState ?? "unknown",
             status?.ActiveRevisionId, status?.ParserVersion);
