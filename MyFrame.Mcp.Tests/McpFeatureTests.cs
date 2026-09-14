@@ -119,6 +119,9 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal(1, referenceStatus.AcceptedRecords);
             Assert.Equal(1, referenceStatus.RejectedRecords);
             var coverage = await new PlatformStatusService().GetSourceCoverageAsync("references");
+            Assert.Equal("partial", coverage.State);
+            Assert.NotNull(coverage.ServedAt);
+            Assert.Null(coverage.ActiveRevisionId);
             Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "documents").State);
             Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "attribution").State);
             Assert.Equal("Invalid", Assert.Single(coverage.Items, value => value.FieldPath == "rejectedDocuments").State);
