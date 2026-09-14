@@ -45,14 +45,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_inventory_history", Title = "Get inventory revision history", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns sanitized inventory revision metadata from SQLite, including sequence, completeness and snapshot/delta mode. It never returns raw payloads or claims that a delta is a complete inventory.")]
+    [Description("Returns sanitized inventory revision metadata from SQLite, including sequence, completeness, snapshot/delta mode and optional collector contextId. It never returns raw payloads or claims that a delta is a complete inventory.")]
     public Task<InventoryHistoryResponse> GetInventoryHistory(
         [Description("Maximum revisions from 1 to 100; default 20.")] int limit = 20,
         CancellationToken cancellationToken = default) => platform.GetInventoryHistoryAsync(limit, cancellationToken);
 
     [McpServerTool(Name = "get_inventory_changes", Title = "Compare inventory revisions", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Compares two complete inventory snapshot revisions without exposing raw payloads. Delta captures return partial and produce no inferred additions/removals.")]
+    [Description("Compares two complete inventory snapshot revisions, including equipment configuration and attributed mods/upgrades, without exposing raw payloads. Delta captures return partial and produce no inferred additions/removals.")]
     public Task<InventoryChangesResponse> GetInventoryChanges(
         [Description("Optional previous revision id from get_inventory_history.")] string? fromRevisionId = null,
         [Description("Optional target revision id from get_inventory_history.")] string? toRevisionId = null,
