@@ -98,6 +98,31 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task PublicExportRetriesTransientHttpFailures()
+    {
+        using var handler = new RetryHandler();
+        using var client = new HttpClient(handler);
+        var entries = await new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+            .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma"));
+
+        Assert.Single(entries);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
+    public async Task PublicExportDoesNotRetryNotFound()
+    {
+        using var handler = new NotFoundHandler();
+        using var client = new HttpClient(handler);
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() =>
+            new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+                .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma")));
+
+        Assert.Equal("PUBLIC_EXPORT_HTTP_404", error.Message);
+        Assert.Equal(1, handler.Attempts);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedPublicExportRecordsAtomically()
     {
         const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test\",\"pt\":\"Teste\"},\"category\":\"Melee\"}]";
@@ -225,6 +250,34 @@ public sealed class PublicExportTests
             LastPath = request.RequestUri?.AbsolutePath;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             { Content = new StringContent("[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\"}]", System.Text.Encoding.UTF8, "application/json") });
+        }
+    }
+
+    private sealed class RetryHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            if (Attempts < 3)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.Zero);
+                return Task.FromResult(response);
+            }
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
+        }
+    }
+
+    private sealed class NotFoundHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
         }
     }
 

@@ -136,7 +136,7 @@ public sealed class PublicExportIndexClient(HttpClient httpClient, Func<byte[], 
     public const string DefaultIndexUrl = "https://origin.warframe.com/PublicExport/index_en.txt.lzma";
     public async Task<IReadOnlyList<PublicExportIndexEntry>> FetchIndexAsync(Uri? uri = null, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync(uri ?? new Uri(DefaultIndexUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await PublicExportHttp.GetAsync(httpClient, uri ?? new Uri(DefaultIndexUrl), cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"PUBLIC_EXPORT_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length > 4 * 1024 * 1024) throw new InvalidDataException("PUBLIC_EXPORT_INDEX_TOO_LARGE");
@@ -169,7 +169,7 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
         if (!string.IsNullOrWhiteSpace(entry.RevisionTag))
             path = $"{path}!{entry.RevisionTag}";
         var uri = new Uri((baseUri ?? new Uri(DefaultBaseUrl)), path);
-        using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await PublicExportHttp.GetAsync(httpClient, uri, cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"PUBLIC_EXPORT_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length == 0 || bytes.Length > 64 * 1024 * 1024) throw new InvalidDataException("PUBLIC_EXPORT_DOCUMENT_TOO_LARGE");
@@ -177,5 +177,48 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
         var records = PublicExportDocumentParser.Parse(json);
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         return (new SyncBatch(sourceId, hash, json, records.Count, "public-export-1"), records);
+    }
+}
+
+internal static class PublicExportHttp
+{
+    private const int MaximumAttempts = 3;
+    private const int MaximumRetryAfterSeconds = 10;
+
+    public static async Task<HttpResponseMessage> GetAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            HttpResponseMessage? response = null;
+            try
+            {
+                response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (!IsTransient(response.StatusCode) || attempt >= MaximumAttempts) return response;
+                var delay = RetryDelay(attempt, response.Headers.RetryAfter?.Delta);
+                response.Dispose();
+                await Task.Delay(delay, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                response?.Dispose();
+                throw;
+            }
+            catch (HttpRequestException) when (attempt < MaximumAttempts)
+            {
+                response?.Dispose();
+                await Task.Delay(RetryDelay(attempt, null), cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsTransient(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests ||
+        (int)statusCode >= 500;
+
+    private static TimeSpan RetryDelay(int attempt, TimeSpan? retryAfter)
+    {
+        if (retryAfter is { } serverDelay && serverDelay >= TimeSpan.Zero)
+            return TimeSpan.FromSeconds(Math.Min(serverDelay.TotalSeconds, MaximumRetryAfterSeconds));
+        return TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt - 1));
     }
 }
