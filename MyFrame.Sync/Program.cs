@@ -4,6 +4,7 @@ using MyFrame.Core.Sync;
 
 var publicExport = args.Any(argument => string.Equals(argument, "--public-export", StringComparison.Ordinal));
 var publicExportProbe = args.Any(argument => string.Equals(argument, "--public-export-probe", StringComparison.Ordinal));
+var overwolfInventoryProbe = args.Any(argument => string.Equals(argument, "--overwolf-inventory-probe", StringComparison.Ordinal));
 var publicExportFile = args.Any(argument => string.Equals(argument, "--public-export-file", StringComparison.Ordinal));
 var publicExportDirectory = args.Any(argument => string.Equals(argument, "--public-export-directory", StringComparison.Ordinal));
 var worldState = args.Any(argument => string.Equals(argument, "--world-state", StringComparison.Ordinal));
@@ -14,9 +15,9 @@ var referenceFile = args.Any(argument => string.Equals(argument, "--reference-fi
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
 var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (overwolfInventoryProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --overwolf-inventory-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -62,6 +63,25 @@ if (publicExportProbe)
         Console.WriteLine(JsonSerializer.Serialize(new { state = "unreachable", source = "public-export", errorCode = error.Message }));
         return 1;
     }
+}
+
+if (overwolfInventoryProbe)
+{
+    var result = await CollectorCaptureStatusProbe.ReadAsync(MyFrameStoragePaths.CollectorCaptureDirectory);
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = result.State,
+        source = "overwolf-inventory",
+        directoryExists = result.DirectoryExists,
+        heartbeatState = result.HeartbeatState,
+        heartbeatTimestampUtc = result.HeartbeatTimestampUtc,
+        heartbeatFresh = result.HeartbeatFresh,
+        readyMarkers = result.ReadyMarkers,
+        validMarkers = result.ValidMarkers,
+        invalidMarkers = result.InvalidMarkers,
+        invalidByCode = result.InvalidByCode
+    }));
+    return result.State is "ready" or "heartbeat-only" ? 0 : 1;
 }
 
 await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
