@@ -131,4 +131,4 @@ public sealed record AcquisitionResponse(DateTimeOffset ServedAt, string State, 
     string? CatalogRevisionId, string? WorldStateRevisionId, string? ItemId, string? ItemName,
     IReadOnlyList<AcquisitionComponentDto> Components, IReadOnlyList<AcquisitionRelicDto> Relics,
     IReadOnlyList<WorldStateBountyDto> Bounties,
-    IReadOnlyDictionary<string, string> Coverage);
+    IReadOnlyDictionary<string, string> Coverage, string? WorldStateParserVersion = null);

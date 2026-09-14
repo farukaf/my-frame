@@ -534,7 +534,7 @@ public sealed class PlatformStatusService
                 catalogState == "published" ? "item_not_found" : "catalog_unavailable";
             return new(DateTimeOffset.UtcNow, resultState,
                 catalogStatus?.ErrorCode, catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId,
-                itemId, null, [], [], [], coverage);
+                itemId, null, [], [], [], coverage, worldStatus?.ParserVersion);
         }
 
         var components = (await database.GetPublicExportComponentsAsync("public-export", cancellationToken))
@@ -560,7 +560,7 @@ public sealed class PlatformStatusService
         var state = catalogAvailable && worldAvailable ? "available" : catalogAvailable ? "partial" : "catalog_unavailable";
         return new(DateTimeOffset.UtcNow, state, worldStatus?.ErrorCode ?? catalogStatus?.ErrorCode,
             catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId, item.UniqueName, item.Name,
-            components, relics, matchedBounties, coverage);
+            components, relics, matchedBounties, coverage, worldStatus?.ParserVersion);
     }
 
     private static WorldStateBountyDto ToBountyDto(WorldStateBounty bounty) =>
