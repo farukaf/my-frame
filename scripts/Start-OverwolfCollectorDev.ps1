@@ -1,11 +1,12 @@
 [CmdletBinding()]
 param(
-    [string]$CollectorRoot = (Join-Path $PSScriptRoot '..\artifacts\collector-overwolf'),
+    [string]$CollectorRoot,
     [switch]$Launch,
     [switch]$EnableDevTools
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($CollectorRoot)) { $CollectorRoot = Join-Path $PSScriptRoot '..\artifacts\collector-overwolf' }
 $collector = (Resolve-Path -LiteralPath $CollectorRoot).Path
 $packageTest = Join-Path $PSScriptRoot 'Test-CollectorPackage.ps1'
 & $packageTest -PackagePath $collector
