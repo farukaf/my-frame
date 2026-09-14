@@ -79,7 +79,8 @@ public sealed class ReferenceSyncRunner
             throw new InvalidDataException("REFERENCE_REDIRECT_UNSUPPORTED");
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         if (mediaType is not null && !mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase) &&
-            !mediaType.Equals("application/*+json", StringComparison.OrdinalIgnoreCase))
+            !(mediaType.StartsWith("application/", StringComparison.OrdinalIgnoreCase) &&
+              mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase)))
             throw new InvalidDataException("REFERENCE_CONTENT_TYPE_UNSUPPORTED");
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength is > ReferenceDocumentParser.MaximumDocumentBytes)
