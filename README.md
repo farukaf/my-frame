@@ -54,6 +54,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F230: status MCP alinhado ao probe Overwolf](docs/validacoes/2026-09-14-f230.md)
 - [F231: contrato MCP do status de runtime do coletor](docs/validacoes/2026-09-14-f231.md)
 - [F232: regressão completa após status de runtime](docs/validacoes/2026-09-14-f232.md)
+- [F233: skills condicionadas à prontidão da captura](docs/validacoes/2026-09-14-f233.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

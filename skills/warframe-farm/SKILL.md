@@ -2,7 +2,7 @@
 name: warframe-farm
 description: Montar planos de farm e progressão rastreáveis por aquisição, atividade e inventário.
 metadata:
-  version: "3"
+  version: "4"
 ---
 
 # Farm and progression
@@ -12,6 +12,9 @@ metadata:
 - Execute o contrato comum.
 - Fixe `snapshotId`, horário e plataforma.
 - Consulte `get_capabilities` e `get_sync_status` antes dos dados; registre `activeRevisionId` e `parserVersion` da fonte World State.
+- Se o plano usar posse ou peças faltantes, consulte `get_capture_inbox_status`;
+  sem `state=ready`, `heartbeatFresh=true` e `validMarkers>0`, trate o
+  inventário como `unverified` e não calcule déficit pessoal.
 - Para atividades, use apenas bounties cuja ativação/expiração cubra o horário da consulta.
 
 ## Procedimento
