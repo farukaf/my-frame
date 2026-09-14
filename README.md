@@ -67,6 +67,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F243: warning de captura ausente no snapshot SQLite](docs/validacoes/2026-09-14-f243.md)
 - [F244: teste do warning de captura não verificada](docs/validacoes/2026-09-14-f244.md)
 - [F245: distribuição 0.0.17 e clientes atualizados](docs/validacoes/2026-09-14-f245.md)
+- [F246: smoke real Codex/Claude no MCP 0.0.17](docs/validacoes/2026-09-14-f246.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
