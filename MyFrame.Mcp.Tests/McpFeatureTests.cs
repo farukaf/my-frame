@@ -458,6 +458,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotEqual(true, acquisitionResult.IsError);
         var acquisitionJson = JsonSerializer.Serialize(acquisitionResult.StructuredContent);
         Assert.Contains("available", acquisitionJson);
+        Assert.Contains("catalog.components", acquisitionJson);
+        Assert.Contains("worldstate.bountyRewards", acquisitionJson);
         Assert.Contains("Test Part", acquisitionJson);
         Assert.Contains("Lith A1", acquisitionJson);
         Assert.Contains("deimos-f33", acquisitionJson);

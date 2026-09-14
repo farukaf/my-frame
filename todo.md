@@ -253,6 +253,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F215: adicionar consulta MCP unificada de aquisição ([evidências](docs/validacoes/2026-09-13-f215.md)).
 - [x] F216: validar aquisição unificada com catálogo e World State semeados ([evidências](docs/validacoes/2026-09-13-f216.md)).
 - [x] F217: publicar pacote 0.0.14 e validar aquisição no executável distribuído ([evidências](docs/validacoes/2026-09-13-f217.md)).
+- [x] F218: expor cobertura por campo na consulta de aquisição ([evidências](docs/validacoes/2026-09-13-f218.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

@@ -130,4 +130,5 @@ public sealed record AcquisitionRelicDto(string RelicName, string Rarity, double
 public sealed record AcquisitionResponse(DateTimeOffset ServedAt, string State, string? ErrorCode,
     string? CatalogRevisionId, string? WorldStateRevisionId, string? ItemId, string? ItemName,
     IReadOnlyList<AcquisitionComponentDto> Components, IReadOnlyList<AcquisitionRelicDto> Relics,
-    IReadOnlyList<WorldStateBountyDto> Bounties);
+    IReadOnlyList<WorldStateBountyDto> Bounties,
+    IReadOnlyDictionary<string, string> Coverage);
