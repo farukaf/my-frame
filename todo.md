@@ -264,6 +264,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F226: integrar status do coletor à página de sincronização ([evidências](docs/validacoes/2026-09-14-f226.md)).
 - [x] F227: renovar heartbeat durante a sessão Overwolf ([evidências](docs/validacoes/2026-09-14-f227.md)).
 - [x] F228: incluir presença de Overwolf/Warframe no diagnóstico ([evidências](docs/validacoes/2026-09-14-f228.md)).
+- [x] F229: registrar tentativa F1 com Overwolf e Warframe ativos ([evidências](docs/validacoes/2026-09-14-f229.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
