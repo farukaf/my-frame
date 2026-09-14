@@ -1,10 +1,12 @@
 import { Collector } from "./collector.mjs";
 const $ = id => document.getElementById(id);
 const api = globalThis.overwolf;
+let heartbeatTimer = null;
+let heartbeatWriteTimer = null;
 const collector = api ? new Collector(api, status => {
   $("status").textContent = JSON.stringify(status, null, 2);
+  if (heartbeatTimer !== null) scheduleHeartbeatWrite();
 }) : null;
-let heartbeatTimer = null;
 $("availability").textContent = api ? "Pronto. Clique em iniciar; depois abra o Warframe." :
   "Abra este pacote como extensão local no Overwolf. O navegador comum não oferece GEP.";
 const localAppData = api?.io?.paths?.localAppData;
@@ -21,10 +23,12 @@ $("start").onclick = async () => {
 };
 $("stop").onclick = () => {
   if (heartbeatTimer !== null) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  if (heartbeatWriteTimer !== null) { clearTimeout(heartbeatWriteTimer); heartbeatWriteTimer = null; }
   collector.stop(); $("consent").checked = false;
 };
 addEventListener("unload", () => {
   if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
+  if (heartbeatWriteTimer !== null) clearTimeout(heartbeatWriteTimer);
   collector?.stop();
 });
 
@@ -56,6 +60,13 @@ async function writeHeartbeat(quiet = false) {
   } catch {
     if (!quiet) $("export-status").textContent = "Captura iniciada, mas não foi possível registrar o heartbeat. Confirme a pasta.";
   }
+}
+function scheduleHeartbeatWrite() {
+  if (heartbeatWriteTimer !== null) return;
+  heartbeatWriteTimer = setTimeout(() => {
+    heartbeatWriteTimer = null;
+    void writeHeartbeat(true);
+  }, 250);
 }
 async function exporting(action) {
   $("report").disabled = $("capture").disabled = true;
