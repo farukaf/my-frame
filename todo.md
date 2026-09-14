@@ -29,6 +29,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F276: expor cobertura Public Export para nomes localizados e metadados técnicos ([evidências](docs/validacoes/2026-09-14-f276.md)).
 - [x] F277: incluir estado, revisão e parser na resposta MCP de cobertura ([evidências](docs/validacoes/2026-09-14-f277.md)).
 - [x] F278: distribuir 0.0.25 e validar `get_source_coverage` no Codex e Claude ([evidências](docs/validacoes/2026-09-14-f278.md)).
+- [x] F279: validar snapshot Public Export local empacotado via SyncHost → SQLite → MCP ([evidências](docs/validacoes/2026-09-14-f279.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
