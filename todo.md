@@ -237,6 +237,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F199: adicionar retry limitado para falhas transitórias do Public Export ([evidências](docs/validacoes/2026-09-13-f199.md)).
 - [x] F200: compartilhar retry entre Public Export e World State ([evidências](docs/validacoes/2026-09-13-f200.md)).
 - [x] F201: agregar documentos JSON do Public Export em uma revisão única ([evidências](docs/validacoes/2026-09-13-f201.md)).
+- [x] F202: expor cobertura de campos ricos do catálogo Public Export ([evidências](docs/validacoes/2026-09-13-f202.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

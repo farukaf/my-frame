@@ -434,6 +434,24 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task CatalogCoverageReportsRichFieldsWithoutInferringMissingData()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-catalog-coverage-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-rich-coverage", "[]", 1),
+            [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                new Dictionary<string, string>(),
+                "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"components\":[]}")]);
+
+        var coverage = await db.GetSourceCoverageAsync("public-export");
+
+        Assert.Equal(InventoryFieldState.Known, coverage["components"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["marketIdentity"]);
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["relics"]);
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["imageName"]);
+    }
+
+    [Fact]
     public async Task SynchronizedReaderDoesNotProjectDeltaAsCompleteInventory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-delta-reader-{Guid.NewGuid():N}.db");
