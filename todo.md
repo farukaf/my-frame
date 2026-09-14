@@ -355,6 +355,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
 - [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
 - [x] F319: reconciliar marcos implementados F3/F5 no checklist ([evidências](docs/validacoes/2026-09-14-f319.md)).
+- [x] F320: distribuir 0.0.30 com cobertura de fontes canônica ([evidências](docs/validacoes/2026-09-14-f320.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
