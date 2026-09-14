@@ -31,6 +31,8 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
         var stackables = await database.GetInventoryStackablesAsync(cancellationToken);
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        var componentRows = await database.GetPublicExportComponentsAsync("public-export", cancellationToken);
+        var relicRows = await database.GetPublicExportRelicsAsync("public-export", cancellationToken);
         if (equipment.Count == 0 && stackables.Count == 0 || records.Count == 0) return null;
 
         var stackableValues = stackables
@@ -44,7 +46,12 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
             File.GetLastWriteTimeUtc(databasePath), stackableValues, owned,
             new Dictionary<string, long>(StringComparer.Ordinal), 0, 0, "my-frame-sqlite");
 
-        var items = records.Select(PublicExportCatalogMapper.Map).ToArray();
+        var componentsByParent = componentRows.GroupBy(row => row.ParentUniqueName, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<PublicExportComponentRow>)group.ToArray(), StringComparer.Ordinal);
+        var relicsByReward = relicRows.GroupBy(row => row.RewardUniqueName, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<PublicExportRelicRow>)group.ToArray(), StringComparer.Ordinal);
+        var items = records.Select(record => PublicExportCatalogMapper.Map(record,
+            componentsByParent.GetValueOrDefault(record.UniqueName), relicsByReward.GetValueOrDefault(record.UniqueName))).ToArray();
         var market = PublicExportCatalogMapper.MarketMappings(records, items);
         var catalog = new CatalogSnapshot(items,
             items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal),
@@ -55,7 +62,9 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
 
 internal static class PublicExportCatalogMapper
 {
-    public static CatalogItem Map(PublicExportRecord record)
+    public static CatalogItem Map(PublicExportRecord record,
+        IReadOnlyList<PublicExportComponentRow>? normalizedComponents = null,
+        IReadOnlyList<PublicExportRelicRow>? normalizedRelics = null)
     {
         if (string.IsNullOrWhiteSpace(record.RawJson))
             return Minimal(record);
@@ -63,8 +72,14 @@ internal static class PublicExportCatalogMapper
         {
             using var document = JsonDocument.Parse(record.RawJson);
             var root = document.RootElement;
-            var components = ReadComponents(root);
-            var relics = ReadRelics(root);
+            var components = normalizedComponents is { Count: > 0 }
+                ? normalizedComponents.Select(row => new CatalogComponent(row.UniqueName, row.Name, row.RequiredCount,
+                    row.Ducats, row.Tradable, row.ImageName ?? "")).ToArray()
+                : ReadComponents(root);
+            var relics = normalizedRelics is { Count: > 0 }
+                ? normalizedRelics.Select(row => new RelicSource(row.RelicName, row.Rarity, row.Chance,
+                    row.Vaulted, row.RewardName)).ToArray()
+                : ReadRelics(root);
             return new(
                 record.UniqueName,
                 String(root, "name") ?? record.Name ?? record.UniqueName,
