@@ -27,7 +27,7 @@ public sealed record SyncHistoryResponse(IReadOnlyList<SyncRunDto> Items);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record InventoryCoverageResponse(IReadOnlyList<InventoryCoverageDto> Items);
 public sealed record InventoryRevisionDto(string RevisionId, string ContentHash, long Sequence,
-    string Completeness, string CaptureMode, DateTimeOffset RetrievedAt);
+    string Completeness, string CaptureMode, DateTimeOffset RetrievedAt, string? ContextId = null);
 public sealed record InventoryHistoryResponse(DateTimeOffset ServedAt, string State,
     IReadOnlyList<InventoryRevisionDto> Items);
 public sealed record InventoryChangeDto(string Kind, string Key, string Change,
@@ -199,7 +199,7 @@ public sealed class PlatformStatusService
         var revisions = await database.GetInventoryRevisionSummariesAsync(limit, cancellationToken);
         return new(DateTimeOffset.UtcNow, revisions.Count == 0 ? "not_initialized" : "available",
             revisions.Select(value => new InventoryRevisionDto(value.RevisionId, value.ContentHash,
-                value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt)).ToArray());
+                value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt, value.ContextId)).ToArray());
     }
 
     public async Task<InventoryChangesResponse> GetInventoryChangesAsync(
