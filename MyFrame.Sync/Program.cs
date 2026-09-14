@@ -73,6 +73,8 @@ if (overwolfInventoryProbe)
         state = result.State,
         source = "overwolf-inventory",
         directoryExists = result.DirectoryExists,
+        overwolfRunning = result.OverwolfRunning,
+        warframeRunning = result.WarframeRunning,
         heartbeatState = result.HeartbeatState,
         heartbeatTimestampUtc = result.HeartbeatTimestampUtc,
         heartbeatFresh = result.HeartbeatFresh,

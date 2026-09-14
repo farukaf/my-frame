@@ -13,6 +13,8 @@ public sealed class CollectorCaptureStatusProbeTests
 
         Assert.Equal("missing", result.State);
         Assert.False(result.DirectoryExists);
+        Assert.IsType<bool>(result.OverwolfRunning);
+        Assert.IsType<bool>(result.WarframeRunning);
         Assert.False(Directory.Exists(path));
     }
 
