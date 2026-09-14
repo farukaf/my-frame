@@ -445,3 +445,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F333: executar regressão integrada atual do coletor, Core e MCP
 - [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
 - [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
+- [x] F336: expor observedAt por campo na cobertura do Warframe Market

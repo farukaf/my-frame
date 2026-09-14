@@ -205,6 +205,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Contains(response.Items, item => item.FieldPath == "orders" && item.State == "Known");
             Assert.Contains(response.Items, item => item.FieldPath == "account" && item.State == "Known");
             Assert.Contains(response.Items, item => item.FieldPath == "marketItems" && item.State == "Known");
+            Assert.All(response.Items.Where(item => item.State == "Known"), item => Assert.NotNull(item.ObservedAt));
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
