@@ -198,6 +198,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F203 — skills orientadas por cobertura rica](docs/validacoes/2026-09-13-f203.md)
 - [Validação F204 — runbook Overwolf executável diretamente](docs/validacoes/2026-09-13-f204.md)
 - [Validação F205 — pacote distribuível 0.0.13 após F202–F204](docs/validacoes/2026-09-13-f205.md)
+- [Validação F206 — cobertura rica documentada no contrato MCP](docs/validacoes/2026-09-13-f206.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
