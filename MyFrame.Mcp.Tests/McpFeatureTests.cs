@@ -82,6 +82,10 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal("reference-file-1", referenceStatus.ParserVersion);
             Assert.Equal(1, referenceStatus.AcceptedRecords);
             Assert.Equal(1, referenceStatus.RejectedRecords);
+            var coverage = await new PlatformStatusService().GetSourceCoverageAsync("references");
+            Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "documents").State);
+            Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "attribution").State);
+            Assert.Equal("Invalid", Assert.Single(coverage.Items, value => value.FieldPath == "rejectedDocuments").State);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
