@@ -12,6 +12,10 @@ metadata:
 - Execute o contrato comum em `../README.md` quando a skill estiver instalada
   no diretório de skills do cliente.
 - Consulte `get_capabilities` e `get_sync_status` antes do arsenal; registre a revisão ativa e `parserVersion` de `overwolf-inventory`.
+- Quando usar atividades/recompensas para recomendar uma build, registre também
+  `activeRevisionId`/`parserVersion` de World State. Trate
+  `worldstate-community-1` como fallback comunitário e `worldstate-1` como
+  fixture/adaptador genérico, nunca como confirmação oficial.
 - Consulte `get_capture_inbox_status` antes de usar o arsenal; sem
   `state=ready`, `heartbeatFresh=true` e `validMarkers>0`, qualquer posse,
   rank ou loadout atual deve permanecer `unverified`.
