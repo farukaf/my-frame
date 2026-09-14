@@ -23,6 +23,10 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
 public sealed record SyncHistoryResponse(IReadOnlyList<SyncRunDto> Items);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record InventoryCoverageResponse(IReadOnlyList<InventoryCoverageDto> Items);
+public sealed record InventoryRevisionDto(string RevisionId, string ContentHash, long Sequence,
+    string Completeness, string CaptureMode, DateTimeOffset RetrievedAt);
+public sealed record InventoryHistoryResponse(DateTimeOffset ServedAt, string State,
+    IReadOnlyList<InventoryRevisionDto> Items);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
 public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
@@ -163,6 +167,18 @@ public sealed class PlatformStatusService
         return new(coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
             .ToArray());
+    }
+
+    public async Task<InventoryHistoryResponse> GetInventoryHistoryAsync(
+        int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 100.");
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var revisions = await database.GetInventoryRevisionSummariesAsync(limit, cancellationToken);
+        return new(DateTimeOffset.UtcNow, revisions.Count == 0 ? "not_initialized" : "available",
+            revisions.Select(value => new InventoryRevisionDto(value.RevisionId, value.ContentHash,
+                value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt)).ToArray());
     }
 
     public async Task<SourceCoverageResponse> GetSourceCoverageAsync(

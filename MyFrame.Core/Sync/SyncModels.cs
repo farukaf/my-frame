@@ -39,3 +39,11 @@ public sealed record InventoryRevisionStatus(
     string CaptureMode,
     string Completeness,
     long Sequence);
+
+public sealed record InventoryRevisionSummary(
+    string RevisionId,
+    string ContentHash,
+    long Sequence,
+    string Completeness,
+    string CaptureMode,
+    DateTimeOffset RetrievedAt);
