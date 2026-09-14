@@ -31,6 +31,25 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task CaptureInboxStatusReportsRuntimeReadinessWithoutPathOrPayload()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-capture-status-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var response = await new PlatformStatusService().GetCaptureInboxStatusAsync();
+
+            Assert.Equal("not_initialized", response.State);
+            Assert.Equal(0, response.PendingMarkers);
+            Assert.False(response.HeartbeatFresh);
+            Assert.Null(response.HeartbeatState);
+            Assert.DoesNotContain(root, JsonSerializer.Serialize(response), StringComparison.Ordinal);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");

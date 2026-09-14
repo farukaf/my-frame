@@ -217,7 +217,7 @@ permitir filtros e paginação previsível.
 | `get_capabilities` | Capacidades disponíveis, parciais e pendentes de validação externa. |
 | `get_market_credential_status` | Estado/expiração da credencial independente do Warframe Market; nunca retorna o token. |
 | `get_sync_status` | Estado somente leitura das fontes, última tentativa, revisão ativa, versão do parser, contagens aceitas/rejeitadas e erro sanitizado. |
-| `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
+| `get_capture_inbox_status` | Status read-only da inbox Overwolf: estado, processos, heartbeat/frescor e marcadores válidos/inválidos; não retorna caminho nem payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
 | `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. No Public Export inclui `components`, `relics`, `marketIdentity`, `imageName` e `productCategory`. |
