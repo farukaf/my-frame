@@ -359,6 +359,8 @@ public partial class DashboardViewModel : ObservableObject
             CollectorCaptureMessage = $"Encontradas {result.Discovered:N0}; novas {result.Imported:N0}; já publicadas {result.AlreadyPublished:N0}; rejeitadas {result.Rejected:N0}.";
             await RefreshCollectorCaptureStatusAsync();
             await RefreshSyncStatusAsync();
+            if (result.Imported > 0)
+                await RefreshAsync();
         }
         catch (Exception error)
         {
