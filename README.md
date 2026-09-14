@@ -38,6 +38,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F214: read model usando relações Public Export normalizadas](docs/validacoes/2026-09-13-f214.md)
 - [F215: consulta MCP unificada de aquisição](docs/validacoes/2026-09-13-f215.md)
 - [F216: smoke MCP de aquisição com catálogo e World State](docs/validacoes/2026-09-13-f216.md)
+- [F217: distribuição 0.0.14 com aquisição MCP](docs/validacoes/2026-09-13-f217.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
