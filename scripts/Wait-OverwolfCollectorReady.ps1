@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$ProbePath,
+    [string]$CollectorRoot,
     [int]$TimeoutSeconds = 300,
     [int]$PollSeconds = 2
 )
@@ -8,8 +9,16 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($TimeoutSeconds -lt 0) { throw 'TimeoutSeconds must be non-negative.' }
 if ($PollSeconds -lt 1) { throw 'PollSeconds must be at least one second.' }
-if ([string]::IsNullOrWhiteSpace($ProbePath)) { $ProbePath = Join-Path $PSScriptRoot '..\artifacts\MyFrame-0.0.17-win-x64\MyFrame.Sync.exe' }
+if ([string]::IsNullOrWhiteSpace($CollectorRoot)) { $CollectorRoot = Join-Path $PSScriptRoot '..\artifacts\collector-overwolf' }
+if ([string]::IsNullOrWhiteSpace($ProbePath)) {
+    $artifactRoot = Join-Path $PSScriptRoot '..\artifacts'
+    $latest = Get-ChildItem -LiteralPath $artifactRoot -Directory -Filter 'MyFrame-*-win-x64' |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($null -eq $latest) { throw 'MCP_DISTRIBUTION_NOT_FOUND' }
+    $ProbePath = Join-Path $latest.FullName 'MyFrame.Sync.exe'
+}
 $probe = (Resolve-Path -LiteralPath $ProbePath -ErrorAction Stop).Path
+$collector = (Resolve-Path -LiteralPath $CollectorRoot -ErrorAction Stop).Path
 $deadline = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
 $last = $null
 
@@ -40,4 +49,6 @@ do {
 
 'OVERWOLF_COLLECTOR_READY=0'
 'OVERWOLF_COLLECTOR_TIMEOUT=1'
+'OVERWOLF_ACTION=load-unpacked-extension'
+"OVERWOLF_EXTENSION_PATH=$collector"
 exit 2
