@@ -366,7 +366,12 @@ public sealed class SyncDatabase : IAsyncDisposable
                     (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
                     (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
                     (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
-                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson)))
+                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson))),
+                    (Path: "components", Observed: records.Any(record => HasJsonArray(record.RawJson, "components"))),
+                    (Path: "relics", Observed: records.Any(record => HasJsonArray(record.RawJson, "relics"))),
+                    (Path: "marketIdentity", Observed: records.Any(record => HasJsonProperties(record.RawJson, "marketId", "marketSlug"))),
+                    (Path: "imageName", Observed: records.Any(record => HasJsonString(record.RawJson, "imageName", "image_name"))),
+                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category")))
                 };
                 foreach (var field in catalogFields)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
@@ -443,6 +448,50 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
+    }
+
+    private static bool HasJsonArray(string? rawJson, string property)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            return document.RootElement.TryGetProperty(property, out var value) &&
+                value.ValueKind == JsonValueKind.Array;
+        }
+        catch (JsonException) { return false; }
+    }
+
+    private static bool HasJsonString(string? rawJson, params string[] properties)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            return properties.Any(property => document.RootElement.TryGetProperty(property, out var value) &&
+                value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
+        }
+        catch (JsonException) { return false; }
+    }
+
+    private static bool HasJsonProperties(string? rawJson, params string[] properties) =>
+        !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
+        properties.All(property => root.TryGetProperty(property, out var value) &&
+            value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
+
+    private static bool TryParseJson(string rawJson, out JsonElement root)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            root = document.RootElement.Clone();
+            return true;
+        }
+        catch (JsonException)
+        {
+            root = default;
+            return false;
+        }
     }
 
     public async Task<InventoryRevisionStatus?> GetActiveInventoryRevisionStatusAsync(

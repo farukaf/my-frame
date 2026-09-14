@@ -194,6 +194,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F199 — retry controlado de fontes Public Export](docs/validacoes/2026-09-13-f199.md)
 - [Validação F200 — retry compartilhado no World State](docs/validacoes/2026-09-13-f200.md)
 - [Validação F201 — agregação dos documentos Public Export](docs/validacoes/2026-09-13-f201.md)
+- [Validação F202 — cobertura rica do catálogo Public Export](docs/validacoes/2026-09-13-f202.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
