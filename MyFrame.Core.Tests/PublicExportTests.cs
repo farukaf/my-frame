@@ -10,7 +10,7 @@ public sealed class PublicExportTests
     public void PublicExportUsesSeparateOfficialIndexAndDocumentHosts()
     {
         Assert.Equal("https://origin.warframe.com/PublicExport/index_en.txt.lzma", PublicExportIndexClient.DefaultIndexUrl);
-        Assert.Equal("https://content.warframe.com/PublicExport/", PublicExportDocumentClient.DefaultBaseUrl);
+        Assert.Equal("https://content.warframe.com/PublicExport/Manifest/", PublicExportDocumentClient.DefaultBaseUrl);
     }
 
     [Fact]
@@ -84,6 +84,17 @@ public sealed class PublicExportTests
         Assert.Equal(1, batch.RecordCount);
         Assert.Equal("public-export-1", batch.ParserVersion);
         Assert.Contains("uniqueName", batch.PayloadJson);
+    }
+
+    [Fact]
+    public async Task DocumentClientPreservesRevisionTagInOfficialPath()
+    {
+        using var client = new HttpClient(new RecordingPathHandler());
+        await new PublicExportDocumentClient(client).FetchBatchAsync(
+            new PublicExportIndexEntry("ExportWeapons_en.json", "00_fixture"),
+            baseUri: new Uri("https://fixture.invalid/PublicExport/"));
+
+        Assert.Equal("/PublicExport/ExportWeapons_en.json!00_fixture", RecordingPathHandler.LastPath);
     }
 
     [Fact]
@@ -205,6 +216,18 @@ public sealed class PublicExportTests
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
     }
 
+    private sealed class RecordingPathHandler : HttpMessageHandler
+    {
+        public static string? LastPath { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            LastPath = request.RequestUri?.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent("[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\"}]", System.Text.Encoding.UTF8, "application/json") });
+        }
+    }
+
     private sealed class RoutedFixtureHandler(string index, string document) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -223,7 +246,7 @@ public sealed class PublicExportTests
             if (request.RequestUri?.AbsolutePath.EndsWith("index_en.txt.lzma", StringComparison.Ordinal) == true)
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(compressedIndex) });
             var index = "ExportWeapons_en.json!00_fixture";
-            if (request.RequestUri?.AbsolutePath.EndsWith(".json", StringComparison.Ordinal) == true)
+            if (request.RequestUri?.AbsolutePath.Contains(".json", StringComparison.Ordinal) == true)
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) });
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(index) });
         }
