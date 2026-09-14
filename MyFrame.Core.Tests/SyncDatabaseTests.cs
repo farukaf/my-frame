@@ -359,6 +359,13 @@ public sealed class SyncDatabaseTests
         Assert.Equal("instance-1", upgrade.OwnerInstanceId);
         Assert.Equal("/Lotus/Mod", upgrade.UpgradeId);
         Assert.Equal(5, upgrade.Rank);
+
+        var revisions = await db.GetInventoryRevisionSummariesAsync();
+        var revision = Assert.Single(revisions);
+        var revisionData = await db.GetInventoryRevisionDataAsync(revision.RevisionId);
+        var attributed = Assert.Single(revisionData!.Upgrades!);
+        Assert.Equal("mods", attributed.SourceField);
+        Assert.Equal("instance-1", attributed.OwnerInstanceId);
     }
 
     [Fact]

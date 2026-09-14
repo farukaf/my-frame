@@ -51,4 +51,5 @@ public sealed record InventoryRevisionSummary(
 public sealed record InventoryRevisionData(
     InventoryRevisionSummary Summary,
     IReadOnlyList<InventoryEquipmentRecord> Equipment,
-    IReadOnlyList<InventoryStackableRecord> Stackables);
+    IReadOnlyList<InventoryStackableRecord> Stackables,
+    IReadOnlyList<InventoryUpgradeRecord>? Upgrades = null);
