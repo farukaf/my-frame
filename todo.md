@@ -345,6 +345,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F307: propagar parserVersion World State para get_acquisition ([evidências](docs/validacoes/2026-09-14-f307.md)).
 - [x] F308: testar procedência World State no caminho de aquisição ([evidências](docs/validacoes/2026-09-14-f308.md)).
 - [x] F309: distribuir 0.0.29 com procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f309.md)).
+- [x] F310: habilitar cobertura do source warframe-market no MCP ([evidências](docs/validacoes/2026-09-14-f310.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

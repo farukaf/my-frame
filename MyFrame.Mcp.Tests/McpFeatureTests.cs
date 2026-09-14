@@ -154,6 +154,23 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task SourceCoverageAllowsRegisteredMarketSource()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-market-coverage-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var response = await new PlatformStatusService().GetSourceCoverageAsync("warframe-market");
+
+            Assert.Equal("not_initialized", response.State);
+            Assert.Null(response.ActiveRevisionId);
+            Assert.Null(response.ParserVersion);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task PublicExportSearchReturnsNormalizedTechnicalAndRecipeFields()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");

@@ -263,7 +263,7 @@ public sealed class PlatformStatusService
     {
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
             throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
-        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "references" };
+        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references" };
         if (!allowed.Contains(sourceId, StringComparer.OrdinalIgnoreCase))
             throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
         if (string.Equals(sourceId, "references", StringComparison.OrdinalIgnoreCase))
