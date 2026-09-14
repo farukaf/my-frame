@@ -37,6 +37,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F213: fontes de relíquia Public Export normalizadas no SQLite](docs/validacoes/2026-09-13-f213.md)
 - [F214: read model usando relações Public Export normalizadas](docs/validacoes/2026-09-13-f214.md)
 - [F215: consulta MCP unificada de aquisição](docs/validacoes/2026-09-13-f215.md)
+- [F216: smoke MCP de aquisição com catálogo e World State](docs/validacoes/2026-09-13-f216.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

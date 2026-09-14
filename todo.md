@@ -251,6 +251,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F213: normalizar fontes de relíquia Public Export em SQLite ([evidências](docs/validacoes/2026-09-13-f213.md)).
 - [x] F214: projetar componentes e relíquias normalizados no read model ([evidências](docs/validacoes/2026-09-13-f214.md)).
 - [x] F215: adicionar consulta MCP unificada de aquisição ([evidências](docs/validacoes/2026-09-13-f215.md)).
+- [x] F216: validar aquisição unificada com catálogo e World State semeados ([evidências](docs/validacoes/2026-09-13-f216.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

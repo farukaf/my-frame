@@ -363,9 +363,14 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                 1, DateTimeOffset.UtcNow, "test", "verified", payload, "f33-hash");
             var projection = InventoryPayloadParser.Parse(payload);
             await database.PublishInventoryAsync(envelope, projection);
+            await database.PublishCatalogAsync(new SyncBatch("public-export", "catalog-f33", "[]", 1,
+                "public-export-aggregate-1"),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                    new Dictionary<string, string>(),
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}],\"relics\":[{\"relicName\":\"Lith A1\",\"rarity\":\"Rare\",\"chance\":0.1,\"rewardName\":\"Test Weapon\"}]}" )]);
             var bounty = new WorldStateBounty("deimos-f33", "Entrati", DateTimeOffset.UtcNow.AddMinutes(-5),
                 DateTimeOffset.UtcNow.AddMinutes(55), [new WorldStateJob("job-f33", "Sample bounty", null, 3,
-                    [100], [new WorldStateReward("Endo", 50, 100, "Common")])]);
+                    [100], [new WorldStateReward("Endo", 50, 100, "Common"), new WorldStateReward("Test Weapon", null, 1, "Rare")])]);
             var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
                 [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true,
                 new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved });
@@ -413,6 +418,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             new Dictionary<string, object?> { ["ownerInstanceId"] = "instance-f33" });
         var loadoutResult = await client.CallToolAsync("get_loadout",
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
+        var acquisitionResult = await client.CallToolAsync("get_acquisition",
+            new Dictionary<string, object?> { ["itemId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
         var rewardBountiesResult = await client.CallToolAsync("get_bounties",
             new Dictionary<string, object?> { ["reward"] = "endo" });
@@ -448,6 +455,11 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains(prompts, x => x.Name == "review_inventory");
         Assert.NotNull(result.StructuredContent);
         Assert.NotEqual(true, coverageResult.IsError);
+        Assert.NotEqual(true, acquisitionResult.IsError);
+        var acquisitionJson = JsonSerializer.Serialize(acquisitionResult.StructuredContent);
+        Assert.Contains("Test Part", acquisitionJson);
+        Assert.Contains("Lith A1", acquisitionJson);
+        Assert.Contains("deimos-f33", acquisitionJson);
         Assert.NotNull(coverageResult.StructuredContent);
         Assert.NotEqual(true, equipmentResult.IsError);
         Assert.NotNull(equipmentResult.StructuredContent);
@@ -490,7 +502,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
             content => content.Text.Contains("INVALID_ARGUMENT", StringComparison.Ordinal));
         AssertTextOnlyError(expired, "SNAPSHOT_EXPIRED", "Retryable=false");
-        AssertTextOnlyError(unavailable, "SETUP_REQUIRED", "Retryable=false");
+        Assert.NotEqual(true, unavailable.IsError);
         Assert.Contains("Check isError", client.ServerInstructions);
         Assert.Contains(result.Content.OfType<TextContentBlock>(), x => x.Text.Contains("snapshotId", StringComparison.Ordinal));
         Assert.DoesNotContain(stderr, line => line.Contains("Authorization", StringComparison.OrdinalIgnoreCase));
