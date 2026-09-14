@@ -408,6 +408,14 @@ public sealed class SyncDatabaseTests
         Assert.Equal("Observed description", snapshot.Catalog.Items[0].Description);
         Assert.Single(snapshot.Catalog.Items[0].Components);
         Assert.Equal(2, snapshot.Catalog.Items[0].Components[0].Required);
+        await using var componentDb = new SyncDatabase(path);
+        var components = await componentDb.GetPublicExportComponentsAsync();
+        var component = Assert.Single(components);
+        Assert.Equal("/Lotus/Weapon", component.ParentUniqueName);
+        Assert.Equal("/Lotus/Part", component.UniqueName);
+        Assert.Equal(2, component.RequiredCount);
+        Assert.Equal(15, component.Ducats);
+        Assert.True(component.Tradable);
     }
 
     [Fact]
