@@ -197,6 +197,36 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task FetchCatalogAggregatesMultipleDocumentsAndDeduplicatesIdenticalRecords()
+    {
+        using var client = new HttpClient(new DocumentMapHandler(new Dictionary<string, string>
+        {
+            ["ExportWarframes_en.json!tag-a"] = "[{\"uniqueName\":\"/Lotus/Warframe\",\"name\":\"Frame\"}]",
+            ["ExportWeapons_en.json!tag-b"] = "[{\"uniqueName\":\"/Lotus/Warframe\",\"name\":\"Frame\"},{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Weapon\"}]"
+        }));
+        var fetch = await new PublicExportSyncRunner().FetchCatalogAsync(new PublicExportDocumentClient(client),
+        [new("ExportWarframes_en.json", "tag-a"), new("ExportWeapons_en.json", "tag-b")]);
+
+        Assert.Equal(2, fetch.DocumentCount);
+        Assert.Equal("public-export-aggregate-1", fetch.Batch.ParserVersion);
+        Assert.Equal(2, fetch.Records.Count);
+    }
+
+    [Fact]
+    public async Task FetchCatalogRejectsConflictingDuplicateRecords()
+    {
+        using var client = new HttpClient(new DocumentMapHandler(new Dictionary<string, string>
+        {
+            ["ExportWarframes_en.json!tag-a"] = "[{\"uniqueName\":\"/Lotus/Same\",\"name\":\"First\"}]",
+            ["ExportWeapons_en.json!tag-b"] = "[{\"uniqueName\":\"/Lotus/Same\",\"name\":\"Second\"}]"
+        }));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => new PublicExportSyncRunner().FetchCatalogAsync(
+            new PublicExportDocumentClient(client),
+            [new("ExportWarframes_en.json", "tag-a"), new("ExportWeapons_en.json", "tag-b")]));
+    }
+
+    [Fact]
     public async Task SharedRunnerClassifiesTransportFailureWithoutLeakingNetworkDetails()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-public-network-{Guid.NewGuid():N}");
@@ -333,5 +363,16 @@ public sealed class PublicExportTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             throw new HttpRequestException("proxy details must not escape");
+    }
+
+    private sealed class DocumentMapHandler(IReadOnlyDictionary<string, string> documents) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var key = request.RequestUri?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).Last() ?? "";
+            return Task.FromResult(documents.TryGetValue(key, out var document)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) }
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
     }
 }

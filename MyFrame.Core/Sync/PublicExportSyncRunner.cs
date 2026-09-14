@@ -13,9 +13,58 @@ public sealed record PublicExportSyncOutcome(
     string? RelativePath = null,
     string? RevisionTag = null);
 
+public sealed record PublicExportCatalogFetch(
+    SyncBatch Batch,
+    IReadOnlyList<PublicExportRecord> Records,
+    int DocumentCount);
+
 /// <summary>Shared orchestration boundary for UI, CLI and future scheduled syncs.</summary>
 public sealed class PublicExportSyncRunner
 {
+    public async Task<PublicExportCatalogFetch> FetchCatalogAsync(
+        PublicExportDocumentClient documentClient,
+        IReadOnlyList<PublicExportIndexEntry> entries,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(documentClient);
+        ArgumentNullException.ThrowIfNull(entries);
+        var catalogEntries = entries.Where(value =>
+            value.RelativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (catalogEntries.Length == 0) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
+        if (catalogEntries.Length > 128) throw new InvalidDataException("PUBLIC_EXPORT_TOO_MANY_DOCUMENTS");
+
+        var recordsByUniqueName = new Dictionary<string, PublicExportRecord>(StringComparer.Ordinal);
+        var rawParts = new List<string>();
+        foreach (var candidate in catalogEntries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var publication = await documentClient.FetchPublicationAsync(candidate, "public-export", cancellationToken: cancellationToken);
+            foreach (var record in publication.Records)
+            {
+                if (recordsByUniqueName.TryGetValue(record.UniqueName, out var existing))
+                {
+                    if (!string.Equals(existing.RawJson, record.RawJson, StringComparison.Ordinal))
+                        throw new InvalidDataException("PUBLIC_EXPORT_DUPLICATE_UNIQUE_NAME");
+                    continue;
+                }
+                recordsByUniqueName.Add(record.UniqueName, record);
+                rawParts.Add(record.RawJson ?? JsonSerializer.Serialize(new
+                {
+                    uniqueName = record.UniqueName, name = record.Name,
+                    category = record.Category, description = record.Description
+                }));
+            }
+        }
+
+        var payload = $"[{string.Join(',', rawParts)}]";
+        if (Encoding.UTF8.GetByteCount(payload) > 256 * 1024 * 1024)
+            throw new InvalidDataException("PUBLIC_EXPORT_CATALOG_TOO_LARGE");
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant();
+        var batch = new SyncBatch("public-export", hash, payload, recordsByUniqueName.Count,
+            catalogEntries.Length == 1 ? "public-export-1" : "public-export-aggregate-1");
+        return new(batch, recordsByUniqueName.Values.ToArray(), catalogEntries.Length);
+    }
+
     public async Task<PublicExportSyncOutcome> RunDirectoryAsync(
         SyncDatabase database,
         SyncHost host,
@@ -134,41 +183,9 @@ public sealed class PublicExportSyncRunner
             if (catalogEntries.Length == 0) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
             entry = catalogEntries[0];
 
-            var recordsByUniqueName = new Dictionary<string, PublicExportRecord>(StringComparer.Ordinal);
-            var rawParts = new List<string>();
-            foreach (var candidate in catalogEntries)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var publication = await documentClient.FetchPublicationAsync(candidate, "public-export", cancellationToken: cancellationToken);
-                foreach (var record in publication.Records)
-                {
-                    if (recordsByUniqueName.TryGetValue(record.UniqueName, out var existing))
-                    {
-                        if (!string.Equals(existing.RawJson, record.RawJson, StringComparison.Ordinal))
-                            throw new InvalidDataException("PUBLIC_EXPORT_DUPLICATE_UNIQUE_NAME");
-                        continue;
-                    }
-
-                    recordsByUniqueName.Add(record.UniqueName, record);
-                    rawParts.Add(record.RawJson ?? JsonSerializer.Serialize(new
-                    {
-                        uniqueName = record.UniqueName,
-                        name = record.Name,
-                        category = record.Category,
-                        description = record.Description
-                    }));
-                }
-            }
-
-            var payload = $"[{string.Join(',', rawParts)}]";
-            if (Encoding.UTF8.GetByteCount(payload) > 256 * 1024 * 1024)
-                throw new InvalidDataException("PUBLIC_EXPORT_CATALOG_TOO_LARGE");
-            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant();
-            var batch = new SyncBatch("public-export", hash, payload, recordsByUniqueName.Count,
-                catalogEntries.Length == 1 ? "public-export-1" : "public-export-aggregate-1");
-            var records = recordsByUniqueName.Values.ToArray();
+            var fetch = await FetchCatalogAsync(documentClient, catalogEntries, cancellationToken);
             var publicationResult = await host.RunCatalogOnceAsync("public-export", _ =>
-                Task.FromResult<(SyncBatch, IReadOnlyList<PublicExportRecord>)>((batch, records)), cancellationToken);
+                Task.FromResult<(SyncBatch, IReadOnlyList<PublicExportRecord>)>((fetch.Batch, fetch.Records)), cancellationToken);
             var status = await database.GetStatusAsync("public-export", cancellationToken);
             var sourcePath = catalogEntries.Length == 1 ? catalogEntries[0].RelativePath : $"aggregate:{catalogEntries.Length}";
             var sourceTag = catalogEntries.Length == 1 ? catalogEntries[0].RevisionTag : null;
