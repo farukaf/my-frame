@@ -192,6 +192,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F197 — ingestão de referência Overframe no SyncHost e MCP](docs/validacoes/2026-09-13-f197.md)
 - [Validação F198 — endpoint oficial versionado do Public Export](docs/validacoes/2026-09-13-f198.md)
 - [Validação F199 — retry controlado de fontes Public Export](docs/validacoes/2026-09-13-f199.md)
+- [Validação F200 — retry compartilhado no World State](docs/validacoes/2026-09-13-f200.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)

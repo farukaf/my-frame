@@ -136,7 +136,7 @@ public sealed class PublicExportIndexClient(HttpClient httpClient, Func<byte[], 
     public const string DefaultIndexUrl = "https://origin.warframe.com/PublicExport/index_en.txt.lzma";
     public async Task<IReadOnlyList<PublicExportIndexEntry>> FetchIndexAsync(Uri? uri = null, CancellationToken cancellationToken = default)
     {
-        using var response = await PublicExportHttp.GetAsync(httpClient, uri ?? new Uri(DefaultIndexUrl), cancellationToken);
+        using var response = await SyncHttp.GetAsync(httpClient, uri ?? new Uri(DefaultIndexUrl), cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"PUBLIC_EXPORT_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length > 4 * 1024 * 1024) throw new InvalidDataException("PUBLIC_EXPORT_INDEX_TOO_LARGE");
@@ -169,7 +169,7 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
         if (!string.IsNullOrWhiteSpace(entry.RevisionTag))
             path = $"{path}!{entry.RevisionTag}";
         var uri = new Uri((baseUri ?? new Uri(DefaultBaseUrl)), path);
-        using var response = await PublicExportHttp.GetAsync(httpClient, uri, cancellationToken);
+        using var response = await SyncHttp.GetAsync(httpClient, uri, cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"PUBLIC_EXPORT_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length == 0 || bytes.Length > 64 * 1024 * 1024) throw new InvalidDataException("PUBLIC_EXPORT_DOCUMENT_TOO_LARGE");
@@ -180,7 +180,7 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
     }
 }
 
-internal static class PublicExportHttp
+internal static class SyncHttp
 {
     private const int MaximumAttempts = 3;
     private const int MaximumRetryAfterSeconds = 10;
