@@ -288,6 +288,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F250: testar endpoint real da Wiki e registrar bloqueio de conectividade ([evidências](docs/validacoes/2026-09-14-f250.md)).
 - [x] F251: adicionar detalhe de seção atribuída para referências no MCP ([evidências](docs/validacoes/2026-09-14-f251.md)).
 - [x] F252: atualizar skills para consultar detalhe de referência com atribuição ([evidências](docs/validacoes/2026-09-14-f252.md)).
+- [x] F253: executar regressão Core/MCP após detalhe de referências ([evidências](docs/validacoes/2026-09-14-f253.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
