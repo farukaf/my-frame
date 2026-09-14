@@ -31,10 +31,27 @@ public sealed class CollectorCaptureStatusProbeTests
 
         Assert.Equal("heartbeat-only", result.State);
         Assert.Equal("started", result.HeartbeatState);
+        Assert.True(result.HeartbeatFresh);
         Assert.Equal(1, result.ReadyMarkers);
         Assert.Equal(0, result.ValidMarkers);
         Assert.Equal(1, result.InvalidMarkers);
         Assert.Contains("CAPTURE_FORMAT_INVALID", result.InvalidByCode.Keys);
+    }
+
+    [Fact]
+    public async Task DoesNotTreatExpiredHeartbeatAsActive()
+    {
+        using var folder = new TemporaryFolder();
+        await File.WriteAllTextAsync(Path.Combine(folder.Path, "collector-status.json"), JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1, kind = "my-frame-collector", state = "started",
+            timestampUtc = DateTimeOffset.UtcNow.AddHours(-2)
+        }));
+
+        var result = await CollectorCaptureStatusProbe.ReadAsync(folder.Path);
+
+        Assert.Equal("idle", result.State);
+        Assert.False(result.HeartbeatFresh);
     }
 
     private sealed class TemporaryFolder : IDisposable

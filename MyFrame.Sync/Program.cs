@@ -75,6 +75,7 @@ if (overwolfInventoryProbe)
         directoryExists = result.DirectoryExists,
         heartbeatState = result.HeartbeatState,
         heartbeatTimestampUtc = result.HeartbeatTimestampUtc,
+        heartbeatFresh = result.HeartbeatFresh,
         readyMarkers = result.ReadyMarkers,
         validMarkers = result.ValidMarkers,
         invalidMarkers = result.InvalidMarkers,

@@ -7,6 +7,7 @@ public sealed record CollectorCaptureStatus(
     bool DirectoryExists,
     string? HeartbeatState,
     DateTimeOffset? HeartbeatTimestampUtc,
+    bool HeartbeatFresh,
     int ReadyMarkers,
     int ValidMarkers,
     int InvalidMarkers,
@@ -21,7 +22,7 @@ public static class CollectorCaptureStatusProbe
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
         var absoluteDirectory = Path.GetFullPath(directory);
         if (!Directory.Exists(absoluteDirectory))
-            return new("missing", false, null, null, 0, 0, 0,
+            return new("missing", false, null, null, false, 0, 0, 0,
                 new Dictionary<string, int>(StringComparer.Ordinal));
 
         var heartbeat = ReadHeartbeat(Path.Combine(absoluteDirectory, "collector-status.json"));
@@ -46,30 +47,31 @@ public static class CollectorCaptureStatusProbe
             }
         }
 
-        var state = heartbeat.State is "started" && valid > 0 ? "ready" :
-            heartbeat.State is "started" ? "heartbeat-only" :
+        var state = heartbeat.Fresh && valid > 0 ? "ready" :
+            heartbeat.Fresh ? "heartbeat-only" :
             markers.Length > 0 ? "captures-only" : "idle";
-        return new(state, true, heartbeat.State, heartbeat.TimestampUtc, markers.Length, valid,
+        return new(state, true, heartbeat.State, heartbeat.TimestampUtc, heartbeat.Fresh, markers.Length, valid,
             markers.Length - valid, invalidByCode);
     }
 
-    private static (string? State, DateTimeOffset? TimestampUtc) ReadHeartbeat(string path)
+    private static (string? State, DateTimeOffset? TimestampUtc, bool Fresh) ReadHeartbeat(string path)
     {
-        if (!File.Exists(path)) return (null, null);
+        if (!File.Exists(path)) return (null, null, false);
         try
         {
             using var document = JsonDocument.Parse(File.ReadAllBytes(path), new() { MaxDepth = 8 });
             var root = document.RootElement;
             if (root.GetProperty("schemaVersion").GetInt32() != 1 ||
-                root.GetProperty("kind").GetString() != "my-frame-collector") return ("invalid", null);
+                root.GetProperty("kind").GetString() != "my-frame-collector") return ("invalid", null, false);
             var state = root.GetProperty("state").GetString();
-            return (state, DateTimeOffset.TryParse(root.GetProperty("timestampUtc").GetString(), out var timestamp)
-                ? timestamp : null);
+            var parsed = DateTimeOffset.TryParse(root.GetProperty("timestampUtc").GetString(), out var timestamp);
+            return (state, parsed ? timestamp : null,
+                state is "started" && parsed && DateTimeOffset.UtcNow - timestamp < TimeSpan.FromHours(1));
         }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or
                                        KeyNotFoundException or UnauthorizedAccessException)
         {
-            return ("invalid", null);
+            return ("invalid", null, false);
         }
     }
 }
