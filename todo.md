@@ -228,6 +228,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F190: executar regressão Core/MCP após envelopes estruturados ([evidências](docs/validacoes/2026-09-13-f190.md)).
 - [x] F191: publicar inventário e Public Export no mesmo SQLite e validar snapshot parcial ([evidências](docs/validacoes/2026-09-13-f191.md)).
 - [x] F192: preservar identidades de mercado e validar preços, ordens, vendas e excedentes no MCP ([evidências](docs/validacoes/2026-09-13-f192.md)).
+- [x] F193: automatizar a identidade de mercado e publicar o pacote MCP 0.0.9 ([evidências](docs/validacoes/2026-09-13-f193.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

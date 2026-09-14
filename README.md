@@ -185,6 +185,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F190 — regressão após envelopes estruturados do MCP](docs/validacoes/2026-09-13-f190.md)
 - [Validação F191 — snapshot combinado de inventário e Public Export](docs/validacoes/2026-09-13-f191.md)
 - [Validação F192 — cobertura econômica com preços, ordens e identidades do Public Export](docs/validacoes/2026-09-13-f192.md)
+- [Validação F193 — teste automatizado de identidade de mercado e pacote 0.0.9](docs/validacoes/2026-09-13-f193.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)
