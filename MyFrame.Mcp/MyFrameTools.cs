@@ -127,7 +127,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_acquisition", Title = "Get item acquisition sources", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Combines normalized catalog components and relic sources with currently active World State bounties for one stable itemId. It is read-only, revision-aware, and does not invent sources when a dataset is unavailable.")]
+    [Description("Combines normalized catalog components and relic sources with currently active World State bounties for one stable itemId. It includes catalog/World State revisions and parser provenance, is read-only, and does not invent sources when a dataset is unavailable.")]
     public Task<AcquisitionResponse> GetAcquisition(
         [Description("Exact catalog itemId/uniqueName returned by another My Frame tool.")] string itemId,
         [Description("Maximum entries per acquisition source from 1 to 200; default 100.")] int limit = 100,

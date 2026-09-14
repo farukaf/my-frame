@@ -342,6 +342,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F304: executar regressão sequencial Core/MCP após F303 ([evidências](docs/validacoes/2026-09-14-f304.md)).
 - [x] F305: revalidar pacote e testes Node do coletor antes da homologação F1 ([evidências](docs/validacoes/2026-09-14-f305.md)).
 - [x] F306: cobrir procedência World State no MCP com publicação SQLite real ([evidências](docs/validacoes/2026-09-14-f306.md)).
+- [x] F307: propagar parserVersion World State para get_acquisition ([evidências](docs/validacoes/2026-09-14-f307.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
