@@ -258,19 +258,22 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                     DateTimeOffset.UtcNow.AddMinutes(-1), "native", "verified", "{}", "changes-1");
                 var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow, ContentHash = "changes-2" };
                 await database.PublishInventoryAsync(first, new InventoryProjection(
-                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}")],
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}"),
+                     new InventoryEquipmentRecord("config-instance", "/Lotus/Weapon", 30, "{\"configSecret\":\"old\"}", InventoryFieldState.Known, InventoryFieldState.Known, "{}")],
                     [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
                     [new InventoryUpgradeRecord("instance", "mods", "/Lotus/OldMod", 3, "{\"secret\":true}")]));
                 await database.PublishInventoryAsync(second, new InventoryProjection(
-                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}")],
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}"),
+                     new InventoryEquipmentRecord("config-instance", "/Lotus/Weapon", 30, "{\"configSecret\":\"new\"}", InventoryFieldState.Known, InventoryFieldState.Known, "{}")],
                     [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
                     [new InventoryUpgradeRecord("instance", "mods", "/Lotus/NewMod", 5, "{\"secret\":false}")]));
             }
 
             var response = await new PlatformStatusService().GetInventoryChangesAsync();
             Assert.Equal("available", response.State);
-            Assert.Equal(4, response.Items.Count);
+            Assert.Equal(5, response.Items.Count);
             Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Change == "changed" && value.AfterRank == 20);
+            Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Key == "config-instance" && value.Change == "changed");
             Assert.Contains(response.Items, value => value.Kind == "stackable" && value.Key == "/Lotus/New" && value.Change == "added");
             Assert.Contains(response.Items, value => value.Kind == "upgrade" && value.Change == "changed" && value.BeforeTypeId == "/Lotus/OldMod" && value.AfterTypeId == "/Lotus/NewMod" && value.AfterRank == 5);
             Assert.DoesNotContain("private", JsonSerializer.Serialize(response), StringComparison.Ordinal);

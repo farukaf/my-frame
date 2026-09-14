@@ -232,7 +232,8 @@ public sealed class PlatformStatusService
             equipmentBefore.TryGetValue(key, out var oldValue);
             equipmentAfter.TryGetValue(key, out var newValue);
             var changed = oldValue is null || newValue is null || oldValue.TypeId != newValue.TypeId ||
-                oldValue.Rank != newValue.Rank || oldValue.RankState != newValue.RankState || oldValue.ConfigState != newValue.ConfigState;
+                oldValue.Rank != newValue.Rank || oldValue.RankState != newValue.RankState ||
+                oldValue.ConfigState != newValue.ConfigState || oldValue.ConfigJson != newValue.ConfigJson;
             if (changed)
                 changes.Add(new("equipment", key, oldValue is null ? "added" : newValue is null ? "removed" : "changed",
                     oldValue?.TypeId, newValue?.TypeId, oldValue?.Rank, newValue?.Rank, null, null,
