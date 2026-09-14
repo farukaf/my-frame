@@ -306,6 +306,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F268: publicar 0.0.24 e validar referência empacotada, upgrade SQLite e gate read-only ([evidências](docs/validacoes/2026-09-14-f268.md)).
 - [x] F269: selecionar automaticamente o pacote mais recente no smoke de referências ([evidências](docs/validacoes/2026-09-14-f269.md)).
 - [x] F270: selecionar automaticamente o pacote mais recente no smoke econômico ([evidências](docs/validacoes/2026-09-14-f270.md)).
+- [x] F271: atualizar e verificar Codex/Claude contra o MCP distribuído 0.0.24 ([evidências](docs/validacoes/2026-09-14-f271.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
