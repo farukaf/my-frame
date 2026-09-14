@@ -61,7 +61,12 @@ if (publicExportProbe)
     catch (OperationCanceledException) { throw; }
     catch (Exception error)
     {
-        Console.WriteLine(JsonSerializer.Serialize(new { state = "unreachable", source = "public-export", errorCode = error.Message }));
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            state = "unreachable",
+            source = "public-export",
+            errorCode = PublicExportProbeErrorCode(error)
+        }));
         return 1;
     }
 }
@@ -300,6 +305,15 @@ if (allLocal)
     }));
     return success ? 0 : 1;
 }
+
+static string PublicExportProbeErrorCode(Exception error) => error switch
+{
+    HttpRequestException => "PUBLIC_EXPORT_NETWORK_UNAVAILABLE",
+    TaskCanceledException => "PUBLIC_EXPORT_TIMEOUT",
+    InvalidDataException => "PUBLIC_EXPORT_INVALID_DATA",
+    NotSupportedException => "PUBLIC_EXPORT_UNSUPPORTED",
+    _ => "PUBLIC_EXPORT_PROBE_FAILED"
+};
 
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
 try
