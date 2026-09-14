@@ -45,9 +45,10 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
             new Dictionary<string, long>(StringComparer.Ordinal), 0, 0, "my-frame-sqlite");
 
         var items = records.Select(PublicExportCatalogMapper.Map).ToArray();
+        var market = PublicExportCatalogMapper.MarketMappings(records, items);
         var catalog = new CatalogSnapshot(items,
             items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal),
-            new Dictionary<string, MarketIdentity>(StringComparer.Ordinal));
+            market);
         return new(inventory, catalog, File.GetLastWriteTimeUtc(databasePath));
     }
 }
@@ -82,6 +83,41 @@ internal static class PublicExportCatalogMapper
                 String(root, "itemType") ?? "");
         }
         catch (JsonException) { return Minimal(record); }
+    }
+
+    public static IReadOnlyDictionary<string, MarketIdentity> MarketMappings(
+        IReadOnlyList<PublicExportRecord> records, IReadOnlyList<CatalogItem> items)
+    {
+        var result = new Dictionary<string, MarketIdentity>(StringComparer.Ordinal);
+        foreach (var pair in records.Zip(items))
+        {
+            if (string.IsNullOrWhiteSpace(pair.First.RawJson)) continue;
+            try
+            {
+                using var document = JsonDocument.Parse(pair.First.RawJson);
+                var root = document.RootElement;
+                Add(root, pair.Second.Name, result);
+                if (!root.TryGetProperty("components", out var components) || components.ValueKind != JsonValueKind.Array)
+                    continue;
+                foreach (var component in components.EnumerateArray())
+                {
+                    var componentName = String(component, "name");
+                    if (string.IsNullOrWhiteSpace(componentName)) continue;
+                    Add(component, $"{pair.Second.Name} {componentName}", result);
+                }
+            }
+            catch (JsonException) { }
+        }
+        return result;
+    }
+
+    private static void Add(JsonElement element, string displayName,
+        IDictionary<string, MarketIdentity> result)
+    {
+        var id = String(element, "marketId");
+        var slug = String(element, "marketSlug");
+        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(slug))
+            result[ItemNameNormalizer.Normalize(displayName)] = new(id, slug);
     }
 
     private static CatalogItem Minimal(PublicExportRecord record) => new(record.UniqueName,

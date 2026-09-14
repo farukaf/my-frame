@@ -338,12 +338,20 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         sources["settings"] = new(settings is null ? "missing" : "valid", settings?.UpdatedAt);
         sources["inventory"] = new("valid", synchronized.RetrievedAt, false, "SYNC_DATABASE");
         sources["catalog"] = new("partial", synchronized.RetrievedAt, false, "PUBLIC_EXPORT_MINIMAL");
-        sources["prices"] = quotes.Count == 0 ? new("missing", null) : new("stale", quotes.Values.Max(x => x.RetrievedAt));
-        sources["orders"] = marketState is null ? new("missing", null) : new("unverified", marketState.RetrievedAt);
+        var latestPrice = quotes.Count == 0 ? (DateTimeOffset?)null : quotes.Values.Max(x => x.RetrievedAt);
+        var pricesStale = quotes.Values.Any(quote => now - quote.RetrievedAt > QuoteFreshness);
+        sources["prices"] = quotes.Count == 0 ? new("missing", null) :
+            new(pricesStale ? "stale" : "valid", latestPrice);
+        var ordersFresh = marketState is not null && now - marketState.RetrievedAt <= OrderFreshness;
+        var ordersValid = marketState is not null &&
+            !marketState.ValidationState.Equals("invalidated", StringComparison.OrdinalIgnoreCase) &&
+            marketState.ValidationState.Equals("confirmed", StringComparison.OrdinalIgnoreCase) && ordersFresh;
+        sources["orders"] = marketState is null ? new("missing", null) :
+            new(ordersValid ? "valid" : "unverified", marketState.RetrievedAt);
         warnings.Add(new("SYNC_DATABASE_PARTIAL", "Inventory and catalog came from My Frame SQLite; catalog components and player progression fields are not observed yet."));
         var recommendations = _engine.Evaluate(inventory, synchronized.Catalog, quotes, orders, effectiveSettings.RecommendationSettings);
         return new(Guid.NewGuid().ToString("N"), now, now, inventory, synchronized.Catalog, recommendations,
-            account, orders, quotes, effectiveSettings, sources, warnings, false, false, now + TimeSpan.FromSeconds(30));
+            account, orders, quotes, effectiveSettings, sources, warnings, false, ordersValid, now + TimeSpan.FromSeconds(30));
     }
 
     private static DateTimeOffset CatalogTimestamp(string directory)
