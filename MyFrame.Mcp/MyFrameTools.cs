@@ -25,7 +25,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_capture_inbox_status", Title = "Get capture inbox status", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns read-only metadata about local Overwolf capture markers. It never reads payload contents, imports files, starts synchronization, or exposes the inbox path.")]
+    [Description("Returns read-only metadata about local Overwolf capture markers, heartbeat freshness and sanitized collector callback diagnostics. It never reads payload contents, imports files, starts synchronization, or exposes the inbox path.")]
     public Task<CaptureInboxStatusResponse> GetCaptureInboxStatus(CancellationToken cancellationToken = default) =>
         platform.GetCaptureInboxStatusAsync(cancellationToken);
 

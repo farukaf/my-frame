@@ -25,7 +25,10 @@ public sealed class CollectorCaptureStatusProbeTests
         await File.WriteAllTextAsync(Path.Combine(folder.Path, "collector-status.json"), JsonSerializer.Serialize(new
         {
             schemaVersion = 1, kind = "my-frame-collector", state = "started",
-            timestampUtc = DateTimeOffset.UtcNow
+            timestampUtc = DateTimeOffset.UtcNow, collectorState = "waitingForInventory",
+            supportedFeatures = new[] { "match_info", "game_info" },
+            eventCounts = new Dictionary<string, int> { ["match_info"] = 2 },
+            lastEventFeature = "match_info", lastEventAt = DateTimeOffset.UtcNow
         }));
         await File.WriteAllTextAsync(Path.Combine(folder.Path, "bad.ready.json"), "{}");
 
@@ -38,6 +41,11 @@ public sealed class CollectorCaptureStatusProbeTests
         Assert.Equal(0, result.ValidMarkers);
         Assert.Equal(1, result.InvalidMarkers);
         Assert.Contains("CAPTURE_FORMAT_INVALID", result.InvalidByCode.Keys);
+        Assert.Equal("waitingForInventory", result.CollectorState);
+        Assert.Contains("match_info", result.SupportedFeatures!);
+        Assert.Equal(2, result.EventCounts!["match_info"]);
+        Assert.Equal("match_info", result.LastEventFeature);
+        Assert.NotNull(result.LastEventAt);
     }
 
     [Fact]
