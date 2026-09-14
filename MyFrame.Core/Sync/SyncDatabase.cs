@@ -58,7 +58,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE INDEX IF NOT EXISTS ix_public_export_components_unique_name ON public_export_components(unique_name);
             CREATE TABLE IF NOT EXISTS public_export_relics(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), reward_unique_name TEXT NOT NULL, ordinal INTEGER NOT NULL, relic_name TEXT NOT NULL, rarity TEXT NOT NULL, chance REAL NOT NULL, vaulted INTEGER NOT NULL, reward_name TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, reward_unique_name, ordinal));
             CREATE INDEX IF NOT EXISTS ix_public_export_relics_relic_name ON public_export_relics(relic_name);
-            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot');
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot', context_id TEXT);
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -73,6 +73,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "public_export_items", "aliases_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "inventory_revisions", "capture_mode", "TEXT NOT NULL DEFAULT 'snapshot'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "context_id", "TEXT");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -469,7 +470,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             }
             if (inventory is { } data)
             {
-                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode) VALUES ($revision, $session, $event, $sequence, $completeness, $mode);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode));
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode, context_id) VALUES ($revision, $session, $event, $sequence, $completeness, $mode, $context);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode), ("$context", (object?)data.Envelope.ContextId ?? DBNull.Value));
                 foreach (var equipment in data.Projection.Equipment)
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
                 for (var index = 0; index < data.Projection.Stackables.Count; index++)
@@ -595,7 +596,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT ir.capture_mode, ir.completeness, ir.sequence
+            SELECT ir.capture_mode, ir.completeness, ir.sequence, ir.context_id
             FROM inventory_revisions ir
             JOIN source_revisions r ON r.revision_id=ir.revision_id
             WHERE r.source_id='overwolf-inventory' AND r.state='active'
@@ -603,7 +604,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             """;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
-        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2));
+        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetString(3));
     }
 
     public async Task<IReadOnlyList<InventoryRevisionSummary>> GetInventoryRevisionSummariesAsync(
@@ -615,7 +617,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
-                   ir.capture_mode, r.retrieved_at
+                   ir.capture_mode, r.retrieved_at, ir.context_id
             FROM inventory_revisions ir
             JOIN source_revisions r ON r.revision_id=ir.revision_id
             WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
@@ -627,7 +629,8 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
             result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
-                reader.GetString(3), reader.GetString(4), DateTimeOffset.Parse(reader.GetString(5))));
+                reader.GetString(3), reader.GetString(4), DateTimeOffset.Parse(reader.GetString(5)),
+                reader.IsDBNull(6) ? null : reader.GetString(6)));
         return result;
     }
 
@@ -639,7 +642,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var summaryCommand = connection.CreateCommand();
         summaryCommand.CommandText = """
             SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
-                   ir.capture_mode, r.retrieved_at
+                   ir.capture_mode, r.retrieved_at, ir.context_id
             FROM inventory_revisions ir
             JOIN source_revisions r ON r.revision_id=ir.revision_id
             WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
@@ -650,7 +653,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         if (!await summaryReader.ReadAsync(cancellationToken)) return null;
         var summary = new InventoryRevisionSummary(summaryReader.GetString(0), summaryReader.GetString(1),
             summaryReader.GetInt64(2), summaryReader.GetString(3), summaryReader.GetString(4),
-            DateTimeOffset.Parse(summaryReader.GetString(5)));
+            DateTimeOffset.Parse(summaryReader.GetString(5)), summaryReader.IsDBNull(6) ? null : summaryReader.GetString(6));
         var equipment = new List<InventoryEquipmentRecord>();
         await using (var equipmentCommand = connection.CreateCommand())
         {

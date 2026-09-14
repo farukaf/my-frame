@@ -38,7 +38,8 @@ public sealed record SyncRunSummary(
 public sealed record InventoryRevisionStatus(
     string CaptureMode,
     string Completeness,
-    long Sequence);
+    long Sequence,
+    string? ContextId = null);
 
 public sealed record InventoryRevisionSummary(
     string RevisionId,
@@ -46,7 +47,8 @@ public sealed record InventoryRevisionSummary(
     long Sequence,
     string Completeness,
     string CaptureMode,
-    DateTimeOffset RetrievedAt);
+    DateTimeOffset RetrievedAt,
+    string? ContextId = null);
 
 public sealed record InventoryRevisionData(
     InventoryRevisionSummary Summary,
