@@ -329,8 +329,9 @@ public partial class DashboardViewModel : ObservableObject
         try
         {
             var status = await _collectorCaptureInbox.ReadStatusAsync();
-            CollectorCaptureStatusText = $"Collector: {status.State}; heartbeat {status.HeartbeatState ?? "missing"}" +
-                $"; fresh {status.HeartbeatFresh}; markers {status.ReadyMarkers:N0} ({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid).";
+            CollectorCaptureStatusText = $"Collector: {status.State}; Overwolf {status.OverwolfRunning}; Warframe {status.WarframeRunning}; " +
+                $"heartbeat {status.HeartbeatState ?? "missing"} (fresh {status.HeartbeatFresh}); markers {status.ReadyMarkers:N0} " +
+                $"({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid).";
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
         {

@@ -49,6 +49,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F225: probe read-only do inbox Overwolf](docs/validacoes/2026-09-14-f225.md)
 - [F226: status do coletor na página de sincronização](docs/validacoes/2026-09-14-f226.md)
 - [F227: renovação do heartbeat Overwolf](docs/validacoes/2026-09-14-f227.md)
+- [F228: presença dos processos no diagnóstico do coletor](docs/validacoes/2026-09-14-f228.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

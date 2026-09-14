@@ -1,10 +1,13 @@
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace MyFrame.Core;
 
 public sealed record CollectorCaptureStatus(
     string State,
     bool DirectoryExists,
+    bool OverwolfRunning,
+    bool WarframeRunning,
     string? HeartbeatState,
     DateTimeOffset? HeartbeatTimestampUtc,
     bool HeartbeatFresh,
@@ -22,7 +25,7 @@ public static class CollectorCaptureStatusProbe
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
         var absoluteDirectory = Path.GetFullPath(directory);
         if (!Directory.Exists(absoluteDirectory))
-            return new("missing", false, null, null, false, 0, 0, 0,
+            return new("missing", false, IsProcessRunning("Overwolf"), IsProcessRunning("Warframe.x64"), null, null, false, 0, 0, 0,
                 new Dictionary<string, int>(StringComparer.Ordinal));
 
         var heartbeat = ReadHeartbeat(Path.Combine(absoluteDirectory, "collector-status.json"));
@@ -50,8 +53,15 @@ public static class CollectorCaptureStatusProbe
         var state = heartbeat.Fresh && valid > 0 ? "ready" :
             heartbeat.Fresh ? "heartbeat-only" :
             markers.Length > 0 ? "captures-only" : "idle";
-        return new(state, true, heartbeat.State, heartbeat.TimestampUtc, heartbeat.Fresh, markers.Length, valid,
+        return new(state, true, IsProcessRunning("Overwolf"), IsProcessRunning("Warframe.x64"), heartbeat.State, heartbeat.TimestampUtc, heartbeat.Fresh, markers.Length, valid,
             markers.Length - valid, invalidByCode);
+    }
+
+    private static bool IsProcessRunning(string name)
+    {
+        try { return Process.GetProcessesByName(name).Length > 0; }
+        catch (InvalidOperationException) { return false; }
+        catch (System.ComponentModel.Win32Exception) { return false; }
     }
 
     private static (string? State, DateTimeOffset? TimestampUtc, bool Fresh) ReadHeartbeat(string path)
