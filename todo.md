@@ -296,6 +296,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F258: publicar 0.0.20, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f258.md)).
 - [x] F259: expor histórico sanitizado de revisões do inventário no MCP ([evidências](docs/validacoes/2026-09-14-f259.md)).
 - [x] F260: publicar 0.0.21, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f260.md)).
+- [x] F261: adicionar comparação segura de snapshots e proteção contra deltas incompletas ([evidências](docs/validacoes/2026-09-14-f261.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

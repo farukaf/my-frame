@@ -27,6 +27,11 @@ public sealed record InventoryRevisionDto(string RevisionId, string ContentHash,
     string Completeness, string CaptureMode, DateTimeOffset RetrievedAt);
 public sealed record InventoryHistoryResponse(DateTimeOffset ServedAt, string State,
     IReadOnlyList<InventoryRevisionDto> Items);
+public sealed record InventoryChangeDto(string Kind, string Key, string Change,
+    string? BeforeTypeId, string? AfterTypeId, int? BeforeRank, int? AfterRank,
+    int? BeforeQuantity, int? AfterQuantity, string BeforeState, string AfterState);
+public sealed record InventoryChangesResponse(DateTimeOffset ServedAt, string State,
+    string? FromRevisionId, string? ToRevisionId, IReadOnlyList<InventoryChangeDto> Items);
 public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
 public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
@@ -179,6 +184,62 @@ public sealed class PlatformStatusService
         return new(DateTimeOffset.UtcNow, revisions.Count == 0 ? "not_initialized" : "available",
             revisions.Select(value => new InventoryRevisionDto(value.RevisionId, value.ContentHash,
                 value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt)).ToArray());
+    }
+
+    public async Task<InventoryChangesResponse> GetInventoryChangesAsync(
+        string? fromRevisionId = null, string? toRevisionId = null, int limit = 200,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 500)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 500.");
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var summaries = await database.GetInventoryRevisionSummariesAsync(100, cancellationToken);
+        if (summaries.Count == 0)
+            return new(DateTimeOffset.UtcNow, "not_initialized", null, null, []);
+        var to = toRevisionId is null ? summaries[0] : summaries.FirstOrDefault(value => value.RevisionId == toRevisionId);
+        if (to is null) return new(DateTimeOffset.UtcNow, "not_found", fromRevisionId, toRevisionId, []);
+        var from = fromRevisionId is null
+            ? summaries.FirstOrDefault(value => value.RevisionId != to.RevisionId)
+            : summaries.FirstOrDefault(value => value.RevisionId == fromRevisionId);
+        if (from is null) return new(DateTimeOffset.UtcNow, "insufficient_history", null, to.RevisionId, []);
+        var before = await database.GetInventoryRevisionDataAsync(from.RevisionId, cancellationToken);
+        var after = await database.GetInventoryRevisionDataAsync(to.RevisionId, cancellationToken);
+        if (before is null || after is null) return new(DateTimeOffset.UtcNow, "not_found", from.RevisionId, to.RevisionId, []);
+        if (before.Summary.CaptureMode == "delta" || after.Summary.CaptureMode == "delta")
+            return new(DateTimeOffset.UtcNow, "partial", from.RevisionId, to.RevisionId, []);
+
+        var changes = new List<InventoryChangeDto>();
+        var equipmentBefore = before.Equipment.ToDictionary(value => value.InstanceId, StringComparer.Ordinal);
+        var equipmentAfter = after.Equipment.ToDictionary(value => value.InstanceId, StringComparer.Ordinal);
+        foreach (var key in equipmentBefore.Keys.Union(equipmentAfter.Keys, StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal))
+        {
+            equipmentBefore.TryGetValue(key, out var oldValue);
+            equipmentAfter.TryGetValue(key, out var newValue);
+            var changed = oldValue is null || newValue is null || oldValue.TypeId != newValue.TypeId ||
+                oldValue.Rank != newValue.Rank || oldValue.RankState != newValue.RankState || oldValue.ConfigState != newValue.ConfigState;
+            if (changed)
+                changes.Add(new("equipment", key, oldValue is null ? "added" : newValue is null ? "removed" : "changed",
+                    oldValue?.TypeId, newValue?.TypeId, oldValue?.Rank, newValue?.Rank, null, null,
+                    oldValue?.RankState.ToString() ?? "NotObserved", newValue?.RankState.ToString() ?? "NotObserved"));
+        }
+
+        static Dictionary<string, InventoryStackableRecord> Aggregate(IReadOnlyList<InventoryStackableRecord> values) =>
+            values.Where(value => value.TypeId is not null).GroupBy(value => value.TypeId!, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => new InventoryStackableRecord(group.Key,
+                    group.All(value => value.Quantity is not null) ? group.Sum(value => value.Quantity!.Value) : null,
+                    group.All(value => value.QuantityState == InventoryFieldState.Known) ? InventoryFieldState.Known : InventoryFieldState.NotObserved, "{}"), StringComparer.Ordinal);
+        var stackBefore = Aggregate(before.Stackables);
+        var stackAfter = Aggregate(after.Stackables);
+        foreach (var key in stackBefore.Keys.Union(stackAfter.Keys, StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal))
+        {
+            stackBefore.TryGetValue(key, out var oldValue);
+            stackAfter.TryGetValue(key, out var newValue);
+            if (oldValue?.Quantity == newValue?.Quantity && oldValue?.QuantityState == newValue?.QuantityState) continue;
+            changes.Add(new("stackable", key, oldValue is null ? "added" : newValue is null ? "removed" : "changed",
+                null, null, null, null, oldValue?.Quantity, newValue?.Quantity,
+                oldValue?.QuantityState.ToString() ?? "NotObserved", newValue?.QuantityState.ToString() ?? "NotObserved"));
+        }
+        return new(DateTimeOffset.UtcNow, "available", from.RevisionId, to.RevisionId, changes.Take(limit).ToArray());
     }
 
     public async Task<SourceCoverageResponse> GetSourceCoverageAsync(

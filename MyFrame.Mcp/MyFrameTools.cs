@@ -50,6 +50,15 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum revisions from 1 to 100; default 20.")] int limit = 20,
         CancellationToken cancellationToken = default) => platform.GetInventoryHistoryAsync(limit, cancellationToken);
 
+    [McpServerTool(Name = "get_inventory_changes", Title = "Compare inventory revisions", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Compares two complete inventory snapshot revisions without exposing raw payloads. Delta captures return partial and produce no inferred additions/removals.")]
+    public Task<InventoryChangesResponse> GetInventoryChanges(
+        [Description("Optional previous revision id from get_inventory_history.")] string? fromRevisionId = null,
+        [Description("Optional target revision id from get_inventory_history.")] string? toRevisionId = null,
+        [Description("Maximum changes from 1 to 500; default 200.")] int limit = 200,
+        CancellationToken cancellationToken = default) => platform.GetInventoryChangesAsync(fromRevisionId, toRevisionId, limit, cancellationToken);
+
     [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns field-level coverage for a synchronized source such as public-export, worldstate-pc, or overwolf-inventory. Public Export coverage includes components, relics, marketIdentity, imageName, and productCategory. It never returns raw payloads and preserves NotObserved instead of guessing.")]
