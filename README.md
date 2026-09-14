@@ -80,6 +80,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F256: revalidação da matriz F10 e dos gates externos](docs/validacoes/2026-09-14-f256.md)
 - [F257: cobertura explícita da fonte de referências](docs/validacoes/2026-09-14-f257.md)
 - [F258: distribuição 0.0.20 com cobertura de referências](docs/validacoes/2026-09-14-f258.md)
+- [F259: histórico de revisões do inventário no MCP](docs/validacoes/2026-09-14-f259.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.

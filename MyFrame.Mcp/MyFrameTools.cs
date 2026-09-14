@@ -43,6 +43,13 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<InventoryCoverageResponse> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
         platform.GetInventoryCoverageAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_inventory_history", Title = "Get inventory revision history", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns sanitized inventory revision metadata from SQLite, including sequence, completeness and snapshot/delta mode. It never returns raw payloads or claims that a delta is a complete inventory.")]
+    public Task<InventoryHistoryResponse> GetInventoryHistory(
+        [Description("Maximum revisions from 1 to 100; default 20.")] int limit = 20,
+        CancellationToken cancellationToken = default) => platform.GetInventoryHistoryAsync(limit, cancellationToken);
+
     [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns field-level coverage for a synchronized source such as public-export, worldstate-pc, or overwolf-inventory. Public Export coverage includes components, relics, marketIdentity, imageName, and productCategory. It never returns raw payloads and preserves NotObserved instead of guessing.")]

@@ -294,6 +294,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F256: revalidar matriz F10 e registrar estado dos gates externos ([evidências](docs/validacoes/2026-09-14-f256.md)).
 - [x] F257: expor cobertura de documentos e atribuição para referências no MCP ([evidências](docs/validacoes/2026-09-14-f257.md)).
 - [x] F258: publicar 0.0.20, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f258.md)).
+- [x] F259: expor histórico sanitizado de revisões do inventário no MCP ([evidências](docs/validacoes/2026-09-14-f259.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

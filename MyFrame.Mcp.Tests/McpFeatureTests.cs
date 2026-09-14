@@ -45,6 +45,9 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.False(response.HeartbeatFresh);
             Assert.Null(response.HeartbeatState);
             Assert.DoesNotContain(root, JsonSerializer.Serialize(response), StringComparison.Ordinal);
+            var history = await new PlatformStatusService().GetInventoryHistoryAsync();
+            Assert.Equal("not_initialized", history.State);
+            Assert.Empty(history.Items);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
@@ -106,7 +109,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_reference_section", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
+        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_inventory_history", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_reference_section", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
