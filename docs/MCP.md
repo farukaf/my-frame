@@ -230,10 +230,10 @@ permitir filtros e paginação previsível.
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
-| `get_acquisition` | Consolida componentes, fontes de relíquia e bounties ativas para um itemId, preservando revisões e estados de disponibilidade. |
-| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte; aceita filtros opcionais por sindicato e texto da recompensa. |
-| `get_world_state` | Estado da fonte, revisão ativa, bounties, ciclos planetários e cobertura observada; limite de 1–200 bounties e filtros opcionais por sindicato e texto da recompensa. |
-| `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, validade e cobertura do World State; pode filtrar texto da recompensa. |
+| `get_acquisition` | Consolida componentes, fontes de relíquia e bounties ativas para um itemId, preservando revisões, `worldStateParserVersion` e estados de disponibilidade. |
+| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas, revisão ativa e `parserVersion` da fonte; aceita filtros opcionais por sindicato e texto da recompensa. |
+| `get_world_state` | Estado da fonte, revisão ativa, `parserVersion`, bounties, ciclos planetários e cobertura observada; limite de 1–200 bounties e filtros opcionais por sindicato e texto da recompensa. |
+| `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, `parserVersion`, validade e cobertura do World State; pode filtrar texto da recompensa. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
 | `search_inventory` | Busca inventário agregado suportado por texto, tipo, categoria, quantidade conhecida e estado built/stackable. |
 | `get_item` | Detalhe por `itemId`, com descrição atribuída do catálogo, posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |

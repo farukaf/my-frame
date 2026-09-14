@@ -347,6 +347,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F309: distribuir 0.0.29 com procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f309.md)).
 - [x] F310: habilitar cobertura do source warframe-market no MCP ([evidências](docs/validacoes/2026-09-14-f310.md)).
 - [x] F311: alinhar documentação e schema textual de get_source_coverage ([evidências](docs/validacoes/2026-09-14-f311.md)).
+- [x] F312: documentar procedência World State e aquisição no MCP.md ([evidências](docs/validacoes/2026-09-14-f312.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
