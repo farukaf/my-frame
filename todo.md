@@ -436,3 +436,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
 - [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
 - [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
+- [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
