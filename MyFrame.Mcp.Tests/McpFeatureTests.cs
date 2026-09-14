@@ -55,6 +55,38 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task CaptureInboxStatusReturnsSanitizedCallbackDiagnostics()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-callback-status-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var directory = Path.Combine(root, "captures");
+            Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(Path.Combine(directory, "collector-status.json"), JsonSerializer.Serialize(new
+            {
+                schemaVersion = 1, kind = "my-frame-collector", state = "started",
+                timestampUtc = DateTimeOffset.UtcNow, collectorState = "waitingForInventory",
+                supportedFeatures = new[] { "match_info" },
+                eventCounts = new Dictionary<string, int> { ["match_info"] = 3 },
+                lastEventFeature = "match_info", lastEventAt = DateTimeOffset.UtcNow
+            }));
+
+            var response = await new PlatformStatusService().GetCaptureInboxStatusAsync();
+            Assert.Equal("heartbeat-only", response.State);
+            Assert.Equal("waitingForInventory", response.CollectorState);
+            Assert.Contains("match_info", response.SupportedFeatures!);
+            Assert.Equal(3, response.EventCounts!["match_info"]);
+            Assert.Equal("match_info", response.LastEventFeature);
+            Assert.NotNull(response.LastEventAt);
+            Assert.DoesNotContain("waitingForInventory", response.HeartbeatState is null ? "" : response.HeartbeatState,
+                StringComparison.Ordinal); // state remains the generic heartbeat state
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task PublicExportSearchReturnsNormalizedTechnicalAndRecipeFields()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
