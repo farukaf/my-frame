@@ -240,6 +240,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F202: expor cobertura de campos ricos do catálogo Public Export ([evidências](docs/validacoes/2026-09-13-f202.md)).
 - [x] F203: alinhar skills de build/farm à cobertura rica do catálogo ([evidências](docs/validacoes/2026-09-13-f203.md)).
 - [x] F204: corrigir execução direta dos scripts do runbook Overwolf ([evidências](docs/validacoes/2026-09-13-f204.md)).
+- [x] F205: recompilar e testar pacote distribuível após F202–F204 ([evidências](docs/validacoes/2026-09-13-f205.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
