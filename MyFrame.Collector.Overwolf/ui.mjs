@@ -39,11 +39,18 @@ function write(name, text) {
 }
 async function writeHeartbeat(quiet = false) {
   try {
+    const report = collector?.report();
     await write("collector-status.json", JSON.stringify({
       schemaVersion: 1,
       kind: "my-frame-collector",
       state: "started",
-      timestampUtc: new Date().toISOString()
+      timestampUtc: new Date().toISOString(),
+      collectorState: report?.state ?? "notStarted",
+      supportedFeatures: report?.supportedFeatures ?? [],
+      eventCounts: report?.eventCounts ?? {},
+      lastEventFeature: report?.lastEventFeature ?? null,
+      lastEventAt: report?.lastEventAt ?? null,
+      inventoryState: report?.inventory?.rootObject === true ? "observedUnverified" : "notObserved"
     }));
     if (!quiet) $("export-status").textContent = "Sessão registrada na inbox; agora abra o Warframe.";
   } catch {

@@ -15,6 +15,8 @@ separa testes sintéticos de homologação com Warframe em execução.
 | rank/config/mods | Campos aceitos no envelope quando presentes | parser sintético | `NotObserved` até comparar Arsenal |
 | upgrades/RawUpgrades | Relação atribuída por `ownerInstanceId` quando presente | testes Core/MCP | cobertura depende da captura |
 
+| diagnóstico de callbacks GEP | Heartbeat preserva estado sanitizado, features suportadas, contagem por feature e último evento | F284 (sintético); callback real ainda pendente | evidência de transporte, não de completude |
+
 ## Envelope e retenção
 
 O transporte local usa `schemaVersion`, `sessionId`, `eventId`, `sequence`,

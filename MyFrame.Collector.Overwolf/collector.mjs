@@ -20,7 +20,8 @@ export class Collector {
     this.lastHash = null;
     this.status = { state, gameId: GAME_ID, sessionId: this.sessionId, received: 0,
       duplicates: 0, rejected: 0, supportedFeatures: [], inventory: null,
-      highlighted: "notObserved", identity: "notObserved", provider: "notObserved" };
+      highlighted: "notObserved", identity: "notObserved", provider: "notObserved",
+      eventCounts: {}, lastEventFeature: null, lastEventAt: null };
     this.changed(this.status);
   }
   listen(event, handler) {
@@ -96,6 +97,11 @@ export class Collector {
     const epoch = this.epoch;
     this.pending++;
     this.status.received++;
+    if (typeof event?.feature === "string") {
+      this.status.eventCounts[event.feature] = (this.status.eventCounts[event.feature] ?? 0) + 1;
+      this.status.lastEventFeature = event.feature;
+      this.status.lastEventAt = this.clock();
+    }
     this.queue = this.queue.then(async () => {
       if (epoch !== this.epoch) return;
       for (const update of nativeUpdates(event)) {
