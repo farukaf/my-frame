@@ -127,18 +127,55 @@ public sealed class PublicExportSyncRunner
             var indexClient = new PublicExportIndexClient(httpClient, decoder.Decode);
             var documentClient = new PublicExportDocumentClient(httpClient, decoder);
             var entries = await indexClient.FetchIndexAsync(cancellationToken: cancellationToken);
-            entry = entries.FirstOrDefault(value =>
-                value.RelativePath.Contains("ExportWeapons_en.json", StringComparison.OrdinalIgnoreCase))
-                ?? entries.FirstOrDefault(value => value.RelativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
-            if (entry is null) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
+            var catalogEntries = entries
+                .Where(value => value.RelativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (catalogEntries.Length > 128) throw new InvalidDataException("PUBLIC_EXPORT_TOO_MANY_DOCUMENTS");
+            if (catalogEntries.Length == 0) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
+            entry = catalogEntries[0];
 
-            var publication = await host.RunPublicExportOnceAsync("public-export", documentClient, entry,
-                cancellationToken: cancellationToken);
+            var recordsByUniqueName = new Dictionary<string, PublicExportRecord>(StringComparer.Ordinal);
+            var rawParts = new List<string>();
+            foreach (var candidate in catalogEntries)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var publication = await documentClient.FetchPublicationAsync(candidate, "public-export", cancellationToken: cancellationToken);
+                foreach (var record in publication.Records)
+                {
+                    if (recordsByUniqueName.TryGetValue(record.UniqueName, out var existing))
+                    {
+                        if (!string.Equals(existing.RawJson, record.RawJson, StringComparison.Ordinal))
+                            throw new InvalidDataException("PUBLIC_EXPORT_DUPLICATE_UNIQUE_NAME");
+                        continue;
+                    }
+
+                    recordsByUniqueName.Add(record.UniqueName, record);
+                    rawParts.Add(record.RawJson ?? JsonSerializer.Serialize(new
+                    {
+                        uniqueName = record.UniqueName,
+                        name = record.Name,
+                        category = record.Category,
+                        description = record.Description
+                    }));
+                }
+            }
+
+            var payload = $"[{string.Join(',', rawParts)}]";
+            if (Encoding.UTF8.GetByteCount(payload) > 256 * 1024 * 1024)
+                throw new InvalidDataException("PUBLIC_EXPORT_CATALOG_TOO_LARGE");
+            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant();
+            var batch = new SyncBatch("public-export", hash, payload, recordsByUniqueName.Count,
+                catalogEntries.Length == 1 ? "public-export-1" : "public-export-aggregate-1");
+            var records = recordsByUniqueName.Values.ToArray();
+            var publicationResult = await host.RunCatalogOnceAsync("public-export", _ =>
+                Task.FromResult<(SyncBatch, IReadOnlyList<PublicExportRecord>)>((batch, records)), cancellationToken);
             var status = await database.GetStatusAsync("public-export", cancellationToken);
-            return publication is not null
-                ? new("published", publication.RecordCount, publication.RevisionId, null, status?.ParserVersion, entry.RelativePath, entry.RevisionTag)
+            var sourcePath = catalogEntries.Length == 1 ? catalogEntries[0].RelativePath : $"aggregate:{catalogEntries.Length}";
+            var sourceTag = catalogEntries.Length == 1 ? catalogEntries[0].RevisionTag : null;
+            return publicationResult is not null
+                ? new("published", publicationResult.RecordCount, publicationResult.RevisionId, null, status?.ParserVersion, sourcePath, sourceTag)
                 : new(status?.LastRunState ?? "failed", 0, status?.ActiveRevisionId,
-                    status?.ErrorCode ?? "SYNC_FAILED", status?.ParserVersion, entry.RelativePath, entry.RevisionTag);
+                    status?.ErrorCode ?? "SYNC_FAILED", status?.ParserVersion, sourcePath, sourceTag);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
