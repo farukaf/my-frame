@@ -135,7 +135,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_bounties", Title = "Get active bounties", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns currently active World State bounties with jobs, standing stages and attributed rewards. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
+    [Description("Returns currently active World State bounties with jobs, standing stages, attributed rewards and source revision/parser provenance. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
     public Task<WorldStateBountiesResponse> GetBounties(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
@@ -144,7 +144,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns the current World State source status, active bounties with rewards, and supported planetary cycles. It is read-only and never fetches the network.")]
+    [Description("Returns the current World State source status, active bounties with rewards, supported planetary cycles and source revision/parser provenance. It is read-only and never fetches the network.")]
     public Task<WorldStateResponse> GetWorldState(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,

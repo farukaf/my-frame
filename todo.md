@@ -335,6 +335,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F297: impedir redirect cross-host no sincronizador World State ([evidências](docs/validacoes/2026-09-14-f297.md)).
 - [x] F298: distribuir 0.0.28 com hardening World State e validar upgrade/read-only ([evidências](docs/validacoes/2026-09-14-f298.md)).
 - [x] F299: corrigir verificador World State no Windows PowerShell e separar erro de ambiente ([evidências](docs/validacoes/2026-09-14-f299.md)).
+- [x] F300: expor parserVersion e revisão da fonte nas consultas World State ([evidências](docs/validacoes/2026-09-14-f300.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
