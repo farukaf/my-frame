@@ -68,7 +68,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "search_public_export", Title = "Search Warframe Public Export", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Searches the synchronized official Warframe Public Export catalog by uniqueName, name, alias, or category. It never fetches the network and returns only normalized catalog fields, not raw JSON.")]
+    [Description("Searches the synchronized official Warframe Public Export catalog by uniqueName, name, alias, or category. Results include normalized technical metadata, market identity, recipe components and relic sources when observed. It never fetches the network or returns raw JSON.")]
     public Task<PublicExportSearchResponse> SearchPublicExport(
         [Description("Optional case-insensitive text filter for uniqueName, name, or alias; maximum 200 characters.")] string? text = null,
         [Description("Optional exact case-insensitive category filter; maximum 100 characters.")] string? category = null,

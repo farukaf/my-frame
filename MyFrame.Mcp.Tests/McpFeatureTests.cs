@@ -55,6 +55,34 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task PublicExportSearchReturnsNormalizedTechnicalAndRecipeFields()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-public-export-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+                await database.PublishCatalogAsync(new SyncBatch("public-export", "mcp-catalog-rich", "[]", 1),
+                [new PublicExportRecord("/Lotus/Test", "Test Weapon", "Weapon", "desc",
+                    new Dictionary<string, string> { ["en"] = "Test Weapon", ["pt"] = "Arma de Teste" },
+                    "{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test Weapon\",\"pt\":\"Arma de Teste\"},\"category\":\"Weapon\",\"productCategory\":\"LongGuns\",\"masterable\":true,\"tradable\":true,\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"components\":[{\"uniqueName\":\"/Lotus/TestPart\",\"name\":\"Barrel\",\"itemCount\":2}],\"relics\":[{\"relicName\":\"A1\",\"rarity\":\"Rare\",\"chance\":10,\"rewardName\":\"Test Weapon\"}]}")]);
+
+            var response = await new PlatformStatusService().SearchPublicExportAsync("Test Weapon");
+            var item = Assert.Single(response.Items);
+            Assert.Equal("published", response.State);
+            Assert.Equal("LongGuns", item.ProductCategory);
+            Assert.True(item.Masterable);
+            Assert.True(item.Tradable);
+            Assert.Equal("test-weapon", item.MarketSlug);
+            Assert.Equal("Arma de Teste", item.Aliases["pt"]);
+            Assert.Equal("/Lotus/TestPart", Assert.Single(item.Components).UniqueName);
+            Assert.Equal("A1", Assert.Single(item.Relics).RelicName);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task InventoryChangesCompareCompleteSnapshotsWithoutRawPayloads()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");

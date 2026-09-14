@@ -37,7 +37,10 @@ public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Ite
     DateTimeOffset? ServedAt = null, string? State = null, string? ActiveRevisionId = null,
     string? ParserVersion = null);
 public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
-    string? Description, IReadOnlyDictionary<string, string> Aliases);
+    string? Description, IReadOnlyDictionary<string, string> Aliases,
+    string ProductCategory, string ImageName, bool Masterable, bool Prime, bool Tradable,
+    bool Vaulted, string? MarketId, string? MarketSlug, string ItemType,
+    IReadOnlyList<CatalogComponent> Components, IReadOnlyList<RelicSource> Relics);
 public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
     string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
     IReadOnlyList<PublicExportItemDto> Items);
@@ -310,8 +313,14 @@ public sealed class PlatformStatusService
             .OrderBy(record => record.Name ?? record.UniqueName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(record => record.UniqueName, StringComparer.Ordinal)
             .Take(limit)
-            .Select(record => new PublicExportItemDto(record.UniqueName, record.Name, record.Category,
-                record.Description, record.Aliases))
+            .Select(record =>
+            {
+                var item = PublicExportCatalogMapper.Map(record);
+                return new PublicExportItemDto(record.UniqueName, item.Name, item.Category,
+                    item.Description, record.Aliases, item.ProductCategory, item.ImageName,
+                    item.Masterable, item.Prime, item.Tradable, item.Vaulted, item.MarketId,
+                    item.MarketSlug, item.ItemType, item.Components, item.Relics);
+            })
             .ToArray();
         var status = await database.GetStatusAsync("public-export", cancellationToken);
         var coverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
