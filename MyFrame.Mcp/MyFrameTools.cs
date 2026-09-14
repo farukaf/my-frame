@@ -67,6 +67,15 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum hits from 1 to 100; default 20.")] int limit = 20,
         CancellationToken cancellationToken = default) => platform.SearchReferencesAsync(query, limit, cancellationToken);
 
+    [McpServerTool(Name = "get_reference_section", Title = "Get imported reference section", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns one bounded section from an explicitly imported Wiki/Overframe reference, preserving URL, revision, author/license and the untrusted-for-facts flag. It never fetches the network or reads arbitrary paths.")]
+    public Task<ReferenceSectionResponse> GetReferenceSection(
+        [Description("Exact source URL returned by search_references; maximum 2048 characters.")] string url,
+        [Description("Exact section id returned by search_references; maximum 200 characters.")] string sectionId,
+        [Description("Optional exact revision to disambiguate the source; maximum 200 characters.")] string? revision = null,
+        CancellationToken cancellationToken = default) => platform.GetReferenceSectionAsync(url, sectionId, revision, cancellationToken);
+
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]

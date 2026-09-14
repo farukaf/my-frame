@@ -35,6 +35,10 @@ public sealed record ReferenceSearchHitDto(string Kind, string Title, string Sec
     string? License, string? Author, bool TrustedForFacts);
 public sealed record ReferenceSearchResponse(DateTimeOffset ServedAt, string State,
     int Documents, int RejectedDocuments, IReadOnlyList<ReferenceSearchHitDto> Hits);
+public sealed record ReferenceSectionResponse(DateTimeOffset ServedAt, string State,
+    int Documents, int RejectedDocuments, string? Kind, string? Title, string? Url,
+    string? Revision, string? License, string? Author, bool TrustedForFacts,
+    string? SectionId, string? SectionTitle, string? Content, bool ContentTruncated);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryEquipmentResponse(IReadOnlyList<InventoryEquipmentDto> Items);
@@ -236,6 +240,50 @@ public sealed class PlatformStatusService
         }).ToArray();
         var state = documents.Count == 0 ? "empty" : rejected == 0 ? "available" : "partial";
         return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, state, documents.Count, rejected, result));
+    }
+
+    public Task<ReferenceSectionResponse> GetReferenceSectionAsync(
+        string url, string sectionId, string? revision = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(url) || url.Length > 2048)
+            throw new ArgumentException("url is required and limited to 2048 characters.", nameof(url));
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var sourceUri))
+            throw new ArgumentException("url must be an absolute URL.", nameof(url));
+        if (string.IsNullOrWhiteSpace(sectionId) || sectionId.Length > 200)
+            throw new ArgumentException("sectionId is required and limited to 200 characters.", nameof(sectionId));
+        if (revision?.Length > 200) throw new ArgumentException("revision is limited to 200 characters.", nameof(revision));
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+        if (!Directory.Exists(directory))
+            return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "not_initialized", 0, 0,
+                null, null, null, null, null, null, false, null, null, null, false));
+
+        var documents = new List<ReferenceDocument>();
+        var rejected = 0;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { documents.Add(ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path))); }
+            catch (InvalidDataException) { rejected++; }
+            catch (JsonException) { rejected++; }
+        }
+
+        var document = documents.FirstOrDefault(value =>
+            string.Equals(value.Url.AbsoluteUri, sourceUri.AbsoluteUri, StringComparison.OrdinalIgnoreCase) &&
+            (revision is null || string.Equals(value.Revision, revision, StringComparison.Ordinal)));
+        var section = document?.Sections.FirstOrDefault(value => string.Equals(value.Id, sectionId, StringComparison.Ordinal));
+        if (document is null || section is null)
+            return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "not_found", documents.Count, rejected,
+                null, null, null, null, null, null, false, null, null, null, false));
+
+        const int maxContent = 20_000;
+        var truncated = section.Content.Length > maxContent;
+        var content = truncated ? section.Content[..maxContent] : section.Content;
+        return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "available", documents.Count, rejected,
+            document.Kind.ToString(), document.Title, document.Url.ToString(), document.Revision,
+            document.License, document.Author, document.IsTrustedForFacts, section.Id, section.Title, content, truncated));
     }
 
     private static bool Contains(string? value, string text) =>
