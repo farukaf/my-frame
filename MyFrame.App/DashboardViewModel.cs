@@ -93,6 +93,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
     [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
+    [ObservableProperty] public partial string CollectorCaptureStatusText { get; set; } = "Collector status not loaded.";
     [ObservableProperty] public partial string CollectorCaptureNotice { get; set; } = "";
     [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
@@ -151,6 +152,7 @@ public partial class DashboardViewModel : ObservableObject
         _initialized = true;
         _collectorCaptureWatcher.Start();
         _logger.LogInformation("Dashboard view initialized");
+        await RefreshCollectorCaptureStatusAsync();
         await RefreshMarketCredentialStatusAsync();
         await RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
@@ -322,6 +324,22 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task RefreshCollectorCaptureStatusAsync()
+    {
+        try
+        {
+            var status = await _collectorCaptureInbox.ReadStatusAsync();
+            CollectorCaptureStatusText = $"Collector: {status.State}; heartbeat {status.HeartbeatState ?? "missing"}" +
+                $"; fresh {status.HeartbeatFresh}; markers {status.ReadyMarkers:N0} ({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid).";
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            _logger.LogWarning(error, "Collector capture status read failed");
+            CollectorCaptureStatusText = "Collector status unavailable.";
+        }
+    }
+
+    [RelayCommand]
     private async Task ImportCollectorCapturesAsync()
     {
         if (IsImportingCollectorCaptures) return;
@@ -338,6 +356,7 @@ public partial class DashboardViewModel : ObservableObject
             CollectorCaptureNotice = "";
             CollectorCaptureNoticeVisible = false;
             CollectorCaptureMessage = $"Encontradas {result.Discovered:N0}; novas {result.Imported:N0}; já publicadas {result.AlreadyPublished:N0}; rejeitadas {result.Rejected:N0}.";
+            await RefreshCollectorCaptureStatusAsync();
             await RefreshSyncStatusAsync();
         }
         catch (Exception error)
@@ -358,6 +377,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             CollectorCaptureNotice = "Nova captura detectada. Revise e importe com consentimento explícito.";
             CollectorCaptureNoticeVisible = true;
+            await RefreshCollectorCaptureStatusAsync();
             await RefreshSyncStatusAsync();
         });
     }

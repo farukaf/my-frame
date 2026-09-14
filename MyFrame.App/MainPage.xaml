@@ -216,6 +216,10 @@
                             <Label Text="Overwolf capture inbox" Style="{StaticResource SectionTitle}" />
                             <Label Text="Copie os .capture.json e .ready.json exportados pelo coletor para esta pasta." Style="{StaticResource Muted}" />
                             <Entry Text="{Binding CollectorCaptureDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{Binding CollectorCaptureStatusText}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                                <Button Text="Atualizar status" Command="{Binding RefreshCollectorCaptureStatusCommand}" BackgroundColor="#33415C" TextColor="White" />
+                            </HorizontalStackLayout>
                             <HorizontalStackLayout Spacing="10">
                                 <CheckBox IsChecked="{Binding AllowCollectorRawPayload}" Color="#7DE2D1" />
                                 <Label Text="Autorizar a leitura do payload privado desta importação" Style="{StaticResource Muted}" VerticalOptions="Center" />
