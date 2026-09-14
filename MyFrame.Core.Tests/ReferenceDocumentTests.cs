@@ -85,6 +85,18 @@ public sealed class ReferenceDocumentTests
         Assert.Equal("REFERENCE_CONTENT_TYPE_UNSUPPORTED", error.Message);
     }
 
+    [Fact]
+    public async Task SyncRunnerAcceptsStructuredJsonMediaType()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-structured-json-{Guid.NewGuid():N}");
+        using var client = new HttpClient(new StructuredJsonHandler());
+        var runner = new ReferenceSyncRunner();
+
+        var result = await runner.FetchAsync(client, new Uri("https://wiki.warframe.com/w/Mother_Token"), root);
+
+        Assert.Equal("r-structured", result.Document.Revision);
+    }
+
     private sealed class StubHandler(string payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
@@ -111,6 +123,16 @@ public sealed class ReferenceDocumentTests
             {
                 RequestMessage = request,
                 Content = new StringContent("not json", System.Text.Encoding.UTF8, "text/html")
+            });
+    }
+
+    private sealed class StructuredJsonHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent("{\"kind\":\"wiki\",\"url\":\"https://wiki.warframe.com/w/Mother_Token\",\"title\":\"Mother Token\",\"revision\":\"r-structured\",\"sections\":[]}", System.Text.Encoding.UTF8, "application/ld+json")
             });
     }
 }
