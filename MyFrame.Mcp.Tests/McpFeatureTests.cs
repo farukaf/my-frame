@@ -259,18 +259,22 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                 var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow, ContentHash = "changes-2" };
                 await database.PublishInventoryAsync(first, new InventoryProjection(
                     [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}")],
-                    [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+                    [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
+                    [new InventoryUpgradeRecord("instance", "mods", "/Lotus/OldMod", 3, "{\"secret\":true}")]));
                 await database.PublishInventoryAsync(second, new InventoryProjection(
                     [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}")],
-                    [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+                    [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
+                    [new InventoryUpgradeRecord("instance", "mods", "/Lotus/NewMod", 5, "{\"secret\":false}")]));
             }
 
             var response = await new PlatformStatusService().GetInventoryChangesAsync();
             Assert.Equal("available", response.State);
-            Assert.Equal(3, response.Items.Count);
+            Assert.Equal(4, response.Items.Count);
             Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Change == "changed" && value.AfterRank == 20);
             Assert.Contains(response.Items, value => value.Kind == "stackable" && value.Key == "/Lotus/New" && value.Change == "added");
+            Assert.Contains(response.Items, value => value.Kind == "upgrade" && value.Change == "changed" && value.BeforeTypeId == "/Lotus/OldMod" && value.AfterTypeId == "/Lotus/NewMod" && value.AfterRank == 5);
             Assert.DoesNotContain("private", JsonSerializer.Serialize(response), StringComparison.Ordinal);
+            Assert.DoesNotContain("secret", JsonSerializer.Serialize(response), StringComparison.Ordinal);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
