@@ -83,6 +83,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F259: histórico de revisões do inventário no MCP](docs/validacoes/2026-09-14-f259.md)
 - [F260: distribuição 0.0.21 com histórico de inventário](docs/validacoes/2026-09-14-f260.md)
 - [F261: comparação segura entre snapshots do inventário](docs/validacoes/2026-09-14-f261.md)
+- [F262: distribuição 0.0.22 com comparação de inventário](docs/validacoes/2026-09-14-f262.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
