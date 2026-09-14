@@ -598,7 +598,7 @@ public sealed class PlatformStatusService
             .Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
                 string.Equals(bounty.Syndicate, syndicate, StringComparison.OrdinalIgnoreCase))
             .Where(bounty => normalizedReward is null || bounty.Jobs.Any(job =>
-                job.Rewards.Any(value => value.Item.Contains(normalizedReward, StringComparison.OrdinalIgnoreCase))))
+                job.Rewards.Any(value => RewardMatches(value.Item, [normalizedReward!]))))
             .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
             bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                 job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
@@ -624,7 +624,7 @@ public sealed class PlatformStatusService
             bounties.Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
                 string.Equals(bounty.Syndicate, syndicate, StringComparison.OrdinalIgnoreCase))
                 .Where(bounty => normalizedReward is null || bounty.Jobs.Any(job =>
-                    job.Rewards.Any(value => value.Item.Contains(normalizedReward, StringComparison.OrdinalIgnoreCase))))
+                    job.Rewards.Any(value => RewardMatches(value.Item, [normalizedReward!]))))
                 .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
                 bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
