@@ -255,6 +255,22 @@ public sealed class PlatformStatusService
                 null, null, null, null, oldValue?.Quantity, newValue?.Quantity,
                 oldValue?.QuantityState.ToString() ?? "NotObserved", newValue?.QuantityState.ToString() ?? "NotObserved"));
         }
+        static Dictionary<string, InventoryUpgradeRecord> IndexUpgrades(IReadOnlyList<InventoryUpgradeRecord>? values) =>
+            (values ?? []).Select((value, index) => (value, index)).ToDictionary(
+                pair => $"{pair.value.OwnerInstanceId ?? "?"}|{pair.value.SourceField}|{pair.value.UpgradeId ?? "?"}|{pair.index}",
+                pair => pair.value, StringComparer.Ordinal);
+        var upgradesBefore = IndexUpgrades(before.Upgrades);
+        var upgradesAfter = IndexUpgrades(after.Upgrades);
+        foreach (var key in upgradesBefore.Keys.Union(upgradesAfter.Keys, StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal))
+        {
+            upgradesBefore.TryGetValue(key, out var oldValue);
+            upgradesAfter.TryGetValue(key, out var newValue);
+            if (oldValue?.Rank == newValue?.Rank && oldValue?.OwnerInstanceId == newValue?.OwnerInstanceId &&
+                oldValue?.UpgradeId == newValue?.UpgradeId) continue;
+            changes.Add(new("upgrade", key, oldValue is null ? "added" : newValue is null ? "removed" : "changed",
+                oldValue?.UpgradeId, newValue?.UpgradeId, oldValue?.Rank, newValue?.Rank, null, null,
+                oldValue is null ? "NotObserved" : "Known", newValue is null ? "NotObserved" : "Known"));
+        }
         return new(DateTimeOffset.UtcNow, "available", from.RevisionId, to.RevisionId, changes.Take(limit).ToArray());
     }
 

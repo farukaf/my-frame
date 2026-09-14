@@ -672,7 +672,18 @@ public sealed class SyncDatabase : IAsyncDisposable
                 stackables.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0),
                     reader.IsDBNull(1) ? null : reader.GetInt32(1), (InventoryFieldState)reader.GetInt32(2), reader.GetString(3)));
         }
-        return new(summary, equipment, stackables);
+        var upgrades = new List<InventoryUpgradeRecord>();
+        await using (var upgradeCommand = connection.CreateCommand())
+        {
+            upgradeCommand.CommandText = "SELECT owner_instance_id, source_field, upgrade_id, rank, raw_json FROM inventory_upgrades WHERE revision_id=$revision ORDER BY ordinal;";
+            upgradeCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await upgradeCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                upgrades.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0), reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                    reader.GetString(4)));
+        }
+        return new(summary, equipment, stackables, upgrades);
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(

@@ -431,3 +431,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F2: lifecycle mínimo do SyncHost e registro de falhas sem perder revisão ativa
 - [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1
 - [x] F321: expor cobertura real do Warframe Market a partir do SQLite (`quotes`, `orders`, `account`, `marketItems`)
+- [x] F322: preservar upgrades/mods nas revisões SQLite e nas diferenças de inventário
