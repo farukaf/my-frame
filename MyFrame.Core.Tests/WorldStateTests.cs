@@ -104,6 +104,19 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientRetriesTransientOfficialFailures()
+    {
+        const string json = "{\"syndicateMissions\":[]}";
+        using var handler = new TransientHandler(System.Text.Encoding.UTF8.GetBytes(json));
+        using var client = new HttpClient(handler);
+
+        var result = await new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.DefaultUrl));
+
+        Assert.Equal("worldstate-official-1", result.Batch.ParserVersion);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
     public async Task ClientDoesNotFallbackWhenOfficialPayloadIsInvalid()
     {
         using var client = new HttpClient(new InvalidOfficialHandler());
@@ -230,12 +243,27 @@ public sealed class WorldStateTests
 
     private sealed class FailingOfficialThenCommunityHandler(byte[] payload) : HttpMessageHandler
     {
-        private int _calls;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsoluteUri == WorldStateClient.DefaultUrl)
+                throw new HttpRequestException("fixture transport failure");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+        }
+    }
+
+    private sealed class TransientHandler(byte[] payload) : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (Interlocked.Increment(ref _calls) == 1)
-                throw new HttpRequestException("fixture transport failure");
+            Attempts++;
+            if (Attempts < 3)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.Zero);
+                return Task.FromResult(response);
+            }
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
         }
     }
