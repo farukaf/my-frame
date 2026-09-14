@@ -25,6 +25,7 @@ $("stop").onclick = () => {
   if (heartbeatTimer !== null) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
   if (heartbeatWriteTimer !== null) { clearTimeout(heartbeatWriteTimer); heartbeatWriteTimer = null; }
   collector.stop(); $("consent").checked = false;
+  void writeHeartbeat(true, "stopped");
 };
 addEventListener("unload", () => {
   if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
@@ -41,13 +42,13 @@ function write(name, text) {
       result => result?.success ? resolve() : reject(new Error("WRITE_FAILED")));
   });
 }
-async function writeHeartbeat(quiet = false) {
+async function writeHeartbeat(quiet = false, heartbeatState = "started") {
   try {
     const report = collector?.report();
     await write("collector-status.json", JSON.stringify({
       schemaVersion: 1,
       kind: "my-frame-collector",
-      state: "started",
+      state: heartbeatState,
       timestampUtc: new Date().toISOString(),
       collectorState: report?.state ?? "notStarted",
       supportedFeatures: report?.supportedFeatures ?? [],

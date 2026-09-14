@@ -37,6 +37,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F284: registrar diagnóstico sanitizado de callbacks GEP no heartbeat ([evidências](docs/validacoes/2026-09-14-f284.md)).
 - [x] F285: expor diagnóstico de callbacks no get_capture_inbox_status ([evidências](docs/validacoes/2026-09-14-f285.md)).
 - [x] F286: atualizar heartbeat de callbacks GEP com debounce reativo ([evidências](docs/validacoes/2026-09-14-f286.md)).
+- [x] F287: marcar heartbeat como stopped ao encerrar o coletor ([evidências](docs/validacoes/2026-09-14-f287.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
