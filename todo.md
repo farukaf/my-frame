@@ -337,6 +337,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F299: corrigir verificador World State no Windows PowerShell e separar erro de ambiente ([evidências](docs/validacoes/2026-09-14-f299.md)).
 - [x] F300: expor parserVersion e revisão da fonte nas consultas World State ([evidências](docs/validacoes/2026-09-14-f300.md)).
 - [x] F301: alinhar skills à procedência World State oficial, comunitária e fixture ([evidências](docs/validacoes/2026-09-14-f301.md)).
+- [x] F302: alinhar README de skills e gate à versão vigente 5 ([evidências](docs/validacoes/2026-09-14-f302.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
