@@ -74,11 +74,12 @@ public sealed record WorldStateJobDto(string Id, string? Type, string? UniqueNam
 public sealed record WorldStateBountyDto(string Id, string? Syndicate, DateTimeOffset? Activation,
     DateTimeOffset? Expiry, IReadOnlyList<WorldStateJobDto> Jobs);
 public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string State,
-    DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties);
+    DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties,
+    string? ActiveRevisionId = null, string? ParserVersion = null);
 public sealed record WorldStateCycleDto(string Name, string? State, DateTimeOffset? Activation, DateTimeOffset? Expiry);
 public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, DateTimeOffset? LastAttemptAt,
     string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles,
-    IReadOnlyDictionary<string, string> Coverage, string? ActiveRevisionId);
+    IReadOnlyDictionary<string, string> Coverage, string? ActiveRevisionId, string? ParserVersion = null);
 
 public sealed class PlatformStatusService
 {
@@ -566,7 +567,7 @@ public sealed class PlatformStatusService
         new(bounty.Id, bounty.Syndicate, bounty.Activation, bounty.Expiry,
             bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type, job.UniqueName,
                 job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
-                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray());
+            new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray());
 
     private static bool RewardMatches(string reward, IReadOnlyList<string> names)
     {
@@ -602,7 +603,8 @@ public sealed class PlatformStatusService
             .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
             bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                 job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
-            new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray());
+            new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
+            status?.ActiveRevisionId, status?.ParserVersion);
     }
 
     public async Task<WorldStateResponse> GetWorldStateAsync(int limit = 100, string? syndicate = null,
@@ -631,7 +633,7 @@ public sealed class PlatformStatusService
                         new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
             cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray(),
             coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
-            status?.ActiveRevisionId);
+            status?.ActiveRevisionId, status?.ParserVersion);
     }
 
     public Task<WorldStateResponse> GetActivityAsync(int limit = 100, string? syndicate = null,
