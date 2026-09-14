@@ -38,10 +38,20 @@ Write-Output "COLLECTOR_EXTENSION_LOGGED=$([int]$loaded)"
 Write-Output "COLLECTOR_HEARTBEAT=$([int]$heartbeat)"
 Write-Output "COLLECTOR_RUNTIME_EVIDENCE=$([int]($loaded -or $heartbeat))"
 Write-Output "CAPTURE_MARKERS=$($markers.Count)"
+Write-Output "COLLECTOR_ROOT=$resolvedCollector"
+Write-Output "CAPTURE_DIRECTORY=$CaptureDirectory"
 
 if ($overwolf.Count -gt 0 -and $warframe.Count -gt 0 -and $manifest -and ($loaded -or $heartbeat) -and $markers.Count -gt 0) {
     Write-Output 'OVERWOLF_COLLECTOR_READY=1'
     exit 0
 }
 Write-Output 'OVERWOLF_COLLECTOR_READY=0'
+if (-not $manifest) {
+    Write-Output 'OVERWOLF_ACTION=build-collector-package'
+} elseif (-not ($loaded -or $heartbeat)) {
+    Write-Output 'OVERWOLF_ACTION=load-unpacked-extension'
+    Write-Output "OVERWOLF_EXTENSION_PATH=$resolvedCollector"
+} elseif ($markers.Count -eq 0) {
+    Write-Output 'OVERWOLF_ACTION=exercise-warframe-event-and-wait-for-marker'
+}
 exit 1

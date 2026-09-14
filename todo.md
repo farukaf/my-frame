@@ -331,6 +331,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F275: documentar o fluxo oficial unpacked/whitelist do Overwolf e o bloqueio externo atual da F1 ([evidências](docs/validacoes/2026-09-14-f275.md)).
 - [x] F294: rejeitar redirecionamentos e respostas não-JSON na sincronização Wiki/Overframe ([evidências](docs/validacoes/2026-09-14-f294.md)).
 - [x] F295: aceitar media types JSON estruturados na sincronização de referências ([evidências](docs/validacoes/2026-09-14-f295.md)).
+- [x] F296: tornar o preflight Overwolf acionável com caminhos e próxima ação ([evidências](docs/validacoes/2026-09-14-f296.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
