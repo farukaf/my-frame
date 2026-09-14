@@ -435,3 +435,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F323: cobrir mudanças de mods no contrato MCP de diferenças de inventário
 - [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
 - [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
+- [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
