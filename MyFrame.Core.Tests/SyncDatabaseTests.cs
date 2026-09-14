@@ -410,6 +410,30 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task SynchronizedReaderPreservesMarketIdentityForItemsAndComponents()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-market-map-{Guid.NewGuid():N}.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishCatalogAsync(new SyncBatch("public-export", "market-map", "[]", 1),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                    new Dictionary<string, string>(),
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":1,\"tradable\":true,\"marketId\":\"part-id\",\"marketSlug\":\"test_part\"}]}" )]);
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, "native", "unverified", "{}", "market-map-inventory");
+            await db.PublishInventoryAsync(envelope, new InventoryProjection(
+                [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 30, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{}")],
+                [new InventoryStackableRecord("/Lotus/Part", 1, InventoryFieldState.Known, "{}")], [],
+                new Dictionary<string, InventoryFieldState>()));
+        }
+
+        var snapshot = await new SqliteSynchronizedDataReader(path).ReadAsync();
+        Assert.NotNull(snapshot);
+        Assert.Equal("set-id", snapshot!.Catalog.MarketByNormalizedName["testweapon"].Id);
+        Assert.Equal("test_part", snapshot.Catalog.MarketByNormalizedName["testweapontestpart"].Slug);
+    }
+
+    [Fact]
     public async Task SynchronizedReaderDoesNotProjectDeltaAsCompleteInventory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-delta-reader-{Guid.NewGuid():N}.db");
