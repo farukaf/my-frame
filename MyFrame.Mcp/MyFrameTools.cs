@@ -148,7 +148,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_item", Title = "Get item details", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns possession, components, mastery, prices, relic sources, and structured recommendation evidence for one stable itemId.")]
+    [Description("Returns possession, catalog description, components, mastery, prices, relic sources, and structured recommendation evidence for one stable itemId. Description is source text and does not replace observed mechanics.")]
     public Task<ItemResponse> GetItem(
         [Description("Exact itemId returned by another My Frame tool.")] string itemId,
         [Description("Nested detail section: all, summary, components, relics, or recommendations.")] string section = "all",

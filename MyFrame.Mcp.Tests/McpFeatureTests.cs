@@ -202,6 +202,19 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task ItemDetailsExposeOptionalCatalogDescription()
+    {
+        var item = new CatalogItem("/frame", "Frame", "Warframes", "Suits", "", true,
+            false, false, false, null, null, null, [], [], Description: "Attributed catalog text");
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int>(), new HashSet<string>(), new Dictionary<string, long>(), 1, 2, "synthetic");
+        var response = await Service(new FakeProvider(Snapshot("snapshot", inventory, [item])))
+            .GetItemAsync(item.UniqueName, "summary", 50, null, null, default);
+
+        Assert.Equal("Attributed catalog text", response.Item!.Description);
+    }
+
+    [Fact]
     public async Task SurplusTotalsExcludeComponentsAllocatedToCompleteSets()
     {
         var item = new CatalogItem("/set", "Test Prime", "Warframes", "Suits", "", true,

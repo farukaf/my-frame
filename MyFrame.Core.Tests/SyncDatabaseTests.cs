@@ -388,7 +388,7 @@ public sealed class SyncDatabaseTests
             await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-hash", "[]", 1),
                 [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
                     new Dictionary<string, string>(),
-                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}]}" )]);
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"description\":\"Observed description\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}]}" )]);
             var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
                 DateTimeOffset.UtcNow, "native", "unverified", "{}", "inventory-hash");
             var projection = new InventoryProjection(
@@ -405,6 +405,7 @@ public sealed class SyncDatabaseTests
         Assert.Equal(7, snapshot.Inventory.Stackables["/Lotus/Resource"]);
         Assert.Single(snapshot.Catalog.Items);
         Assert.Equal("Test Weapon", snapshot.Catalog.Items[0].Name);
+        Assert.Equal("Observed description", snapshot.Catalog.Items[0].Description);
         Assert.Single(snapshot.Catalog.Items[0].Components);
         Assert.Equal(2, snapshot.Catalog.Items[0].Components[0].Required);
     }
