@@ -43,6 +43,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F290: alinhar filtros de recompensa em bounties, atividades e aquisição ([evidências](docs/validacoes/2026-09-14-f290.md)).
 - [x] F291: testar diagnóstico GEP completo do heartbeat até o MCP ([evidências](docs/validacoes/2026-09-14-f291.md)).
 - [x] F292: exibir diagnóstico sanitizado GEP na página de status ([evidências](docs/validacoes/2026-09-14-f292.md)).
+- [x] F293: distribuir 0.0.27 e revalidar gates offline/external preflight ([evidências](docs/validacoes/2026-09-14-f293.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
