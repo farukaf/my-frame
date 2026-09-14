@@ -75,6 +75,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F251: detalhe atribuído de referências no MCP](docs/validacoes/2026-09-14-f251.md)
 - [F252: skills com detalhe de referência atribuído](docs/validacoes/2026-09-14-f252.md)
 - [F253: regressão após nova ferramenta de referências](docs/validacoes/2026-09-14-f253.md)
+- [F254: distribuição 0.0.19 com detalhe de referências](docs/validacoes/2026-09-14-f254.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
