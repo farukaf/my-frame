@@ -12,7 +12,9 @@ Contrato comum:
 5. tratar `isError`, `problem`, `coverage`, `sources` e frescor antes de usar os dados;
 6. repetir `snapshotId` e seguir todos os `nextCursor` necessários;
 7. separar fatos observados, cálculos determinísticos, referência comunitária e hipótese;
-8. citar fonte/revisão e declarar o que falta confirmar.
+8. citar fonte/revisão e declarar o que falta confirmar. Para referências, use
+   `search_references` e então `get_reference_section`; nunca faça fetch de URL
+   ou caminho local pelo MCP.
 
 Se `get_capture_inbox_status.state` não for `ready`, ou se `heartbeatFresh` for
 falso/`validMarkers` for zero, o inventário não deve ser descrito como captura
@@ -27,4 +29,4 @@ verificados antes de recomendar uma atividade.
 
 Skills disponíveis: `warframe-builds`, `warframe-farm` (v4, World State com
 revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
-e `warframe-research` (v1, referências importadas com atribuição).
+e `warframe-research` (v2, referências importadas com atribuição e detalhe).

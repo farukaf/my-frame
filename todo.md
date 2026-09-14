@@ -287,6 +287,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F249: publicar 0.0.18, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f249.md)).
 - [x] F250: testar endpoint real da Wiki e registrar bloqueio de conectividade ([evidências](docs/validacoes/2026-09-14-f250.md)).
 - [x] F251: adicionar detalhe de seção atribuída para referências no MCP ([evidências](docs/validacoes/2026-09-14-f251.md)).
+- [x] F252: atualizar skills para consultar detalhe de referência com atribuição ([evidências](docs/validacoes/2026-09-14-f252.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
