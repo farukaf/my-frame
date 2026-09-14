@@ -83,6 +83,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal("published", direct.State);
             Assert.Equal("/Lotus/Test", direct.Item?.UniqueName);
             Assert.Equal("LongGuns", direct.Item?.ProductCategory);
+            var byCategory = await new PlatformStatusService().SearchPublicExportAsync(category: "LongGuns");
+            Assert.Single(byCategory.Items);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
