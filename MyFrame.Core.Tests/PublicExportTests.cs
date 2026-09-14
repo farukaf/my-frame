@@ -123,6 +123,18 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task PublicExportRetriesTransportTimeouts()
+    {
+        using var handler = new TimeoutHandler();
+        using var client = new HttpClient(handler);
+        var entries = await new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+            .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma"));
+
+        Assert.Single(entries);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedPublicExportRecordsAtomically()
     {
         const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test\",\"pt\":\"Teste\"},\"category\":\"Melee\"}]";
@@ -278,6 +290,18 @@ public sealed class PublicExportTests
         {
             Attempts++;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+    }
+
+    private sealed class TimeoutHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            if (Attempts < 3) throw new TaskCanceledException("fixture timeout");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
         }
     }
 

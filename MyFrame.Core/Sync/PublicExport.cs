@@ -208,6 +208,11 @@ internal static class PublicExportHttp
                 response?.Dispose();
                 await Task.Delay(RetryDelay(attempt, null), cancellationToken);
             }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaximumAttempts)
+            {
+                response?.Dispose();
+                await Task.Delay(RetryDelay(attempt, null), cancellationToken);
+            }
         }
     }
 
