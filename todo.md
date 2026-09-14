@@ -444,3 +444,4 @@ para a nova matriz e continuam abertas até validação.
 - [x] F332: documentar `context_mismatch` no MCP e skill de farm
 - [x] F333: executar regressão integrada atual do coletor, Core e MCP
 - [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
+- [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
