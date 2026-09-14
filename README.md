@@ -189,6 +189,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F194 — clientes reais e smoke econômico no pacote 0.0.9](docs/validacoes/2026-09-13-f194.md)
 - [Validação F195 — preflight F1 com Overwolf e Warframe ativos](docs/validacoes/2026-09-13-f195.md)
 - [Validação F196 — runbook reproduzível para carregar o coletor Overwolf](docs/validacoes/2026-09-13-f196.md)
+- [Validação F197 — ingestão de referência Overframe no SyncHost e MCP](docs/validacoes/2026-09-13-f197.md)
 - [Validação F21 — detecção automática de novas capturas](docs/validacoes/2026-09-13-f21.md)
 - [Validação F22 — restore SQLite](docs/validacoes/2026-09-13-f22.md)
 - [Validação F23 — histórico de tentativas de sincronização](docs/validacoes/2026-09-13-f23.md)

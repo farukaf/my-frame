@@ -232,6 +232,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F194: validar Codex, Claude e o smoke econômico no pacote distribuído 0.0.9 ([evidências](docs/validacoes/2026-09-13-f194.md)).
 - [ ] F195: concluir carregamento manual da extensão e captura real no Overwolf ([evidências](docs/validacoes/2026-09-13-f195.md)).
 - [x] F196: adicionar runbook local para validar e preparar o carregamento unpacked do coletor ([evidências](docs/validacoes/2026-09-13-f196.md)).
+- [x] F197: validar ingestão e busca local de referência Overframe com autoria/licença e isolamento de confiança ([evidências](docs/validacoes/2026-09-13-f197.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
