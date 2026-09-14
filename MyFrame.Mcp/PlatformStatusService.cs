@@ -316,7 +316,9 @@ public sealed class PlatformStatusService
         var normalizedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
         var items = records
-            .Where(record => normalizedCategory is null || string.Equals(record.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(record => normalizedCategory is null ||
+                string.Equals(record.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(PublicExportCatalogMapper.Map(record).ProductCategory, normalizedCategory, StringComparison.OrdinalIgnoreCase))
             .Where(record => normalizedText is null || Contains(record.UniqueName, normalizedText) ||
                 Contains(record.Name, normalizedText) || Contains(record.Category, normalizedText) ||
                 record.Aliases.Values.Any(value => Contains(value, normalizedText)))
@@ -343,9 +345,9 @@ public sealed class PlatformStatusService
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
         var normalized = itemId.Trim();
         var match = records.FirstOrDefault(record =>
-            string.Equals(record.UniqueName, normalized, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(record.Name, normalized, StringComparison.OrdinalIgnoreCase) ||
-            record.Aliases.Values.Any(alias => string.Equals(alias, normalized, StringComparison.OrdinalIgnoreCase)));
+            PublicExportIdentity.Equivalent(record.UniqueName, normalized) ||
+            (!string.IsNullOrWhiteSpace(record.Name) && PublicExportIdentity.Equivalent(record.Name, normalized)) ||
+            record.Aliases.Values.Any(alias => PublicExportIdentity.Equivalent(alias, normalized)));
         return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" :
             status.LastRunState ?? "unknown", status?.ActiveRevisionId, status?.ParserVersion,
             coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
