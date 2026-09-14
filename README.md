@@ -77,6 +77,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F253: regressão após nova ferramenta de referências](docs/validacoes/2026-09-14-f253.md)
 - [F254: distribuição 0.0.19 com detalhe de referências](docs/validacoes/2026-09-14-f254.md)
 - [F255: smoke real da ferramenta de referências em Codex/Claude](docs/validacoes/2026-09-14-f255.md)
+- [F256: revalidação da matriz F10 e dos gates externos](docs/validacoes/2026-09-14-f256.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
