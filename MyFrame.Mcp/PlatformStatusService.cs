@@ -14,7 +14,9 @@ public sealed record SyncSourceStatusDto(string SourceId, string State, string? 
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
 public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
     int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode,
-    string? ActiveCaptureMode = null, string? ActiveCompleteness = null, long? ActiveSequence = null);
+    string? ActiveCaptureMode = null, string? ActiveCompleteness = null, long? ActiveSequence = null,
+    bool OverwolfRunning = false, bool WarframeRunning = false, string? HeartbeatState = null,
+    bool HeartbeatFresh = false, int ValidMarkers = 0, int InvalidMarkers = 0);
 public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
@@ -113,8 +115,11 @@ public sealed class PlatformStatusService
     public async Task<CaptureInboxStatusResponse> GetCaptureInboxStatusAsync(CancellationToken cancellationToken = default)
     {
         var directory = MyFrameStoragePaths.CollectorCaptureDirectory;
-        if (!Directory.Exists(directory))
-            return new(DateTimeOffset.UtcNow, "not_initialized", 0, null, null);
+        var probe = await CollectorCaptureStatusProbe.ReadAsync(directory, cancellationToken);
+        if (!probe.DirectoryExists)
+            return new(DateTimeOffset.UtcNow, "not_initialized", 0, null, null,
+                OverwolfRunning: probe.OverwolfRunning, WarframeRunning: probe.WarframeRunning,
+                HeartbeatState: probe.HeartbeatState, HeartbeatFresh: probe.HeartbeatFresh);
 
         var markers = Directory.EnumerateFiles(directory, "*.ready.json", SearchOption.TopDirectoryOnly).ToArray();
         DateTimeOffset? newest = null;
@@ -129,9 +134,11 @@ public sealed class PlatformStatusService
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var status = await database.GetStatusAsync("overwolf-inventory", cancellationToken);
         var revision = await database.GetActiveInventoryRevisionStatusAsync(cancellationToken);
-        return new(DateTimeOffset.UtcNow, markers.Length == 0 ? "ready" : "pending",
+        return new(DateTimeOffset.UtcNow, probe.State,
             markers.Length, newest, status?.ErrorCode, revision?.CaptureMode,
-            revision?.Completeness, revision?.Sequence);
+            revision?.Completeness, revision?.Sequence, probe.OverwolfRunning,
+            probe.WarframeRunning, probe.HeartbeatState, probe.HeartbeatFresh,
+            probe.ValidMarkers, probe.InvalidMarkers);
     }
 
     public async Task<SyncHistoryResponse> GetSyncHistoryAsync(
