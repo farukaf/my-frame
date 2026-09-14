@@ -293,6 +293,60 @@ public sealed class PlatformStatusService
             .ToArray());
     }
 
+    public async Task<AcquisitionResponse> GetAcquisitionAsync(string itemId, int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || itemId.Length > 512)
+            throw new ArgumentException("itemId is required and limited to 512 characters.", nameof(itemId));
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var catalogStatus = await database.GetStatusAsync("public-export", cancellationToken);
+        var worldStatus = await database.GetStatusAsync("worldstate-pc", cancellationToken);
+        var items = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        var item = items.FirstOrDefault(value => string.Equals(value.UniqueName, itemId, StringComparison.OrdinalIgnoreCase));
+        if (item is null)
+        {
+            var catalogState = catalogStatus is null ? "not_initialized" : catalogStatus.LastRunState ?? "unknown";
+            var resultState = catalogState == "not_initialized" ? "not_initialized" :
+                catalogState == "published" ? "item_not_found" : "catalog_unavailable";
+            return new(DateTimeOffset.UtcNow, resultState,
+                catalogStatus?.ErrorCode, catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId,
+                itemId, null, [], [], []);
+        }
+
+        var components = (await database.GetPublicExportComponentsAsync("public-export", cancellationToken))
+            .Where(value => string.Equals(value.ParentUniqueName, item.UniqueName, StringComparison.Ordinal))
+            .Take(limit)
+            .Select(value => new AcquisitionComponentDto(value.UniqueName, value.Name, value.RequiredCount,
+                value.Ducats, value.Tradable, value.ImageName)).ToArray();
+        var relics = (await database.GetPublicExportRelicsAsync("public-export", cancellationToken))
+            .Where(value => string.Equals(value.RewardUniqueName, item.UniqueName, StringComparison.Ordinal))
+            .Take(limit)
+            .Select(value => new AcquisitionRelicDto(value.RelicName, value.Rarity, value.Chance,
+                value.Vaulted, value.RewardName)).ToArray();
+        var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
+        var rewardNames = new[] { item.Name, item.UniqueName }.OfType<string>()
+            .Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
+        var matchedBounties = bounties.Where(bounty => bounty.Jobs.Any(job => job.Rewards.Any(reward =>
+                rewardNames.Any(name => reward.Item.Contains(name, StringComparison.OrdinalIgnoreCase)))))
+            .Take(limit)
+            .Select(ToBountyDto).ToArray();
+        var catalogAvailable = catalogStatus?.LastRunState == "published";
+        var worldAvailable = worldStatus?.LastRunState == "published";
+        var state = catalogAvailable && worldAvailable ? "available" : catalogAvailable ? "partial" : "catalog_unavailable";
+        return new(DateTimeOffset.UtcNow, state, worldStatus?.ErrorCode ?? catalogStatus?.ErrorCode,
+            catalogStatus?.ActiveRevisionId, worldStatus?.ActiveRevisionId, item.UniqueName, item.Name,
+            components, relics, matchedBounties);
+    }
+
+    private static WorldStateBountyDto ToBountyDto(WorldStateBounty bounty) =>
+        new(bounty.Id, bounty.Syndicate, bounty.Activation, bounty.Expiry,
+            bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type, job.UniqueName,
+                job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
+                    new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray());
+
     public async Task<WorldStateBountiesResponse> GetBountiesAsync(
         int limit = 100, string? syndicate = null, string? reward = null,
         CancellationToken cancellationToken = default)

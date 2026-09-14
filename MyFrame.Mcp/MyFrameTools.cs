@@ -93,6 +93,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum number of loadouts from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetLoadoutsAsync(typeId, limit, cancellationToken);
 
+    [McpServerTool(Name = "get_acquisition", Title = "Get item acquisition sources", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Combines normalized catalog components and relic sources with currently active World State bounties for one stable itemId. It is read-only, revision-aware, and does not invent sources when a dataset is unavailable.")]
+    public Task<AcquisitionResponse> GetAcquisition(
+        [Description("Exact catalog itemId/uniqueName returned by another My Frame tool.")] string itemId,
+        [Description("Maximum entries per acquisition source from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetAcquisitionAsync(itemId, limit, cancellationToken);
+
     [McpServerTool(Name = "get_bounties", Title = "Get active bounties", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns currently active World State bounties with jobs, standing stages and attributed rewards. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
