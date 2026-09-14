@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
-using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using MyFrame.Core;
 using Microsoft.Extensions.Logging;
+using SyncDiagnosticAttempt = MyFrame.Core.Sync.SyncDiagnosticAttempt;
+using SyncDiagnosticSource = MyFrame.Core.Sync.SyncDiagnosticSource;
+using SyncDiagnosticsSerializer = MyFrame.Core.Sync.SyncDiagnosticsSerializer;
 
 namespace MyFrame.App;
 
@@ -260,29 +262,12 @@ public partial class DashboardViewModel : ObservableObject
         {
             var rows = await _syncStatusReader.ReadAsync();
             var attempts = await _syncStatusReader.ReadRecentRunsAsync();
-            var diagnostics = new
-            {
-                schemaVersion = 1,
-                generatedAtUtc = DateTimeOffset.UtcNow,
-                sources = rows.Select(row => new
-                {
-                    sourceId = row.SourceId,
-                    state = row.State,
-                    detail = row.Detail,
-                    revision = row.Revision,
-                    lastRun = row.LastRun,
-                    parserVersion = row.ParserVersion,
-                    coverage = row.Coverage
-                }),
-                attempts = attempts.Select(attempt => new
-                {
-                    sourceId = attempt.SourceId,
-                    state = attempt.State,
-                    startedAt = attempt.StartedAt,
-                    detail = attempt.Detail
-                })
-            };
-            await Clipboard.Default.SetTextAsync(JsonSerializer.Serialize(diagnostics, new JsonSerializerOptions { WriteIndented = true }));
+            var sources = rows.Select(row => new SyncDiagnosticSource(row.SourceId, row.State, row.Detail,
+                row.Revision, row.LastRun, row.ParserVersion, row.Coverage)).ToArray();
+            var diagnosticAttempts = attempts.Select(attempt => new SyncDiagnosticAttempt(attempt.SourceId,
+                attempt.State, attempt.StartedAt, attempt.Detail)).ToArray();
+            await Clipboard.Default.SetTextAsync(SyncDiagnosticsSerializer.Serialize(sources, diagnosticAttempts,
+                DateTimeOffset.UtcNow));
             SyncStatusMessage = "Sanitized diagnostics copied. Payloads, tokens and local paths were omitted.";
         }
         catch (Exception error)
