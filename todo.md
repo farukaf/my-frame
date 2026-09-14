@@ -284,6 +284,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F246: repetir smoke real Codex/Claude contra o MCP 0.0.17 ([evidências](docs/validacoes/2026-09-14-f246.md)).
 - [x] F247: adicionar espera explícita e sem falso positivo para o gate F1 ([evidências](docs/validacoes/2026-09-14-f247.md)).
 - [x] F248: adicionar ingestão de URL permitida para referências Wiki/Overframe no SyncHost ([evidências](docs/validacoes/2026-09-14-f248.md)).
+- [x] F249: publicar 0.0.18, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f249.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
