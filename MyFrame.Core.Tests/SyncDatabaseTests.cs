@@ -455,8 +455,8 @@ public sealed class SyncDatabaseTests
         await using var db = new SyncDatabase(path);
         await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-rich-coverage", "[]", 1),
             [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
-                new Dictionary<string, string>(),
-                "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"components\":[]}")]);
+                new Dictionary<string, string> { ["en"] = "Test Weapon", ["pt"] = "Arma de Teste" },
+                "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"masterable\":true,\"components\":[]}")]);
 
         var coverage = await db.GetSourceCoverageAsync("public-export");
 
@@ -464,6 +464,8 @@ public sealed class SyncDatabaseTests
         Assert.Equal(InventoryFieldState.Known, coverage["marketIdentity"]);
         Assert.Equal(InventoryFieldState.NotObserved, coverage["relics"]);
         Assert.Equal(InventoryFieldState.NotObserved, coverage["imageName"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["localizedNames"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["technicalMetadata"]);
     }
 
     [Fact]
