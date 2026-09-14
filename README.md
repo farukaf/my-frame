@@ -93,6 +93,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F269: smoke de referências sem pacote obsoleto](docs/validacoes/2026-09-14-f269.md)
 - [F270: smoke econômico usa o pacote atual](docs/validacoes/2026-09-14-f270.md)
 - [F271: clientes MCP apontando para 0.0.24](docs/validacoes/2026-09-14-f271.md)
+- [F272: smoke real Codex/Claude no MCP 0.0.24](docs/validacoes/2026-09-14-f272.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
