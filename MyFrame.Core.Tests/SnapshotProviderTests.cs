@@ -111,6 +111,10 @@ public sealed class SnapshotProviderTests
     public async Task UsesSynchronizedDataWhenAlecaSettingsAreMissing()
     {
         using var folder = new TemporaryFolder();
+        var previousRoot = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", folder.Path);
+        try
+        {
         var item = new CatalogItem("/synced/item", "Synced Item", "Weapon", "", "", false, false,
             false, false, null, null, null, [], []);
         var synced = new SynchronizedDataSnapshot(
@@ -133,6 +137,9 @@ public sealed class SnapshotProviderTests
         Assert.Equal("SYNC_DATABASE", snapshot.Sources["inventory"].DetailCode);
         Assert.Equal("partial", snapshot.Sources["catalog"].State);
         Assert.Equal(3, snapshot.Inventory!.Stackables["/synced/resource"]);
+        Assert.Contains(snapshot.Warnings, warning => warning.Code == "INVENTORY_CAPTURE_UNVERIFIED");
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previousRoot); }
     }
 
     [Fact]
