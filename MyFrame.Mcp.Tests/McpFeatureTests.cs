@@ -166,7 +166,13 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal("not_initialized", response.State);
             Assert.Null(response.ActiveRevisionId);
             Assert.Null(response.ParserVersion);
-            Assert.All(response.Items, item => Assert.Equal("warframe-market", item.SourceId));
+
+            var references = Path.Combine(root, "references");
+            Directory.CreateDirectory(references);
+            await File.WriteAllTextAsync(Path.Combine(references, "reference.json"),
+                "{\"kind\":\"wiki\",\"url\":\"https://wiki.warframe.com/w/Test\",\"title\":\"Test\",\"revision\":\"r1\",\"sections\":[{\"id\":\"overview\",\"content\":\"Test\"}]} ");
+            var referenceCoverage = await new PlatformStatusService().GetSourceCoverageAsync(" REFERENCES ");
+            Assert.Contains(referenceCoverage.Items, item => item.SourceId == "references" && item.FieldPath == "documents");
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
