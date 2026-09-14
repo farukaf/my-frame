@@ -350,6 +350,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F312: documentar procedência World State e aquisição no MCP.md ([evidências](docs/validacoes/2026-09-14-f312.md)).
 - [x] F313: normalizar IDs de fonte no get_source_coverage ([evidências](docs/validacoes/2026-09-14-f313.md)).
 - [x] F314: instruir skill de farm sobre procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f314.md)).
+- [x] F315: executar runbook e polling real do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f315.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
