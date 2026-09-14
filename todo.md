@@ -274,6 +274,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F236: executar smoke read-only no MCP distribuído ([evidências](docs/validacoes/2026-09-14-f236.md)).
 - [x] F237: executar smoke real Codex/Claude no MCP 0.0.15 ([evidências](docs/validacoes/2026-09-14-f237.md)).
 - [x] F238: corrigir roteamento/instalação das skills após smoke Mother Token ([evidências](docs/validacoes/2026-09-14-f238.md)).
+- [x] F239: reconciliar checklist de clientes reais e gate F1 ([evidências](docs/validacoes/2026-09-14-f239.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -343,7 +344,7 @@ para a nova matriz e continuam abertas até validação.
 - [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
 - [x] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo ([F119](docs/validacoes/2026-09-13-f119.md)).
 - [x] Validar o protocolo com MCP Inspector ([F106–F108](docs/validacoes/2026-09-13-f108.md)).
-- [ ] Executar smoke tests reais em Codex e Claude no Windows.
+- [x] Executar smoke tests reais em Codex e Claude no Windows ([evidências](docs/validacoes/2026-09-14-f237.md)).
 - [x] Executar restore, build, publicação e suíte completa antes da entrega.
 - [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
 - [x] F2: lifecycle mínimo do SyncHost e registro de falhas sem perder revisão ativa
