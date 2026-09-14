@@ -432,3 +432,4 @@ para a nova matriz e continuam abertas até validação.
 - [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1
 - [x] F321: expor cobertura real do Warframe Market a partir do SQLite (`quotes`, `orders`, `account`, `marketItems`)
 - [x] F322: preservar upgrades/mods nas revisões SQLite e nas diferenças de inventário
+- [x] F323: cobrir mudanças de mods no contrato MCP de diferenças de inventário

@@ -257,7 +257,7 @@ public sealed class PlatformStatusService
         }
         static Dictionary<string, InventoryUpgradeRecord> IndexUpgrades(IReadOnlyList<InventoryUpgradeRecord>? values) =>
             (values ?? []).Select((value, index) => (value, index)).ToDictionary(
-                pair => $"{pair.value.OwnerInstanceId ?? "?"}|{pair.value.SourceField}|{pair.value.UpgradeId ?? "?"}|{pair.index}",
+                pair => $"{pair.value.OwnerInstanceId ?? "?"}|{pair.value.SourceField}|{pair.index}",
                 pair => pair.value, StringComparer.Ordinal);
         var upgradesBefore = IndexUpgrades(before.Upgrades);
         var upgradesAfter = IndexUpgrades(after.Upgrades);
