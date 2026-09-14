@@ -246,6 +246,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F208: projetar descrição atribuída no detalhe `get_item` ([evidências](docs/validacoes/2026-09-13-f208.md)).
 - [x] F209: corrigir verificador F10 para arrays no Windows PowerShell ([evidências](docs/validacoes/2026-09-13-f209.md)).
 - [x] F210: adicionar probe read-only do índice e documentos Public Export ([evidências](docs/validacoes/2026-09-13-f210.md)).
+- [x] F211: automatizar o gate de não mutação do probe Public Export ([evidências](docs/validacoes/2026-09-13-f211.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

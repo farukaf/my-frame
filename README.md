@@ -32,6 +32,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F0: auditoria e evidências de execução](docs/validacoes/2026-09-12-f0.md)
 - [F1: coletor Overwolf e roteiro de homologação](docs/validacoes/2026-09-13-f1.md)
 - [F210: probe read-only do Public Export](docs/validacoes/2026-09-13-f210.md)
+- [F211: gate read-only do probe Public Export](docs/validacoes/2026-09-13-f211.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
