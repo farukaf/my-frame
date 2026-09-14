@@ -178,6 +178,38 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task SourceCoverageReadsMarketStateFromSqliteStore()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-market-coverage-populated-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var store = new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath);
+            await store.SetAsync(new MarketQuote("test-item", 10, 8, DateTimeOffset.UtcNow));
+            await ((IMarketStateStore)store).SaveAsync(new MarketState(
+                new MarketAccount("account", "Tenno", "pc"),
+                [new MarketOrder("order", "item", "test-item", "sell", 10, 1, true)],
+                DateTimeOffset.UtcNow));
+            await ((IMarketItemIndexStore)store).SaveAsync(new MarketItemIndex(
+                new Dictionary<string, MarketIdentity>
+                {
+                    ["test item"] = new("item", "test-item")
+                }, DateTimeOffset.UtcNow));
+
+            var response = await new PlatformStatusService().GetSourceCoverageAsync(" WARFRAME-MARKET ");
+
+            Assert.Equal("available", response.State);
+            Assert.All(response.Items, item => Assert.Equal("warframe-market", item.SourceId));
+            Assert.Contains(response.Items, item => item.FieldPath == "quotes" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "orders" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "account" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "marketItems" && item.State == "Known");
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public async Task PublicExportSearchReturnsNormalizedTechnicalAndRecipeFields()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");

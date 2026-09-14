@@ -295,6 +295,27 @@ public sealed class PlatformStatusService
                 .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString())).ToArray(),
                 DateTimeOffset.UtcNow, rejected > 0 ? "partial" : accepted > 0 ? "available" : "not_initialized");
         }
+        if (normalizedSourceId == "warframe-market")
+        {
+            var market = new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath,
+                MyFrameStoragePaths.PriceCachePath, MyFrameStoragePaths.MarketStatePath,
+                MyFrameStoragePaths.MarketItemIndexPath);
+            var quotes = await market.LoadAllAsync(cancellationToken).ConfigureAwait(false);
+            var state = await ((IMarketStateStore)market).LoadAsync(cancellationToken).ConfigureAwait(false);
+            var index = await ((IMarketItemIndexStore)market).LoadAsync(cancellationToken).ConfigureAwait(false);
+            var fields = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal)
+            {
+                ["quotes"] = quotes.Count > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved,
+                ["orders"] = state is not null ? InventoryFieldState.Known : InventoryFieldState.NotObserved,
+                ["account"] = state?.Account is not null ? InventoryFieldState.Known : InventoryFieldState.NotObserved,
+                ["marketItems"] = index is not null && index.ByNormalizedName.Count > 0
+                    ? InventoryFieldState.Known : InventoryFieldState.NotObserved
+            };
+            var observed = fields.Values.Any(value => value == InventoryFieldState.Known);
+            return new(fields.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString())).ToArray(),
+                DateTimeOffset.UtcNow, observed ? "available" : "not_initialized");
+        }
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var coverage = await database.GetSourceCoverageAsync(normalizedSourceId, cancellationToken);
         var status = await database.GetStatusAsync(normalizedSourceId, cancellationToken);
