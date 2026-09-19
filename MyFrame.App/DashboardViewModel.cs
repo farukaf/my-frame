@@ -16,6 +16,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly AlecaFrameDirectorySettings _directorySettings;
     private readonly LocalSettings _localSettings;
     private readonly SyncStatusReader _syncStatusReader;
+    private readonly WorldStateSyncService _worldStateSync;
     private readonly CollectorCaptureInboxService _collectorCaptureInbox;
     private readonly CollectorCaptureInboxWatcher _collectorCaptureWatcher;
     private bool _initialized;
@@ -29,7 +30,7 @@ public partial class DashboardViewModel : ObservableObject
     public DashboardViewModel(DashboardService service, ILogger<DashboardViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
         SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox,
-        CollectorCaptureInboxWatcher collectorCaptureWatcher)
+        CollectorCaptureInboxWatcher collectorCaptureWatcher, WorldStateSyncService worldStateSync)
     {
         _service = service;
         _logger = logger;
@@ -37,6 +38,7 @@ public partial class DashboardViewModel : ObservableObject
         _directorySettings = directorySettings;
         _localSettings = localSettings;
         _syncStatusReader = syncStatusReader;
+        _worldStateSync = worldStateSync;
         _collectorCaptureInbox = collectorCaptureInbox;
         _collectorCaptureWatcher = collectorCaptureWatcher;
         _collectorCaptureWatcher.CaptureDetected += OnCollectorCaptureDetected;
@@ -75,6 +77,8 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool SyncStatusVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
     [ObservableProperty] public partial string SyncStatusMessage { get; set; } = "Status not loaded.";
+    [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
+    [ObservableProperty] public partial string WorldStateSyncMessage { get; set; } = "No World State synchronization requested.";
     [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
@@ -84,7 +88,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SelectedCollectionFilter { get; set; } = "In progress";
     [ObservableProperty] public partial string SelectedCollectionSort { get; set; } = "Closest to completion";
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
-    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
+    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Optional legacy import. Synchronized SQLite data is preferred.";
     [ObservableProperty] public partial string SelectedSalesFilter { get; set; } = "All recommendations";
     [ObservableProperty] public partial string SelectedSalesSort { get; set; } = "Name";
     [ObservableProperty] public partial string ActivePrimeSetReserveText { get; set; } = "—";
@@ -149,7 +153,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             _logger.LogInformation("No synchronized SQLite data is available; opening optional legacy Settings");
             StatusMessage = "No synchronized Warframe data is available yet.";
-            AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
+            AlecaFrameDirectoryMessage = $"{directoryError} You can choose a legacy folder, but it is not required for SQLite data.";
             ShowSection("Settings");
             return;
         }
@@ -180,6 +184,28 @@ public partial class DashboardViewModel : ObservableObject
             SyncStatusMessage = "Unable to read synchronization status.";
         }
         finally { IsLoadingSyncStatus = false; }
+    }
+
+    [RelayCommand]
+    private async Task SyncWorldStateAsync()
+    {
+        if (IsSyncingWorldState) return;
+        IsSyncingWorldState = true;
+        WorldStateSyncMessage = "Fetching Warframe World State…";
+        try
+        {
+            var result = await _worldStateSync.RunAsync();
+            WorldStateSyncMessage = result.State == "published"
+                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}; parser {result.ParserVersion ?? "unknown"}."
+                : $"World State synchronization failed: {result.ErrorCode ?? result.State}.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "World State synchronization failed");
+            WorldStateSyncMessage = "World State synchronization failed; previous data was preserved.";
+        }
+        finally { IsSyncingWorldState = false; }
     }
 
     [RelayCommand]
@@ -248,7 +274,7 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings.AlecaFrameDirectory = directory;
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
-        AlecaFrameDirectoryMessage = "Folder saved. Legacy inventory and catalog import use this location; market credentials stay in My Frame storage.";
+        AlecaFrameDirectoryMessage = "Legacy folder saved. SQLite synchronized data remains the primary source.";
         StatusMessage = "AlecaFrame folder configured. Loading data…";
         await RefreshAsync();
     }
@@ -256,13 +282,13 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void ResetAlecaFrameDirectory()
     {
-        _localSettings.AlecaFrameDirectory = _directorySettings.AutomaticDirectory;
-        _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
+        _localSettings.AlecaFrameDirectory = string.Empty;
+        _alecaPath.SetDirectory(string.Empty);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
         AlecaFrameDirectoryMessage = error is null
-            ? "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame)."
-            : $"Automatic location restored, but it is not ready: {error}";
+            ? "Legacy folder cleared; SQLite synchronized data remains primary."
+            : $"Legacy folder cleared. SQLite data remains usable; optional import is not ready: {error}";
         if (error is not null)
         {
             StatusMessage = "AlecaFrame data folder needs to be configured.";
