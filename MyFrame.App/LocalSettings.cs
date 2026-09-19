@@ -13,7 +13,7 @@ public sealed class LocalSettings
         _store = store;
         _document = store.LoadAsync().GetAwaiter().GetResult() ?? new MyFrameSettingsDocument(
             MyFrameSettingsDocument.CurrentStorageVersion, 1,
-            MyFrameStoragePaths.DefaultAlecaFrameDirectory, 10, 1, DateTimeOffset.UtcNow);
+            string.Empty, 10, 1, DateTimeOffset.UtcNow);
     }
 
     public string AlecaFrameDirectory
