@@ -14,8 +14,9 @@ public static class SharedDataMigration
             return (store, existing);
         }
 
-        var directory = Preferences.Default.Get(AlecaFrameDirectorySettings.PreferenceKey,
-            MyFrameStoragePaths.DefaultAlecaFrameDirectory);
+        var directory = Preferences.Default.ContainsKey(AlecaFrameDirectorySettings.PreferenceKey)
+            ? Preferences.Default.Get(AlecaFrameDirectorySettings.PreferenceKey, string.Empty)
+            : string.Empty;
         var ducats = Math.Clamp(Preferences.Default.Get("DucatsPerPlatinum", 10), 1, 50);
         var reserve = Preferences.Default.ContainsKey("UnvaultedPrimeSetsToReserve")
             ? Math.Clamp(Preferences.Default.Get("UnvaultedPrimeSetsToReserve", 1), 0, 10)
