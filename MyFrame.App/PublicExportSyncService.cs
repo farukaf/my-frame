@@ -15,22 +15,12 @@ public sealed class PublicExportSyncService(ILogger<PublicExportSyncService> log
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
         try
         {
-            var decoder = new LzmaAloneDecoder();
-            var indexClient = new PublicExportIndexClient(client, decoder.Decode);
-            var documentClient = new PublicExportDocumentClient(client, decoder);
-            var entries = await indexClient.FetchIndexAsync(cancellationToken: cancellationToken);
-            var entry = entries.FirstOrDefault(value =>
-                value.RelativePath.Contains("ExportWeapons_en.json", StringComparison.OrdinalIgnoreCase))
-                ?? entries.FirstOrDefault(value => value.RelativePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
-            if (entry is null) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
-            var publication = await host.RunPublicExportOnceAsync("public-export", documentClient, entry,
-                cancellationToken: cancellationToken);
-            var status = await database.GetStatusAsync("public-export", cancellationToken);
-            if (publication is not null)
-                return new("published", publication.RecordCount, publication.RevisionId, null, status?.ParserVersion);
-            logger.LogWarning("Public Export synchronization failed with {ErrorCode}", status?.ErrorCode);
-            return new(status?.LastRunState ?? "failed", 0, status?.ActiveRevisionId,
-                status?.ErrorCode ?? "SYNC_FAILED", status?.ParserVersion);
+            var result = await new PublicExportSyncRunner().RunAsync(database, host, client, cancellationToken);
+            if (result.State == "published")
+                return new(result.State, result.Records, result.RevisionId, null, result.ParserVersion);
+            logger.LogWarning("Public Export synchronization failed with {ErrorCode}", result.ErrorCode);
+            return new(result.State, result.Records, result.RevisionId,
+                result.ErrorCode ?? "SYNC_FAILED", result.ParserVersion);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
