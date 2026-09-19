@@ -80,6 +80,7 @@
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Relics" /></Border.GestureRecognizers><Label Text="⬡  Relic advisor" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Sales" /></Border.GestureRecognizers><Label Text="⇄  Sales and ducats" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Surplus" /></Border.GestureRecognizers><Label Text="⊖  Surplus" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
+                    <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="SyncStatus" /></Border.GestureRecognizers><Label Text="◌  Sync status" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                     <Border Style="{StaticResource NavItem}"><Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ShowSectionCommand}" CommandParameter="Settings" /></Border.GestureRecognizers><Label Text="⚙  Settings" TextColor="#AEB8C8" HorizontalOptions="Start" /></Border>
                 </VerticalStackLayout>
 
@@ -192,6 +193,78 @@
                         </Grid>
                     </VerticalStackLayout>
                 </ScrollView>
+
+                <Grid IsVisible="{Binding SyncStatusVisible}" RowDefinitions="Auto,Auto,Auto,*,180" RowSpacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Synchronization status" Style="{StaticResource Title}" />
+                            <Label Text="Read-only health of the shared SQLite data store used by My Frame and MCP." TextColor="#8995A8" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="Refresh status" Command="{Binding RefreshSyncStatusCommand}" BackgroundColor="#167C70" TextColor="White" />
+                    </Grid>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="12">
+                        <HorizontalStackLayout Spacing="8">
+                            <ActivityIndicator IsRunning="{Binding IsLoadingSyncStatus}" IsVisible="{Binding IsLoadingSyncStatus}" Color="#7DE2D1" WidthRequest="16" />
+                            <Label Text="{Binding SyncStatusMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Overwolf capture inbox" Style="{StaticResource SectionTitle}" />
+                            <Label Text="Copie os .capture.json e .ready.json exportados pelo coletor para esta pasta." Style="{StaticResource Muted}" />
+                            <Entry Text="{Binding CollectorCaptureDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                            <HorizontalStackLayout Spacing="10">
+                                <CheckBox IsChecked="{Binding AllowCollectorRawPayload}" Color="#7DE2D1" />
+                                <Label Text="Autorizar a leitura do payload privado desta importação" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                                <Button Text="Importar capturas" Command="{Binding ImportCollectorCapturesCommand}" BackgroundColor="#167C70" TextColor="White" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <ActivityIndicator IsRunning="{Binding IsImportingCollectorCaptures}" IsVisible="{Binding IsImportingCollectorCaptures}" Color="#7DE2D1" WidthRequest="16" />
+                            <Label Text="{Binding CollectorCaptureMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                            <Label Text="{Binding CollectorCaptureNotice}" TextColor="#F4C76D" IsVisible="{Binding CollectorCaptureNoticeVisible}" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="10">
+                                <Button Text="Sync World State" Command="{Binding SyncWorldStateCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                <ActivityIndicator IsRunning="{Binding IsSyncingWorldState}" IsVisible="{Binding IsSyncingWorldState}" Color="#7DE2D1" WidthRequest="16" />
+                                <Label Text="{Binding WorldStateSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                    <CollectionView Grid.Row="3" ItemsSource="{Binding SyncSources}" SelectionMode="None">
+                        <CollectionView.EmptyView><Label Text="No synchronization sources registered." TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="14">
+                                    <Grid ColumnDefinitions="2*,*,2*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                                        <Label Text="{Binding DisplayName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold" />
+                                        <Label Grid.Column="1" Text="{Binding State}" TextColor="#7DE2D1" />
+                                        <Label Grid.Column="2" Text="{Binding LastRun}" Style="{StaticResource Muted}" HorizontalTextAlignment="End" />
+                                        <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Muted}" />
+                                        <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Revision, StringFormat='Revision: {0}'}" Style="{StaticResource Muted}" HorizontalTextAlignment="End" />
+                                        <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding ParserVersion, StringFormat='Parser: {0}'}" Style="{StaticResource Muted}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Border Grid.Row="4" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Recent synchronization attempts" Style="{StaticResource SectionTitle}" />
+                            <CollectionView ItemsSource="{Binding SyncAttempts}" SelectionMode="None">
+                                <CollectionView.EmptyView><Label Text="No synchronization attempts recorded." Style="{StaticResource Muted}" /></CollectionView.EmptyView>
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="2*,*,2*" ColumnSpacing="10" Padding="0,2">
+                                            <Label Text="{Binding SourceId}" Style="{StaticResource Muted}" />
+                                            <Label Grid.Column="1" Text="{Binding State}" TextColor="#7DE2D1" />
+                                            <Label Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Muted}" HorizontalTextAlignment="End" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
 
                 <Grid IsVisible="{Binding CollectionVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
@@ -412,14 +485,14 @@
                         <Label Text="Settings" Style="{StaticResource Title}" />
                         <Border Style="{StaticResource Card}">
                             <VerticalStackLayout Spacing="12">
-                                <Label Text="AlecaFrame data folder" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Legacy AlecaFrame import (optional)" Style="{StaticResource SectionTitle}" />
                                 <Label Text="Choose the folder containing lastData.dat and cachedData/json. The automatic location works for standard installations." TextColor="#8995A8" />
                                 <Label Text="My Frame can start without this folder. Configure it here before loading inventory data." TextColor="#F3C969" FontSize="12" />
                                 <Entry Text="{Binding AlecaFrameDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
                                 <Label Text="{Binding AlecaFrameDirectoryMessage}" Style="{StaticResource Muted}" />
                                 <HorizontalStackLayout Spacing="10">
-                                    <Button Text="Choose folder" Command="{Binding SelectAlecaFrameDirectoryCommand}" BackgroundColor="#167C70" TextColor="White" />
-                                    <Button Text="Use automatic location" Command="{Binding ResetAlecaFrameDirectoryCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
+                                    <Button Text="Choose legacy folder" Command="{Binding SelectAlecaFrameDirectoryCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                    <Button Text="Clear legacy folder" Command="{Binding ResetAlecaFrameDirectoryCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
                         </Border>
