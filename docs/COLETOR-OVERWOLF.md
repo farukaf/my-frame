@@ -14,15 +14,21 @@ separa testes sintéticos de homologação com Warframe em execução.
 | `chat` | Não assinado e descartado | testes de rejeição | não suportado |
 | rank/config/mods | Campos aceitos no envelope quando presentes | parser sintético | `NotObserved` até comparar Arsenal |
 | upgrades/RawUpgrades | Relação atribuída por `ownerInstanceId` quando presente | testes Core/MCP | cobertura depende da captura |
+| `contextId` | Contexto opcional do coletor é validado, persistido na revisão e nunca inferido | F325/F329 | `null` quando ausente; contextos distintos não são comparados |
 
 | diagnóstico de callbacks GEP | Heartbeat preserva estado sanitizado, features suportadas, contagem por feature e último evento | F284 (sintético); callback real ainda pendente | evidência de transporte, não de completude |
 
 ## Envelope e retenção
 
 O transporte local usa `schemaVersion`, `sessionId`, `eventId`, `sequence`,
-`captureMode`, `completeness`, `contentHash` e raw privado com retenção curta. O
+`contextId` opcional, `captureMode`, `completeness`, `contentHash` e raw privado com retenção curta. O
 marker `.ready.json` contém apenas nome, tamanho e SHA-256; não contém inventário,
 username ou token. A importação exige consentimento explícito e é idempotente.
+
+`captureMode=snapshot` pode ser projetado como inventário completo somente com a
+completude apropriada; `captureMode=delta` é tratado como evidência de mudança e
+não substitui nem é comparado com um snapshot completo. O MCP retorna
+`context_mismatch` quando duas revisões conhecidas pertencem a contextos distintos.
 
 ## Gate que ainda falta
 
