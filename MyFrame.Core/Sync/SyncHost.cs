@@ -111,6 +111,27 @@ public sealed class SyncHost : IAsyncDisposable
         }
     }
 
+    public async Task<SyncPublicationResult?> RunWorldStateSnapshotOnceAsync(
+        WorldStateSnapshot snapshot, SyncBatch batch, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(batch);
+        await StartAsync(cancellationToken);
+        try
+        {
+            var result = await _database.PublishWorldStateAsync(snapshot, batch, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            await _database.RecordFailureAsync("worldstate-pc", ErrorCode(error), cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return null;
+        }
+    }
+
     public async Task<int> RunMaintenanceAsync(int maximumRevisionsPerSource = 3,
         CancellationToken cancellationToken = default)
     {

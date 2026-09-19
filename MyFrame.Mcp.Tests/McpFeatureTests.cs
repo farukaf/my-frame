@@ -14,12 +14,44 @@ namespace MyFrame.Mcp.Tests;
 public sealed class McpFeatureTests(ITestOutputHelper output)
 {
     [Fact]
+    public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-references-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            Directory.CreateDirectory(Path.Combine(root, "references"));
+            File.WriteAllText(Path.Combine(root, "references", "build.json"), "{\"kind\":\"overframe\",\"url\":\"https://overframe.gg/build/123\",\"title\":\"Test build\",\"revision\":\"r1\",\"license\":\"community\",\"author\":\"tester\",\"sections\":[{\"id\":\"mods\",\"title\":\"Mods\",\"content\":\"Use Serration for fire rate.\"}]}");
+            File.WriteAllText(Path.Combine(root, "references", "rejected.json"), "{\"kind\":\"wiki\",\"url\":\"https://example.com/not-allowed\",\"title\":\"bad\",\"revision\":\"r1\",\"sections\":[]}");
+
+            var response = await new PlatformStatusService().SearchReferencesAsync("fire rate");
+
+            Assert.Equal("partial", response.State);
+            Assert.Equal(1, response.Documents);
+            Assert.Equal(1, response.RejectedDocuments);
+            var hit = Assert.Single(response.Hits);
+            Assert.Equal("Overframe", hit.Kind);
+            Assert.Equal("community", hit.License);
+            Assert.Equal("tester", hit.Author);
+            Assert.False(hit.TrustedForFacts);
+            var status = await new PlatformStatusService().GetSyncStatusAsync();
+            var referenceStatus = Assert.Single(status.Sources, value => value.SourceId == "references");
+            Assert.Equal("partial", referenceStatus.State);
+            Assert.Equal("reference-file-1", referenceStatus.ParserVersion);
+            Assert.Equal(1, referenceStatus.AcceptedRecords);
+            Assert.Equal(1, referenceStatus.RejectedRecords);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public void EveryToolIsExplicitlyReadOnlyAndHasThePlannedName()
     {
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -70,6 +102,31 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             if (tool.ProtocolTool.OutputSchema is { } output)
                 Assert.Empty(TypeArrayPaths(output));
         }
+    }
+
+    [Fact]
+    public async Task DashboardAndMcpReadTheSameSnapshotProvider()
+    {
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { ["/parity/item"] = 7 },
+            new HashSet<string>(), new Dictionary<string, long>(), 1, 2, "parity");
+        var item = CatalogItem("/parity/item", "Parity Item");
+        var snapshot = Snapshot("parity-snapshot", inventory, [item]);
+        var provider = new FakeProvider(snapshot);
+        using var folder = new TemporaryFolder();
+        using var dashboard = new DashboardService(new ParityPath(folder.Path),
+            new EmptyInventoryReader(), new EmptyCatalogReader(), new EmptyMarket(),
+            new EmptyPriceCache(), new EmptyMarketState(), new EmptyMarketItems(),
+            new RecommendationEngine(), snapshotProvider: provider);
+
+        var uiSnapshot = await dashboard.RefreshAsync(refreshPrices: false);
+        var mcpPage = await Service(provider).SearchInventoryAsync(null, null, null, null,
+            "all", false, 50, null, null, default);
+
+        var mcpItem = Assert.Single(mcpPage.Items);
+        Assert.Equal(uiSnapshot.Inventory.Stackables["/parity/item"], mcpItem.Quantity);
+        Assert.Equal(uiSnapshot.Inventory.Stackables.Count, mcpPage.TotalCount);
+        Assert.Equal(item.Name, mcpItem.Name);
     }
 
     [Fact]
@@ -337,7 +394,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(19, tools.Count);
+        Assert.Equal(22, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
@@ -615,6 +672,55 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
 
     private static CatalogItem CatalogItem(string id, string name) => new(id, name, "Items", "",
         "", false, false, false, false, null, null, null, [], []);
+
+    private sealed class ParityPath(string directory) : IAlecaFramePath
+    {
+        public string DirectoryPath { get; private set; } = directory;
+        public event EventHandler<string>? Changed;
+        public void SetDirectory(string directoryPath)
+        {
+            DirectoryPath = directoryPath;
+            Changed?.Invoke(this, directoryPath);
+        }
+    }
+
+    private sealed class EmptyInventoryReader : IAlecaFrameReader
+    {
+        public Task<InventorySnapshot> ReadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply inventory for this parity test.");
+    }
+
+    private sealed class EmptyCatalogReader : IAlecaCatalogReader
+    {
+        public Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply catalog for this parity test.");
+    }
+
+    private sealed class EmptyMarket : IWarframeMarketClient
+    {
+        public Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketAccount?>(null);
+        public Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MarketOrder>>([]);
+        public Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+    }
+
+    private sealed class EmptyPriceCache : IPriceCache
+    {
+        public Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task SetAsync(MarketQuote quote, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketState : IMarketStateStore
+    {
+        public Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketState?>(null);
+        public Task SaveAsync(MarketState state, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketItems : IMarketItemIndexStore
+    {
+        public Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+        public Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeProvider(params MyFrameSnapshot[] snapshots) : IMyFrameSnapshotProvider
     {
