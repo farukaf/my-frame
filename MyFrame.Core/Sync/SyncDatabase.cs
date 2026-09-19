@@ -5,7 +5,7 @@ namespace MyFrame.Core.Sync;
 
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -29,9 +29,9 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE UNIQUE INDEX IF NOT EXISTS ux_source_revision_hash ON source_revisions(source_id, content_hash);
             CREATE TABLE IF NOT EXISTS coverage(source_id TEXT NOT NULL REFERENCES sources(source_id), field_path TEXT NOT NULL, state TEXT NOT NULL, observed_at TEXT NOT NULL, detail TEXT, PRIMARY KEY(source_id, field_path));
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
-            CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, PRIMARY KEY(revision_id, unique_name));
+            CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, aliases_json TEXT NOT NULL DEFAULT '{}', PRIMARY KEY(revision_id, unique_name));
             CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
-            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot');
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -44,6 +44,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             """);
         await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
+        await EnsureColumnAsync(connection, "public_export_items", "aliases_json", "TEXT NOT NULL DEFAULT '{}'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "capture_mode", "TEXT NOT NULL DEFAULT 'snapshot'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -140,8 +142,13 @@ public sealed class SyncDatabase : IAsyncDisposable
         if (!File.Exists(_path)) return [];
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         var hasRawJson = await HasColumnAsync(connection, "public_export_items", "raw_json", cancellationToken);
+        var hasAliases = await HasColumnAsync(connection, "public_export_items", "aliases_json", cancellationToken);
         await using var command = connection.CreateCommand();
-        command.CommandText = hasRawJson ? """
+        command.CommandText = hasRawJson && hasAliases ? """
+            SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name, i.raw_json, i.aliases_json
+            FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
+            WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
+            """ : hasRawJson ? """
             SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name, i.raw_json
             FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
             WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
@@ -157,7 +164,19 @@ public sealed class SyncDatabase : IAsyncDisposable
         {
             var uniqueName = reader.GetString(0);
             var name = reader.IsDBNull(1) ? null : reader.GetString(1);
-            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }, hasRawJson && !reader.IsDBNull(5) ? reader.GetString(5) : null));
+            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName };
+            var aliasesOrdinal = hasAliases ? 6 : -1;
+            if (aliasesOrdinal >= 0 && !reader.IsDBNull(aliasesOrdinal))
+            {
+                try
+                {
+                    var persisted = JsonSerializer.Deserialize<Dictionary<string, string>>(reader.GetString(aliasesOrdinal));
+                    if (persisted is not null)
+                        foreach (var alias in persisted.Where(alias => !string.IsNullOrWhiteSpace(alias.Value))) aliases[alias.Key] = alias.Value;
+                }
+                catch (JsonException) { }
+            }
+            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), aliases, hasRawJson && !reader.IsDBNull(5) ? reader.GetString(5) : null));
         }
         return records;
     }
@@ -336,11 +355,27 @@ public sealed class SyncDatabase : IAsyncDisposable
             await CommandAsync(connection, transaction, "UPDATE source_revisions SET state='retained' WHERE source_id=$source AND state='active';", cancellationToken, ("$source", batch.SourceId));
             await CommandAsync(connection, transaction, "INSERT INTO source_revisions(revision_id, source_id, content_hash, payload_json, parser_version, record_count, state, retrieved_at, published_at) VALUES ($revision, $source, $hash, $payload, $parser, $count, 'active', $at, $at);", cancellationToken, ("$revision", revisionId), ("$source", batch.SourceId), ("$hash", batch.ContentHash), ("$payload", batch.PayloadJson), ("$parser", batch.ParserVersion), ("$count", batch.RecordCount), ("$at", now));
             if (records is not null)
+            {
                 foreach (var record in records)
-                    await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$raw", (object?)record.RawJson ?? "{}"));
+                    await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, aliases_json, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $aliases, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$aliases", JsonSerializer.Serialize(record.Aliases)), ("$raw", (object?)record.RawJson ?? "{}"));
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='public-export';", cancellationToken);
+                var catalogFields = new[]
+                {
+                    (Path: "uniqueName", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.UniqueName))),
+                    (Path: "name", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Name))),
+                    (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
+                    (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
+                    (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
+                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson)))
+                };
+                foreach (var field in catalogFields)
+                    await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
+                        ("$field", field.Path), ("$state", (field.Observed ? InventoryFieldState.Known : InventoryFieldState.NotObserved).ToString()),
+                        ("$at", now), ("$detail", $"records={records.Count}"));
+            }
             if (inventory is { } data)
             {
-                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode) VALUES ($revision, $session, $event, $sequence, $completeness, $mode);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode));
                 foreach (var equipment in data.Projection.Equipment)
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
                 for (var index = 0; index < data.Projection.Stackables.Count; index++)
@@ -408,6 +443,24 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
+    }
+
+    public async Task<InventoryRevisionStatus?> GetActiveInventoryRevisionStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT ir.capture_mode, ir.completeness, ir.sequence
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active'
+            LIMIT 1;
+            """;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2));
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
