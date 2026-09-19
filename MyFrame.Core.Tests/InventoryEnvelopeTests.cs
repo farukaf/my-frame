@@ -13,6 +13,7 @@ public sealed class InventoryEnvelopeTests
         var result = InventoryEnvelopeParser.Parse(envelope);
         Assert.Equal(session, result.SessionId);
         Assert.Equal("unverified", result.Completeness);
+        Assert.Equal("snapshot", result.CaptureMode);
         Assert.Equal(64, result.ContentHash.Length);
     }
 
