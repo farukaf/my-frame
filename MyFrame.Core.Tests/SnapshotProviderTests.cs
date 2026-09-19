@@ -104,6 +104,41 @@ public sealed class SnapshotProviderTests
         Assert.Equal(3, snapshot.Inventory!.Stackables["/synced/resource"]);
     }
 
+    [Fact]
+    public async Task PrefersSynchronizedDataWhenLegacyAlecaDataAlsoExists()
+    {
+        using var folder = new TemporaryFolder();
+        var aleca = Path.Combine(folder.Path, "aleca");
+        Directory.CreateDirectory(aleca);
+        await File.WriteAllTextAsync(Path.Combine(aleca, "lastData.dat"), "legacy");
+        var now = DateTimeOffset.UtcNow;
+        var syncedItem = new CatalogItem("/synced/item", "Synced Item", "Weapon", "", "", false, false,
+            false, false, null, null, null, [], []);
+        var legacyItem = new CatalogItem("/legacy/item", "Legacy Item", "Weapon", "", "", false, false,
+            false, false, null, null, null, [], []);
+        var synced = new SynchronizedDataSnapshot(
+            new InventorySnapshot(now, new Dictionary<string, int>(), new HashSet<string> { syncedItem.UniqueName },
+                new Dictionary<string, long>(), 0, 0, "sqlite"),
+            new CatalogSnapshot([syncedItem], new Dictionary<string, CatalogItem> { [syncedItem.UniqueName] = syncedItem },
+                new Dictionary<string, MarketIdentity>()), now);
+        var settings = new MyFrameSettingsDocument(1, 1, aleca, 10, 0, now);
+        var paths = new MyFrameLocalDataOptions(Path.Combine(folder.Path, "settings.json"),
+            Path.Combine(folder.Path, "prices.json"), Path.Combine(folder.Path, "state.json"),
+            Path.Combine(folder.Path, "items.json"));
+        using var provider = new MyFrameSnapshotProvider(
+            new ToggleInventoryReader(new InventorySnapshot(now, new Dictionary<string, int>(),
+                new HashSet<string> { legacyItem.UniqueName }, new Dictionary<string, long>(), 0, 0, "legacy")),
+            new CatalogReader(new CatalogSnapshot([legacyItem], new Dictionary<string, CatalogItem> { [legacyItem.UniqueName] = legacyItem },
+                new Dictionary<string, MarketIdentity>())), new RecommendationEngine(), new SettingsStore(settings),
+            new PriceReader(), new StateStore(), new ItemIndexStore(), paths, synchronizedData: new FakeSynchronizedReader(synced));
+
+        var snapshot = await provider.GetAsync();
+
+        Assert.Contains(syncedItem.UniqueName, snapshot.Inventory!.OwnedEquipment);
+        Assert.DoesNotContain(legacyItem.UniqueName, snapshot.Inventory.OwnedEquipment);
+        Assert.Equal("SYNC_DATABASE", snapshot.Sources["inventory"].DetailCode);
+    }
+
     private sealed class ToggleInventoryReader(InventorySnapshot value) : IAlecaFrameReader
     {
         public bool Fail { get; set; }

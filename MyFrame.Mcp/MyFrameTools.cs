@@ -69,7 +69,8 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<WorldStateBountiesResponse> GetBounties(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
-        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, cancellationToken);
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, reward, cancellationToken);
 
     [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -77,7 +78,17 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<WorldStateResponse> GetWorldState(
         [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
         [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
-        CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, syndicate, cancellationToken);
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, syndicate, reward, cancellationToken);
+
+    [McpServerTool(Name = "get_activity", Title = "Get current activities", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns current bounty activities and planetary cycles using the same World State revision, coverage and validity rules as get_world_state. An optional reward filter narrows bounties without inventing missing rewards.")]
+    public Task<WorldStateResponse> GetActivity(
+        [Description("Maximum number of active activities from 1 to 200; default 100.")] int limit = 100,
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetActivityAsync(limit, syndicate, reward, cancellationToken);
 
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
