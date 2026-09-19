@@ -25,13 +25,16 @@ public static class MauiProgram
         var automaticAlecaDirectory = MyFrameStoragePaths.DefaultAlecaFrameDirectory;
         var migration = SharedDataMigration.Ensure();
         var alecaDirectory = migration.Settings.AlecaFrameDirectory;
-        builder.Services.AddSingleton<IMyFrameSettingsWriter>(migration.Store);
-        builder.Services.AddSingleton<IMyFrameSettingsStore>(migration.Store);
+        builder.Services.AddSingleton<SqliteSettingsStore>(_ => new SqliteSettingsStore(
+            MyFrameStoragePaths.DataDatabasePath, MyFrameStoragePaths.SettingsPath));
+        builder.Services.AddSingleton<IMyFrameSettingsWriter>(p => p.GetRequiredService<SqliteSettingsStore>());
+        builder.Services.AddSingleton<IMyFrameSettingsStore>(p => p.GetRequiredService<SqliteSettingsStore>());
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<SyncStatusReader>();
         builder.Services.AddSingleton<WorldStateSyncService>();
+        builder.Services.AddSingleton<PublicExportSyncService>();
         builder.Services.AddSingleton<CollectorCaptureInboxService>();
         builder.Services.AddSingleton<CollectorCaptureInboxWatcher>();
         builder.Services.AddSingleton<WindowPlacementService>();
@@ -45,8 +48,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IMarketStateStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IMarketItemIndexStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
+        builder.Services.AddSingleton<ProtectedFileMarketTokenStore>(_ => new ProtectedFileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath));
+        builder.Services.AddSingleton<MarketCredentialService>(p => new MarketCredentialService(
+            p.GetRequiredService<ProtectedFileMarketTokenStore>()));
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
-            new HttpClient(), new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
+            new HttpClient(), p.GetRequiredService<ProtectedFileMarketTokenStore>(),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
         builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
