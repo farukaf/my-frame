@@ -18,6 +18,10 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
     {
         if (!File.Exists(databasePath)) return null;
         await using var database = new SyncDatabase(databasePath);
+        // Settings/market stores may create the shared database before the first sync publication.
+        // Ensure the complete schema exists so a clean installation reports setup-required data
+        // instead of leaking a "no such table" SQLite exception through MCP.
+        await database.InitializeAsync(cancellationToken);
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
         var stackables = await database.GetInventoryStackablesAsync(cancellationToken);
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
