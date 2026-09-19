@@ -1,6 +1,7 @@
 using LiveChartsCore.SkiaSharpView.Maui;
 using Microsoft.Extensions.Logging;
 using MyFrame.Core;
+using MyFrame.Core.Sync;
 using Serilog;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 
@@ -30,6 +31,9 @@ public static class MauiProgram
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<SyncStatusReader>();
+        builder.Services.AddSingleton<WorldStateSyncService>();
+        builder.Services.AddSingleton<CollectorCaptureInboxService>();
+        builder.Services.AddSingleton<CollectorCaptureInboxWatcher>();
         builder.Services.AddSingleton<WindowPlacementService>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
@@ -43,6 +47,8 @@ public static class MauiProgram
             new HttpClient(), new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
+        builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
+            new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath));
         builder.Services.AddSingleton(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<IAlecaFrameReader>(), p.GetRequiredService<IAlecaCatalogReader>(),
             p.GetRequiredService<IWarframeMarketClient>(), p.GetRequiredService<IPriceCache>(),

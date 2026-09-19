@@ -28,6 +28,20 @@ public sealed class InventoryEnvelopeTests
     }
 
     [Fact]
+    public void PreservesAttributedUpgradeArraysWithoutInferringSemantics()
+    {
+        var projection = InventoryPayloadParser.Parse("{\"equipment\":[{\"instanceId\":\"weapon-1\"}],\"RawUpgrades\":[{\"instanceId\":\"weapon-1\",\"uniqueName\":\"/Lotus/Mod\",\"rank\":5}],\"mods\":[{\"id\":\"opaque-mod\"}]}" );
+
+        Assert.Equal(2, projection.Upgrades!.Count);
+        Assert.Equal("weapon-1", projection.Upgrades[0].OwnerInstanceId);
+        Assert.Equal("/Lotus/Mod", projection.Upgrades[0].UpgradeId);
+        Assert.Equal(5, projection.Upgrades[0].Rank);
+        Assert.Null(projection.Upgrades[1].OwnerInstanceId);
+        Assert.Equal("opaque-mod", projection.Upgrades[1].UpgradeId);
+        Assert.Equal(InventoryFieldState.Known, projection.Coverage["upgrades.RawUpgrades"]);
+    }
+
+    [Fact]
     public void MissingArraysAreNotEmptyClaims()
     {
         var projection = InventoryPayloadParser.Parse("{\"other\":1}");
