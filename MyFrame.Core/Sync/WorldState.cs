@@ -132,19 +132,42 @@ public static class WorldStateParser
     };
 }
 
-public sealed class WorldStateClient(HttpClient httpClient)
+public sealed class WorldStateClient(HttpClient httpClient, bool allowCommunityFallback = false)
 {
     public const string DefaultUrl = "https://content.warframe.com/dynamic/worldState.php";
     public const string CommunityFallbackUrl = "https://api.warframestat.us/pc";
     public async Task<(WorldStateSnapshot Snapshot, SyncBatch Batch)> FetchAsync(Uri? uri = null, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.GetAsync(uri ?? new Uri(DefaultUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        var endpoint = uri ?? new Uri(DefaultUrl);
+        try
+        {
+            return await FetchEndpointAsync(endpoint, cancellationToken);
+        }
+        catch (Exception error) when (allowCommunityFallback && uri is null && IsTransportFailure(error, cancellationToken))
+        {
+            return await FetchEndpointAsync(new Uri(CommunityFallbackUrl), cancellationToken);
+        }
+    }
+
+    private async Task<(WorldStateSnapshot Snapshot, SyncBatch Batch)> FetchEndpointAsync(Uri endpoint, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"WORLDSTATE_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length == 0 || bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("WORLDSTATE_TOO_LARGE");
         var json = new UTF8Encoding(false, true).GetString(bytes);
         var retrieved = DateTimeOffset.UtcNow;
         var snapshot = WorldStateParser.Parse(json, retrieved);
-        return (snapshot, new SyncBatch("worldstate-pc", snapshot.ContentHash, json, snapshot.Bounties.Count, "worldstate-1"));
+        return (snapshot, new SyncBatch("worldstate-pc", snapshot.ContentHash, json, snapshot.Bounties.Count, ParserVersion(endpoint)));
     }
+
+    private static bool IsTransportFailure(Exception error, CancellationToken cancellationToken) =>
+        !cancellationToken.IsCancellationRequested && error is HttpRequestException or IOException or TaskCanceledException;
+
+    private static string ParserVersion(Uri endpoint) => endpoint.Host.ToLowerInvariant() switch
+    {
+        "content.warframe.com" => "worldstate-official-1",
+        "api.warframestat.us" => "worldstate-community-1",
+        _ => "worldstate-1"
+    };
 }
