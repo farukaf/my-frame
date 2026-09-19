@@ -27,9 +27,12 @@ public static class MauiProgram
         builder.Services.AddSingleton<IMyFrameSettingsWriter>(migration.Store);
         builder.Services.AddSingleton<IMyFrameSettingsStore>(migration.Store);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
+        builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<WindowPlacementService>();
+        builder.Services.AddSingleton<IFolderPicker, MauiFolderPicker>();
+        builder.Services.AddSingleton<IExternalBrowser, MauiExternalBrowser>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
@@ -50,6 +53,8 @@ public static class MauiProgram
             p.GetRequiredService<ILogger<DashboardService>>(),
             p.GetRequiredService<IMyFrameSnapshotProvider>()));
         builder.Services.AddSingleton<DashboardViewModel>();
+        builder.Services.AddSingleton<IDashboardService>(p => p.GetRequiredService<DashboardService>());
+        builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainPage>();
         var app = builder.Build();
         StartupDiagnostics.Track("MauiProgram.End");
