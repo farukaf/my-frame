@@ -196,7 +196,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             var result = await _worldStateSync.RunAsync();
             WorldStateSyncMessage = result.State == "published"
-                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}."
+                ? $"World State synchronized: {result.Records:N0} bounties; revision {result.RevisionId}; parser {result.ParserVersion ?? "unknown"}."
                 : $"World State synchronization failed: {result.ErrorCode ?? result.State}.";
             await RefreshSyncStatusAsync();
         }
