@@ -42,6 +42,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
+        await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -357,6 +358,7 @@ public sealed class SyncDatabase : IAsyncDisposable
                     var upgrade = data.Projection.Upgrades![index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_upgrades(revision_id, ordinal, owner_instance_id, source_field, upgrade_id, rank, raw_json) VALUES ($revision, $ordinal, $owner, $source, $id, $rank, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$owner", (object?)upgrade.OwnerInstanceId ?? DBNull.Value), ("$source", upgrade.SourceField), ("$id", (object?)upgrade.UpgradeId ?? DBNull.Value), ("$rank", (object?)upgrade.Rank ?? DBNull.Value), ("$raw", upgrade.RawJson));
                 }
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='overwolf-inventory';", cancellationToken);
                 foreach (var field in data.Projection.Coverage)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('overwolf-inventory', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
             }
@@ -397,7 +399,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT r.revision_id, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected, run.error_code
+            SELECT r.revision_id, r.parser_version, r.content_hash, run.state, run.finished_at, run.records_accepted, run.records_rejected, run.error_code
             FROM sources s LEFT JOIN source_revisions r ON r.source_id=s.source_id AND r.state='active'
             LEFT JOIN sync_runs run ON run.run_id=(SELECT run_id FROM sync_runs WHERE source_id=s.source_id ORDER BY started_at DESC LIMIT 1)
             WHERE s.source_id=$source LIMIT 1;
@@ -405,7 +407,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         command.Parameters.AddWithValue("$source", sourceId);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
-        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : DateTimeOffset.Parse(reader.GetString(3)), reader.IsDBNull(4) ? 0 : reader.GetInt64(4), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? null : reader.GetString(6));
+        return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
@@ -491,7 +493,23 @@ public sealed class SyncDatabase : IAsyncDisposable
                 await backupTarget.OpenAsync(cancellationToken);
                 backupSource.BackupDatabase(backupTarget);
             }
-            File.Move(temporary, _path, true);
+            SqliteConnection.ClearAllPools();
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    File.Move(temporary, _path, true);
+                    break;
+                }
+                catch (IOException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+            }
             foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
