@@ -42,6 +42,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
+        await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -492,7 +493,23 @@ public sealed class SyncDatabase : IAsyncDisposable
                 await backupTarget.OpenAsync(cancellationToken);
                 backupSource.BackupDatabase(backupTarget);
             }
-            File.Move(temporary, _path, true);
+            SqliteConnection.ClearAllPools();
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    File.Move(temporary, _path, true);
+                    break;
+                }
+                catch (IOException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+            }
             foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
