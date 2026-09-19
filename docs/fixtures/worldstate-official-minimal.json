@@ -1,0 +1,1 @@
+{"Timestamp":{"$date":{"$numberLong":"1789291200000"}},"SyndicateMissions":[{"Tag":"DeimosSyndicate","Activation":{"$date":{"$numberLong":"1789290900000"}},"Expiry":{"$date":{"$numberLong":"1789294500000"}},"Jobs":[{"jobType":"DeimosMission","rewards":"/Lotus/Types/Gameplay/Deimos/Jobs/DeimosMissionRewards","minEnemyLevel":10,"maxEnemyLevel":20,"xpAmounts":[100,200]}]}]}
