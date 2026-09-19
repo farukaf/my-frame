@@ -61,7 +61,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns source state, active revision/parser and field-level coverage for a synchronized source: public-export, worldstate-pc, overwolf-inventory, warframe-market, or references. Public Export coverage includes components, relics, marketIdentity, imageName, productCategory, localizedNames and technicalMetadata. It never returns raw payloads and preserves NotObserved instead of guessing.")]
+    [Description("Returns source state, active revision/parser and field-level coverage for a synchronized source: public-export, worldstate-pc, overwolf-inventory, warframe-market, or references. Market fields include their latest observed timestamp when available. Public Export coverage includes components, relics, marketIdentity, imageName, productCategory, localizedNames and technicalMetadata. It never returns raw payloads and preserves NotObserved instead of guessing.")]
     public Task<SourceCoverageResponse> GetSourceCoverage(
         [Description("Coverage-enabled source id: public-export, worldstate-pc, overwolf-inventory, warframe-market, or references.")] string sourceId,
         CancellationToken cancellationToken = default) => platform.GetSourceCoverageAsync(sourceId, cancellationToken);
