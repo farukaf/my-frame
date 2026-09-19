@@ -1,58 +1,5 @@
 namespace MyFrame.Core;
 
-public interface IAlecaFramePath
-{
-    string DirectoryPath { get; }
-    event EventHandler<string>? Changed;
-    void SetDirectory(string directoryPath);
-}
-
-public interface IAlecaFrameReader
-{
-    Task<InventorySnapshot> ReadAsync(string alecaDirectory, CancellationToken cancellationToken = default);
-}
-
-public interface IAlecaCatalogReader
-{
-    Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default);
-}
-
-public interface IWarframeMarketClient
-{
-    Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default);
-    Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default);
-    Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default);
-}
-
-public interface IMarketItemIndexStore
-{
-    Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default);
-    Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default);
-}
-
-public interface IRecommendationEngine
-{
-    RecommendationResult Evaluate(
-        InventorySnapshot inventory,
-        CatalogSnapshot catalog,
-        IReadOnlyDictionary<string, MarketQuote> quotes,
-        IReadOnlyList<MarketOrder> myOrders,
-        RecommendationSettings settings);
-}
-
-public interface IMarketStateStore
-{
-    Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default);
-    Task SaveAsync(MarketState state, CancellationToken cancellationToken = default);
-}
-
-public interface IPriceCache
-{
-    Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default);
-    Task SetAsync(MarketQuote quote, CancellationToken cancellationToken = default);
-}
-
 public interface IReadOnlyPriceCache
 {
     Task<IReadOnlyDictionary<string, MarketQuote>> LoadAllAsync(

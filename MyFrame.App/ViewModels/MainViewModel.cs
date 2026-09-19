@@ -23,7 +23,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
-        Settings = new(alecaPath, directorySettings, preferences, folderPicker, settings, RefreshCoreAsync,
+        Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
             message => GlobalStatus.StatusMessage = message);
         settings.PropertyChanged += (_, _) => ScheduleRescore();
         _service.SnapshotUpdated += OnSnapshotUpdated;

@@ -26,6 +26,8 @@ public static class MauiProgram
         var alecaDirectory = migration.Settings.AlecaFrameDirectory;
         builder.Services.AddSingleton<IMyFrameSettingsWriter>(migration.Store);
         builder.Services.AddSingleton<IMyFrameSettingsStore>(migration.Store);
+        var preferences = new MauiAppPreferences();
+        builder.Services.AddSingleton<ISettingsStore>(preferences);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
@@ -51,8 +53,8 @@ public static class MauiProgram
             p.GetRequiredService<IMarketStateStore>(), p.GetRequiredService<IMarketItemIndexStore>(),
             p.GetRequiredService<IRecommendationEngine>(),
             p.GetRequiredService<ILogger<DashboardService>>(),
-            p.GetRequiredService<IMyFrameSnapshotProvider>()));
-        builder.Services.AddSingleton<DashboardViewModel>();
+            p.GetRequiredService<IMyFrameSnapshotProvider>(),
+            p.GetRequiredService<IAlecaFrameChangeMonitor>()));
         builder.Services.AddSingleton<IDashboardService>(p => p.GetRequiredService<DashboardService>());
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainPage>();
