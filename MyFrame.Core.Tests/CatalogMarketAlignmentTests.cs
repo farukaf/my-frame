@@ -30,7 +30,8 @@ public sealed class CatalogMarketAlignmentTests
             Index(("Something Else", "something_else")));
 
         Assert.False(Assert.Single(aligned.Items).Components[0].Tradable);
-        Assert.Empty(aligned.MarketByNormalizedName.Where(x => x.Value.Slug.Contains("parallax")));
+        Assert.DoesNotContain(aligned.MarketByNormalizedName,
+            x => x.Value.Slug.Contains("parallax", StringComparison.Ordinal));
     }
 
     [Fact]

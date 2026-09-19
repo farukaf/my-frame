@@ -1,6 +1,6 @@
-# Arquitetura e engenharia reversa
+# Arquitetura
 
-## Fluxo
+## Componentes atuais
 
 ```text
 lastData.dat ─────> AlecaFrameReader ─────┐
@@ -12,25 +12,17 @@ cache público de preços <──────────────── Dash
                                       DashboardViewModel -> MAUI
 ```
 
-`MyFrame.Core` mantém o domínio, contratos, regras, sincronização, repositórios de arquivos/cache e integração HTTP. A organização física é:
+- `MyFrame.Core` contém leitores, integração, modelos e regras.
+- `MyFrame.App` contém composição de DI, configurações MAUI, view model e XAML.
+- `MyFrame.Core.Tests` valida o Core somente com dados sintéticos.
 
-```text
-MyFrame.Core/
-  Models/                         snapshots, recomendações e eventos de mudança
-  Abstractions/                   contratos públicos (um por arquivo)
-  Rules/                          RecommendationEngine e alinhamento inventário/catálogo
-  Services/                       DashboardService e monitor de alterações
-  Repositories/AlecaFrame/        lastData.dat, catálogo e diretório atual
-  Repositories/Market/            cache de preços e estado de ordens
-  Integrations/WarframeMarket/    cliente HTTP e autenticação JWT
-```
+O `DashboardService` lê o inventário, carrega o catálogo, recupera caches, tenta atualizar
+conta/ordens/preços, executa as regras e publica um `DashboardSnapshot` atômico. Um watcher
+com debounce observa snapshot, token e catálogos.
 
-Os tipos continuam no namespace `MyFrame.Core` para manter compatibilidade entre as camadas.
-`MyFrame.App` contém a composição de DI, páginas, componentes, view models e adaptadores MAUI
-(preferências, seletor de pasta e launcher). `MyFrame.Core.Tests` valida regras, persistência,
-sincronização e monitoramento com dados sintéticos.
+## Fontes locais
 
-## `lastData.dat`
+### `lastData.dat`
 
 O formato observado é AES-CBC/PKCS7:
 
@@ -40,45 +32,82 @@ O formato observado é AES-CBC/PKCS7:
 - formato atual: coleções no objeto raiz;
 - formato antigo: JSON interno na string `InventoryJson`.
 
-O arquivo deve ser aberto somente para leitura com compartilhamento, repetindo falhas transitórias e publicando apenas snapshots completos.
+O arquivo é aberto somente para leitura com compartilhamento. Falhas transitórias são
+repetidas e apenas snapshots completos são publicados.
 
-## Catálogos
+### Catálogos
 
-Os JSONs em `cachedData` relacionam identificador, nome, categoria, componentes, quantidade, ducats, tradable, relíquias, raridade, chance, vaulted e `warframeMarket { id, urlName }`. O parser deve aceitar campos desconhecidos/opcionais e isolar variantes no `AlecaCatalogReader`.
+Os JSONs em `cachedData` relacionam identificador, nome, categoria, componentes,
+quantidade, ducats, tradable, relíquias, raridade, chance, vaulted e identidade do
+Warframe.Market. O parser aceita campos desconhecidos/opcionais e isola as variantes no
+`AlecaCatalogReader`.
 
-## Token e API
+### Warframe.Market
 
-`WFMarketToken.tk` é JWT em texto, não uma base local de preços. Ele só é lido em memória e nunca copiado, persistido ou registrado.
+`WFMarketToken.tk` é um JWT em texto, não uma base local de preços. Ele é lido somente em
+memória e nunca copiado, persistido ou registrado.
 
-Endpoints planejados:
+O cliente implementado oferece apenas leituras:
 
 - `GET /v2/me`;
 - `GET /v2/orders/my`;
-- `GET /v2/orders/item/{slug}/top`.
+- consulta de catálogo de itens;
+- consulta das melhores ordens públicas por slug.
 
-Bearer vai apenas para endpoints autenticados. O contrato do cliente não oferece operações de escrita.
+Bearer segue apenas para endpoints autenticados. O contrato não oferece operações de
+criação, alteração ou exclusão de anúncios.
 
-## Atualização e cache
+## Cache e falhas
 
-O `DashboardService` implementa `IDashboardService`: lê inventário, carrega catálogo, recupera cache,
-tenta atualizar conta/ordens/preços, executa regras e publica um `DashboardSnapshot` atômico. O
-`FileSystemAlecaFrameChangeMonitor` implementa `IAlecaFrameChangeMonitor`, encapsulando o
-`FileSystemWatcher`, os filtros de `lastData.dat`, `WFMarketToken.tk` e JSONs, recriação após erro e
-debounce de 750 ms. Alterações de catálogo invalidam o catálogo carregado antes do próximo refresh.
+O cache próprio guarda cotações públicas e estado de mercado sem o token. Após 15 minutos,
+uma cotação é marcada como antiga. Inventário e catálogos continuam úteis sem internet.
 
-O cache próprio guarda somente slug, menor venda, maior compra e instante da consulta. Após 15 minutos, a cotação é marcada como antiga. Inventário, perfil e ordens não são persistidos nesse cache.
+Falhas previstas:
 
-## Falhas previstas
+- pasta ausente: orientar o usuário a iniciar AlecaFrame/Warframe ou configurar a pasta;
+- escrita parcial: repetir e manter o último snapshot válido;
+- token ausente/expirado: omitir dados autenticados sem derrubar o restante;
+- API offline: usar cache com aviso;
+- mudança de catálogo: ignorar entrada defeituosa quando seguro e registrar diagnóstico
+  sem payload privado.
 
-- Pasta ausente: orientar o usuário a iniciar AlecaFrame/Warframe.
-- Escrita parcial: repetir e manter o último snapshot válido.
-- Token ausente/expirado: desabilitar dados autenticados sem derrubar o restante.
-- API offline: usar cache com aviso.
-- Mudança de catálogo: ignorar entrada defeituosa quando seguro e manter diagnóstico sem payload privado.
+## Arquitetura alvo do MCP
 
-## Contratos e composição
+```text
+Codex / Claude ──stdio──> MyFrame.Mcp ──> MyFrameReadModel
+                                              │
+MyFrame.App ──────────────────────────────────┤
+                                              v
+                                  SnapshotProvider (Core)
+                                   ├── leitores AlecaFrame
+                                   ├── caches read-only
+                                   ├── settings compartilhados
+                                   └── RecommendationEngine
+```
 
-O Core não acessa APIs MAUI. `IDashboardService` e `IAlecaFrameChangeMonitor` são registrados como
-singletons pela App; o dashboard recebe o monitor por injeção e o descarta junto com o serviço.
-Preferências, seleção de pasta e abertura de links devem ser adaptadas atrás de contratos da App/Core
-para que os view models permaneçam testáveis.
+`MyFrame.Mcp` é um console separado, iniciado sob demanda pelo cliente. Não há
+listener de rede nem autenticação MCP. O processo expõe somente consultas e pode funcionar
+sem a janela MAUI aberta.
+
+Para garantir que “o que a IA vê” seja “o que a tela vê”, configuração, composição do
+snapshot e projeções deixam de depender do projeto MAUI. O app e o servidor consomem a
+mesma implementação de provedor no Core, em instâncias independentes. DTOs MCP próprios
+estabilizam o contrato externo e impedem que campos internos, como caminhos locais,
+vazem por serialização acidental.
+
+O app migra settings e caches para a localização compartilhada, substitui cada arquivo
+por escrita atômica e persiste validade/contexto das ordens. O MCP só lê;
+seu container de DI não registra cliente de mercado, leitor de token ou stores escritores.
+O caminho offline é o `MyFrameSnapshotProvider`, não `RefreshAsync(false)`.
+
+Snapshots têm identidade, versões das fontes/settings/regras e instante de avaliação.
+Cursores e consultas relacionadas podem fixar uma versão com retenção limitada. Watchers
+observam todas as fontes, com reconciliação e expiração temporal; falhas de leitura não
+equivalem a dados vazios. Troca de origem invalida estado e cursores do contexto anterior.
+
+O Core/UI compartilha as correções de estimativas parciais, farm e distinção entre
+excedente de coleção e disponibilidade para venda. O inventário v1 é agregado e
+declara sua cobertura, sem inventar quantidades de equipamento perdidas pelo leitor atual.
+Os testes usam expectativas independentes das regras e o mesmo provedor usado pela interface.
+
+O desenho completo está em [MCP.md](MCP.md).

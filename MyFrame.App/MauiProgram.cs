@@ -21,10 +21,11 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
         builder.Logging.AddSerilog(Log.Logger, dispose: true);
-        var automaticAlecaDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlecaFrame");
-        var preferences = new MauiAppPreferences();
-        builder.Services.AddSingleton<ISettingsStore>(preferences);
-        var alecaDirectory = preferences.Get(AlecaFrameDirectorySettings.PreferenceKey, automaticAlecaDirectory);
+        var automaticAlecaDirectory = MyFrameStoragePaths.DefaultAlecaFrameDirectory;
+        var migration = SharedDataMigration.Ensure();
+        var alecaDirectory = migration.Settings.AlecaFrameDirectory;
+        builder.Services.AddSingleton<IMyFrameSettingsWriter>(migration.Store);
+        builder.Services.AddSingleton<IMyFrameSettingsStore>(migration.Store);
         builder.Services.AddSingleton<IAlecaFramePath>(new AlecaFramePath(alecaDirectory));
         builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
@@ -35,18 +36,24 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
-        builder.Services.AddSingleton<IPriceCache>(_ => new JsonPriceCache(Path.Combine(FileSystem.Current.AppDataDirectory, "market-quotes.json")));
-        builder.Services.AddSingleton<IMarketStateStore>(_ => new MarketStateStore(Path.Combine(FileSystem.Current.AppDataDirectory, "market-data.dat")));
-        builder.Services.AddSingleton<IMarketItemIndexStore>(_ => new MarketItemIndexStore(Path.Combine(FileSystem.Current.AppDataDirectory, "market-items.dat")));
+        builder.Services.AddSingleton(_ => new JsonPriceCache(MyFrameStoragePaths.PriceCachePath));
+        builder.Services.AddSingleton<IPriceCache>(provider => provider.GetRequiredService<JsonPriceCache>());
+        builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<JsonPriceCache>());
+        builder.Services.AddSingleton<IMarketStateStore>(_ => new MarketStateStore(MyFrameStoragePaths.MarketStatePath));
+        builder.Services.AddSingleton<IMarketItemIndexStore>(_ => new MarketItemIndexStore(MyFrameStoragePaths.MarketItemIndexPath));
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
             new HttpClient(), p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
-        builder.Services.AddSingleton<IDashboardService>(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
+        builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
+        builder.Services.AddSingleton(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<IAlecaFrameReader>(), p.GetRequiredService<IAlecaCatalogReader>(),
             p.GetRequiredService<IWarframeMarketClient>(), p.GetRequiredService<IPriceCache>(),
             p.GetRequiredService<IMarketStateStore>(), p.GetRequiredService<IMarketItemIndexStore>(),
             p.GetRequiredService<IRecommendationEngine>(),
-            p.GetRequiredService<ILogger<DashboardService>>(), p.GetRequiredService<IAlecaFrameChangeMonitor>()));
+            p.GetRequiredService<ILogger<DashboardService>>(),
+            p.GetRequiredService<IMyFrameSnapshotProvider>()));
+        builder.Services.AddSingleton<DashboardViewModel>();
+        builder.Services.AddSingleton<IDashboardService>(p => p.GetRequiredService<DashboardService>());
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainPage>();
         var app = builder.Build();

@@ -96,7 +96,9 @@ public sealed record MarketAccount(string Id, string IngameName, string Platform
 public sealed record MarketState(
     MarketAccount? Account,
     IReadOnlyList<MarketOrder> Orders,
-    DateTimeOffset RetrievedAt);
+    DateTimeOffset RetrievedAt,
+    string ValidationState = "confirmed",
+    string? ContextId = null);
 
 /// <summary>
 /// Warframe.Market's own catalogue of tradable items, keyed by normalized name. It is the authority
@@ -128,7 +130,8 @@ public sealed record CollectionGoal(
     bool Vaulted,
     string ImageUrl,
     string? MarketSlug,
-    IReadOnlyList<CollectionComponentDetail> Components)
+    IReadOnlyList<CollectionComponentDetail> Components,
+    string? ItemId = null)
 {
     public string PrimeStatus => !Prime ? "" : Vaulted ? "Prime · Vaulted" : "Prime · Unvaulted";
     public string CardMetadata => $"{OwnedComponents:N0}/{RequiredComponents:N0} parts";
@@ -146,7 +149,14 @@ public sealed record FarmRecommendation(
     IReadOnlyList<string> MissingComponentNames,
     string Reason,
     string ImageUrl,
-    string? MarketSlug)
+    string? MarketSlug,
+    int MissingUnits = 0,
+    int? MissingPartsCostPlatinum = null,
+    int? SetPurchasePricePlatinum = null,
+    int PriceCountKnown = 0,
+    int PriceCountRequired = 0,
+    string ReasonCode = "farm_missing_parts",
+    string? ItemId = null)
 {
     public string VaultStatus => Vaulted ? "Vaulted" : "Unvaulted";
     public string CardMetadata => $"{MissingParts:N0} missing · {OwnedRelics:N0} useful relics";
@@ -164,7 +174,11 @@ public sealed record RelicRecommendation(
     string Action,
     string Reason,
     string ImageUrl,
-    string? MarketSlug)
+    string? MarketSlug,
+    double? CompleteExpectedOpenValueEach = null,
+    int RewardPricesKnown = 0,
+    int RewardPricesRequired = 0,
+    string ReasonCode = "relic_insufficient_data")
 {
     public int? TotalSellPrice => SellPriceEach * Owned;
     public double TotalExpectedOpenValue => ExpectedOpenValueEach * Owned;
@@ -193,7 +207,9 @@ public sealed record SaleRecommendation(
     bool Mastered,
     bool ExistingOrder,
     string Reason,
-    string ImageUrl)
+    string ImageUrl,
+    string ReasonCode = "sale_evaluated",
+    IReadOnlyDictionary<string, int>? AllocatedComponents = null)
 {
     public int TotalDucats => Excess * DucatsEach;
     public int? TotalPlatinum => LowestSell is null ? null : LowestSell * Excess;
@@ -274,7 +290,11 @@ public sealed record SurplusRecommendation(
     bool Tradable,
     SurplusReason Reason,
     bool OnePerAccount,
-    string ImageUrl)
+    string ImageUrl,
+    int Reserved = 0,
+    int AvailableToSell = 0,
+    string ReasonCode = "surplus_for_collection",
+    int AllocatedToSets = 0)
 {
     // A live sell order is the fact; the catalogue's tradable flag is only a hint, and a wrong one
     // often enough that trusting it hid parts with real offers on them.
@@ -320,7 +340,10 @@ public sealed record RecommendationResult(
     int TotalDucats,
     int EstimatedPlatinum,
     DateTimeOffset GeneratedAt,
-    RecommendationSettings Settings);
+    RecommendationSettings Settings,
+    string RulesVersion = "1",
+    IReadOnlyDictionary<string, int>? Reservations = null,
+    IReadOnlyDictionary<string, int>? SetAllocations = null);
 
 public sealed record RecommendationSettings(
     int DucatsPerPlatinum = 10,

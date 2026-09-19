@@ -26,11 +26,6 @@ public sealed class MarketStateStore : IMarketStateStore
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             return await JsonSerializer.DeserializeAsync<MarketState>(stream, cancellationToken: cancellationToken);
         }
-        catch (Exception error) when (error is IOException or JsonException or NotSupportedException)
-        {
-            // A launch that cannot read its own cache simply waits for the network, as before.
-            return null;
-        }
         finally { _gate.Release(); }
     }
 
@@ -41,13 +36,22 @@ public sealed class MarketStateStore : IMarketStateStore
         {
             var directory = Path.GetDirectoryName(_path);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            var temporary = _path + ".tmp";
-            await using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write,
-                             FileShare.None, 32 * 1024, FileOptions.Asynchronous))
+            var temporary = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
             {
-                await JsonSerializer.SerializeAsync(stream, state, cancellationToken: cancellationToken);
+                await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write,
+                                 FileShare.None, 32 * 1024, FileOptions.Asynchronous | FileOptions.WriteThrough))
+                {
+                    await JsonSerializer.SerializeAsync(stream, state, cancellationToken: cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+                File.Move(temporary, _path, true);
             }
-            File.Move(temporary, _path, true);
+            finally
+            {
+                try { if (File.Exists(temporary)) File.Delete(temporary); }
+                catch (IOException) { }
+            }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {

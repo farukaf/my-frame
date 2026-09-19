@@ -1,97 +1,36 @@
-[CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [ValidatePattern('^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$')]
-    [string] $Version,
-
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
+    [string]$Version = '0.0.1',
     [ValidateSet('Debug', 'Release')]
-    [string] $Configuration = 'Release',
-
-    [ValidateSet('win-x64')]
-    [string] $RuntimeIdentifier = 'win-x64',
-
-    [string] $OutputRoot = 'artifacts\distribution'
+    [string]$Configuration = 'Release',
+    [ValidateSet('win-x64', 'win-arm64')]
+    [string]$RuntimeIdentifier = 'win-x64'
 )
 
 $ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'
+$repository = Split-Path -Parent $PSScriptRoot
+$artifactRoot = Join-Path $repository 'artifacts'
+$output = Join-Path $artifactRoot "MyFrame-$Version-$RuntimeIdentifier"
 
-$repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$outputRootPath = if ([System.IO.Path]::IsPathRooted($OutputRoot)) {
-    [System.IO.Path]::GetFullPath($OutputRoot)
-}
-else {
-    [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot $OutputRoot))
-}
-
-$repositoryPrefix = $repositoryRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
-if (-not $outputRootPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "The output directory must be inside the repository: $outputRootPath"
-}
-
-$projectPath = Join-Path $repositoryRoot 'MyFrame.App\MyFrame.App.csproj'
-$publishPath = Join-Path $outputRootPath 'publish'
-$packagesPath = Join-Path $outputRootPath 'packages'
-
-foreach ($path in @($publishPath, $packagesPath)) {
-    if (Test-Path -LiteralPath $path) {
-        Remove-Item -LiteralPath $path -Recurse -Force
+if (Test-Path -LiteralPath $output) {
+    $resolved = (Resolve-Path -LiteralPath $output).Path
+    $resolvedArtifactRoot = (Resolve-Path -LiteralPath $artifactRoot).Path
+    if (-not $resolved.StartsWith($resolvedArtifactRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to clean output outside artifacts: $resolved"
     }
-    New-Item -ItemType Directory -Path $path | Out-Null
+    Remove-Item -LiteralPath $resolved -Recurse -Force
 }
 
-$displayVersion = ($Version -split '-', 2)[0]
+New-Item -ItemType Directory -Path $output -Force | Out-Null
+dotnet publish (Join-Path $repository 'MyFrame.App\MyFrame.App.csproj') `
+    -c $Configuration -f net10.0-windows10.0.19041.0 -r $RuntimeIdentifier `
+    --self-contained true -p:PublishSingleFile=true -p:PublishDir="$output\"
 
-Write-Host "Publishing My Frame $Version for $RuntimeIdentifier..."
-& dotnet publish $projectPath `
-    --framework 'net10.0-windows10.0.19041.0' `
-    --configuration $Configuration `
-    --runtime $RuntimeIdentifier `
-    --self-contained true `
-    --output $publishPath `
-    -p:RuntimeIdentifierOverride=$RuntimeIdentifier `
-    -p:WindowsPackageType=None `
-    -p:WindowsAppSDKSelfContained=true `
-    -p:Version=$Version `
-    -p:ApplicationDisplayVersion=$displayVersion
-
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet publish failed with exit code $LASTEXITCODE."
+$required = @('MyFrame.App.exe', 'MyFrame.Mcp.exe')
+foreach ($name in $required) {
+    if (-not (Test-Path -LiteralPath (Join-Path $output $name))) {
+        throw "Distribution is missing $name"
+    }
 }
 
-$applicationPath = Join-Path $publishPath 'MyFrame.App.exe'
-if (-not (Test-Path -LiteralPath $applicationPath)) {
-    throw "The expected executable was not generated: $applicationPath"
-}
-
-Write-Host 'Restoring the packaging tool...'
-& dotnet tool restore
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet tool restore failed with exit code $LASTEXITCODE."
-}
-
-Write-Host 'Building the one-click installer, portable build, and update packages...'
-& dotnet tool run vpk pack `
-    --packId 'MyFrame' `
-    --packVersion $Version `
-    --packDir $publishPath `
-    --mainExe 'MyFrame.App.exe' `
-    --packTitle 'My Frame' `
-    --packAuthors 'My Frame' `
-    --runtime $RuntimeIdentifier `
-    --outputDir $packagesPath
-
-if ($LASTEXITCODE -ne 0) {
-    throw "Velopack packaging failed with exit code $LASTEXITCODE."
-}
-
-if (-not (Get-ChildItem -LiteralPath $packagesPath -Filter '*-Setup.exe')) {
-    throw 'Velopack did not generate the expected Setup.exe.'
-}
-
-if (-not (Get-ChildItem -LiteralPath $packagesPath -Filter '*-Portable.zip')) {
-    throw 'Velopack did not generate the expected portable package.'
-}
-
-Write-Host "Packages generated in $packagesPath"
-Get-ChildItem -LiteralPath $packagesPath | Select-Object Name, Length
+Write-Output $output

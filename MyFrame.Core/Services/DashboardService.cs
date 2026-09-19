@@ -13,6 +13,7 @@ public sealed class DashboardService : IDashboardService
     private readonly IMarketStateStore _marketState;
     private readonly IMarketItemIndexStore _marketItems;
     private readonly IRecommendationEngine _engine;
+    private readonly IMyFrameSnapshotProvider? _snapshotProvider;
     private readonly ILogger<DashboardService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private readonly IAlecaFrameChangeMonitor _changeMonitor;
@@ -39,6 +40,7 @@ public sealed class DashboardService : IDashboardService
         _market = market;
         _cache = cache;
         _engine = engine;
+        _snapshotProvider = null;
         _logger = logger ?? NullLogger<DashboardService>.Instance;
         _changeMonitor = changeMonitor ?? new FileSystemAlecaFrameChangeMonitor();
         _alecaPath.Changed += OnAlecaDirectoryChanged;
@@ -58,15 +60,41 @@ public sealed class DashboardService : IDashboardService
         try
         {
             var alecaDirectory = _alecaPath.DirectoryPath;
-            var inventory = await _inventoryReader.ReadAsync(alecaDirectory, cancellationToken);
-            _catalog ??= await _catalogReader.LoadAsync(alecaDirectory, cancellationToken);
-            _marketItemIndex ??= await _marketItems.LoadAsync(cancellationToken);
-            _catalog = CatalogMarketAlignment.AlignToMarket(_catalog, _marketItemIndex);
-            inventory = InventoryCatalogAlignment.AlignToCatalog(inventory, _catalog);
-            var quotes = new Dictionary<string, MarketQuote>(StringComparer.Ordinal);
+            InventorySnapshot inventory;
+            Dictionary<string, MarketQuote> quotes;
+            MarketAccount? account;
+            IReadOnlyList<MarketOrder> orders;
+            var contextId = MyFrameContext.ComputeId(alecaDirectory);
+            if (_snapshotProvider is not null)
+            {
+                var local = await _snapshotProvider.GetAsync(cancellationToken: cancellationToken);
+                inventory = local.Inventory ?? throw new InvalidDataException("AlecaFrame inventory is unavailable.");
+                _catalog = local.Catalog ?? throw new InvalidDataException("AlecaFrame catalog is unavailable.");
+                quotes = local.Quotes.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+                account = local.Account;
+                orders = local.Orders;
+            }
+            else
+            {
+                inventory = await _inventoryReader.ReadAsync(alecaDirectory, cancellationToken);
+                _catalog ??= await _catalogReader.LoadAsync(alecaDirectory, cancellationToken);
+                _marketItemIndex ??= await _marketItems.LoadAsync(cancellationToken);
+                _catalog = CatalogMarketAlignment.AlignToMarket(_catalog, _marketItemIndex);
+                inventory = InventoryCatalogAlignment.AlignToCatalog(inventory, _catalog);
+                quotes = new Dictionary<string, MarketQuote>(StringComparer.Ordinal);
+
+                var stored = await _marketState.LoadAsync(cancellationToken);
+                var storedApplies = stored is not null &&
+                    (stored.ContextId is null || stored.ContextId == contextId) &&
+                    !stored.ValidationState.Equals("invalidated", StringComparison.OrdinalIgnoreCase);
+                account = storedApplies ? stored!.Account : null;
+                orders = storedApplies ? stored!.Orders : [];
+            }
+
             var quoteSlugs = GetRelevantSlugs(inventory, _catalog).Distinct(StringComparer.Ordinal).Take(100).ToArray();
             foreach (var slug in quoteSlugs)
             {
+                if (quotes.ContainsKey(slug)) continue;
                 var cached = await _cache.GetAsync(slug, cancellationToken);
                 if (cached is not null) quotes[slug] = cached with { IsStale = IsStale(cached) };
             }
@@ -74,12 +102,6 @@ public sealed class DashboardService : IDashboardService
             _lastSettings = settings ?? _lastSettings;
             var outdated = quoteSlugs.Where(x => !quotes.TryGetValue(x, out var quote) || quote.IsStale).ToArray();
             var priced = quoteSlugs.Length - outdated.Length;
-
-            // Last session's account and orders stand in until the live ones arrive, so the first
-            // paint already reserves against open orders instead of revising itself a second later.
-            var stored = await _marketState.LoadAsync(cancellationToken);
-            var account = stored?.Account;
-            var orders = stored?.Orders ?? [];
 
             // Inventory, catalog and every recommendation are ready before a single request is sent,
             // so they go on screen now; the market pass below refines the same view in place.
@@ -98,7 +120,7 @@ public sealed class DashboardService : IDashboardService
                     account = liveAccount;
                     orders = await _market.GetMyOrdersAsync(cancellationToken);
                     await _marketState.SaveAsync(
-                        new MarketState(account, orders, DateTimeOffset.UtcNow), cancellationToken);
+                        new MarketState(account, orders, DateTimeOffset.UtcNow, "confirmed", contextId), cancellationToken);
                 }
                 else
                 {
@@ -107,6 +129,8 @@ public sealed class DashboardService : IDashboardService
                     // orders that may no longer exist; the stored file is kept for a later sign-in.
                     account = null;
                     orders = [];
+                    await _marketState.SaveAsync(new MarketState(null, [], DateTimeOffset.UtcNow,
+                        "invalidated", contextId), cancellationToken);
                 }
                 // A stale or missing item index is refetched here rather than before the first paint,
                 // so a launch never waits on it. The catalogue is realigned in place afterwards, which
