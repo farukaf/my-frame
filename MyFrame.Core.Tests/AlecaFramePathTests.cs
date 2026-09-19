@@ -19,4 +19,14 @@ public sealed class AlecaFramePathTests
         path.SetDirectory(replacement);
         Assert.Equal(Path.GetFullPath(replacement), changed);
     }
+
+    [Fact]
+    public void AllowsEmptyPathForOptionalLegacySource()
+    {
+        var path = new AlecaFramePath(string.Empty);
+
+        Assert.Equal(string.Empty, path.DirectoryPath);
+        path.SetDirectory(string.Empty);
+        Assert.Equal(string.Empty, path.DirectoryPath);
+    }
 }

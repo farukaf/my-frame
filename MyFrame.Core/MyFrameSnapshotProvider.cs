@@ -188,10 +188,11 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         var warnings = new List<SnapshotWarning>();
         var sources = new Dictionary<string, SnapshotSource>(StringComparer.Ordinal);
         var synchronized = await TryReadSynchronizedAsync(cancellationToken).ConfigureAwait(false);
+        if (synchronized is not null)
+            return await ComposeSynchronizedAsync(synchronized, settings,
+                now, sources, warnings, cancellationToken).ConfigureAwait(false);
         if (settings is null || string.IsNullOrWhiteSpace(settings.AlecaFrameDirectory))
         {
-            if (synchronized is not null)
-                return await ComposeSynchronizedAsync(synchronized, settings, now, sources, warnings, cancellationToken).ConfigureAwait(false);
             sources["settings"] = new("missing", null, false, "SETUP_REQUIRED");
             sources["inventory"] = new("missing", null);
             sources["catalog"] = new("missing", null);
@@ -209,8 +210,6 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         var directory = settings.AlecaFrameDirectory;
         if (!Directory.Exists(directory) || !File.Exists(Path.Combine(directory, "lastData.dat")))
         {
-            if (synchronized is not null)
-                return await ComposeSynchronizedAsync(synchronized, settings, now, sources, warnings, cancellationToken).ConfigureAwait(false);
             sources["inventory"] = new("missing", null, false, "SOURCE_UNAVAILABLE");
             sources["catalog"] = new("missing", null);
             sources["prices"] = new("missing", null);
