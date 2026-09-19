@@ -228,6 +228,11 @@
                                 <ActivityIndicator IsRunning="{Binding IsSyncingWorldState}" IsVisible="{Binding IsSyncingWorldState}" Color="#7DE2D1" WidthRequest="16" />
                                 <Label Text="{Binding WorldStateSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
                             </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="10">
+                                <Button Text="Sync Public Export" Command="{Binding SyncPublicExportCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                <ActivityIndicator IsRunning="{Binding IsSyncingPublicExport}" IsVisible="{Binding IsSyncingPublicExport}" Color="#7DE2D1" WidthRequest="16" />
+                                <Label Text="{Binding PublicExportSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                     <CollectionView Grid.Row="3" ItemsSource="{Binding SyncSources}" SelectionMode="None">
@@ -513,6 +518,19 @@
                                         <Label Text="sets" TextColor="#AEB8C8" VerticalOptions="Center" />
                                     </HorizontalStackLayout>
                                 </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="Warframe.Market credential" Style="{StaticResource SectionTitle}" />
+                                <Label Text="Optional. Public prices work without login. The token is protected for this Windows user and never sent to SQLite, logs or MCP." TextColor="#8995A8" />
+                                <Entry Text="{Binding MarketCredentialTokenInput, Mode=TwoWay}" IsPassword="True"
+                                       Placeholder="Paste current WFM token" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Save securely" Command="{Binding SaveMarketCredentialCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                    <Button Text="Revoke" Command="{Binding RevokeMarketCredentialCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding MarketCredentialStatusText}" Style="{StaticResource Muted}" />
                             </VerticalStackLayout>
                         </Border>
                         <Border Style="{StaticResource Card}">
