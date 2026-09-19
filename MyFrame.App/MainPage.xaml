@@ -228,6 +228,11 @@
                                 <ActivityIndicator IsRunning="{Binding IsSyncingWorldState}" IsVisible="{Binding IsSyncingWorldState}" Color="#7DE2D1" WidthRequest="16" />
                                 <Label Text="{Binding WorldStateSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
                             </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="10">
+                                <Button Text="Sync Public Export" Command="{Binding SyncPublicExportCommand}" BackgroundColor="#167C70" TextColor="White" />
+                                <ActivityIndicator IsRunning="{Binding IsSyncingPublicExport}" IsVisible="{Binding IsSyncingPublicExport}" Color="#7DE2D1" WidthRequest="16" />
+                                <Label Text="{Binding PublicExportSyncMessage}" Style="{StaticResource Muted}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                     <CollectionView Grid.Row="3" ItemsSource="{Binding SyncSources}" SelectionMode="None">

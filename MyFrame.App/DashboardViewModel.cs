@@ -17,6 +17,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly LocalSettings _localSettings;
     private readonly SyncStatusReader _syncStatusReader;
     private readonly WorldStateSyncService _worldStateSync;
+    private readonly PublicExportSyncService _publicExportSync;
     private readonly CollectorCaptureInboxService _collectorCaptureInbox;
     private readonly CollectorCaptureInboxWatcher _collectorCaptureWatcher;
     private bool _initialized;
@@ -32,7 +33,7 @@ public partial class DashboardViewModel : ObservableObject
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings, LocalSettings localSettings,
         SyncStatusReader syncStatusReader, CollectorCaptureInboxService collectorCaptureInbox,
         CollectorCaptureInboxWatcher collectorCaptureWatcher, WorldStateSyncService worldStateSync,
-        MarketCredentialService marketCredentials)
+        MarketCredentialService marketCredentials, PublicExportSyncService publicExportSync)
     {
         _service = service;
         _logger = logger;
@@ -41,6 +42,7 @@ public partial class DashboardViewModel : ObservableObject
         _localSettings = localSettings;
         _syncStatusReader = syncStatusReader;
         _worldStateSync = worldStateSync;
+        _publicExportSync = publicExportSync;
         _marketCredentials = marketCredentials;
         _collectorCaptureInbox = collectorCaptureInbox;
         _collectorCaptureWatcher = collectorCaptureWatcher;
@@ -82,6 +84,8 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string SyncStatusMessage { get; set; } = "Status not loaded.";
     [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
     [ObservableProperty] public partial string WorldStateSyncMessage { get; set; } = "No World State synchronization requested.";
+    [ObservableProperty] public partial bool IsSyncingPublicExport { get; set; }
+    [ObservableProperty] public partial string PublicExportSyncMessage { get; set; } = "No Public Export synchronization requested.";
     [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureDirectory { get; set; } = "";
@@ -267,6 +271,28 @@ public partial class DashboardViewModel : ObservableObject
             WorldStateSyncMessage = "World State synchronization failed; previous data was preserved.";
         }
         finally { IsSyncingWorldState = false; }
+    }
+
+    [RelayCommand]
+    private async Task SyncPublicExportAsync()
+    {
+        if (IsSyncingPublicExport) return;
+        IsSyncingPublicExport = true;
+        PublicExportSyncMessage = "Fetching official Warframe Public Export…";
+        try
+        {
+            var result = await _publicExportSync.RunAsync();
+            PublicExportSyncMessage = result.State == "published"
+                ? $"Public Export synchronized: {result.Records:N0} records; revision {result.RevisionId}; parser {result.ParserVersion ?? "unknown"}."
+                : $"Public Export synchronization failed: {result.ErrorCode ?? result.State}. Previous catalog preserved.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Public Export synchronization failed");
+            PublicExportSyncMessage = "Public Export synchronization failed; previous catalog was preserved.";
+        }
+        finally { IsSyncingPublicExport = false; }
     }
 
     [RelayCommand]
