@@ -27,7 +27,9 @@ foreach ($name in @('warframe-builds', 'warframe-farm')) {
             throw "$name is missing readiness requirement: $required"
         }
     }
-    foreach ($required in @('activeRevisionId', 'parserVersion', 'worldstate-community-1', 'worldstate-1')) {
+    $provenanceRequired = @('activeRevisionId', 'parserVersion', 'worldstate-community-1', 'worldstate-1')
+    if ($name -eq 'warframe-farm') { $provenanceRequired += 'worldStateParserVersion' }
+    foreach ($required in $provenanceRequired) {
         if ($text -notmatch [regex]::Escape($required)) {
             throw "$name is missing World State provenance requirement: $required"
         }

@@ -161,11 +161,51 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         try
         {
             Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
-            var response = await new PlatformStatusService().GetSourceCoverageAsync("warframe-market");
+            var response = await new PlatformStatusService().GetSourceCoverageAsync(" WARFRAME-MARKET ");
 
             Assert.Equal("not_initialized", response.State);
             Assert.Null(response.ActiveRevisionId);
             Assert.Null(response.ParserVersion);
+
+            var references = Path.Combine(root, "references");
+            Directory.CreateDirectory(references);
+            await File.WriteAllTextAsync(Path.Combine(references, "reference.json"),
+                "{\"kind\":\"wiki\",\"url\":\"https://wiki.warframe.com/w/Test\",\"title\":\"Test\",\"revision\":\"r1\",\"sections\":[{\"id\":\"overview\",\"content\":\"Test\"}]} ");
+            var referenceCoverage = await new PlatformStatusService().GetSourceCoverageAsync(" REFERENCES ");
+            Assert.Contains(referenceCoverage.Items, item => item.SourceId == "references" && item.FieldPath == "documents");
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
+    public async Task SourceCoverageReadsMarketStateFromSqliteStore()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-market-coverage-populated-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var store = new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath);
+            await store.SetAsync(new MarketQuote("test-item", 10, 8, DateTimeOffset.UtcNow));
+            await ((IMarketStateStore)store).SaveAsync(new MarketState(
+                new MarketAccount("account", "Tenno", "pc"),
+                [new MarketOrder("order", "item", "test-item", "sell", 10, 1, true)],
+                DateTimeOffset.UtcNow));
+            await ((IMarketItemIndexStore)store).SaveAsync(new MarketItemIndex(
+                new Dictionary<string, MarketIdentity>
+                {
+                    ["test item"] = new("item", "test-item")
+                }, DateTimeOffset.UtcNow));
+
+            var response = await new PlatformStatusService().GetSourceCoverageAsync(" WARFRAME-MARKET ");
+
+            Assert.Equal("available", response.State);
+            Assert.All(response.Items, item => Assert.Equal("warframe-market", item.SourceId));
+            Assert.Contains(response.Items, item => item.FieldPath == "quotes" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "orders" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "account" && item.State == "Known");
+            Assert.Contains(response.Items, item => item.FieldPath == "marketItems" && item.State == "Known");
+            Assert.All(response.Items.Where(item => item.State == "Known"), item => Assert.NotNull(item.ObservedAt));
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
@@ -219,19 +259,55 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                     DateTimeOffset.UtcNow.AddMinutes(-1), "native", "verified", "{}", "changes-1");
                 var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow, ContentHash = "changes-2" };
                 await database.PublishInventoryAsync(first, new InventoryProjection(
-                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}")],
-                    [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":true}"),
+                     new InventoryEquipmentRecord("config-instance", "/Lotus/Weapon", 30, "{\"configSecret\":\"old\"}", InventoryFieldState.Known, InventoryFieldState.Known, "{}")],
+                    [new InventoryStackableRecord("/Lotus/Resource", 2, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
+                    [new InventoryUpgradeRecord("instance", "mods", "/Lotus/OldMod", 3, "{\"secret\":true}")]));
                 await database.PublishInventoryAsync(second, new InventoryProjection(
-                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}")],
-                    [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>()));
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 20, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{\"private\":false}"),
+                     new InventoryEquipmentRecord("config-instance", "/Lotus/Weapon", 30, "{\"configSecret\":\"new\"}", InventoryFieldState.Known, InventoryFieldState.Known, "{}")],
+                    [new InventoryStackableRecord("/Lotus/Resource", 5, InventoryFieldState.Known, "{}"), new InventoryStackableRecord("/Lotus/New", 1, InventoryFieldState.Known, "{}")], [], new Dictionary<string, InventoryFieldState>(),
+                    [new InventoryUpgradeRecord("instance", "mods", "/Lotus/NewMod", 5, "{\"secret\":false}")]));
             }
 
             var response = await new PlatformStatusService().GetInventoryChangesAsync();
             Assert.Equal("available", response.State);
-            Assert.Equal(3, response.Items.Count);
+            Assert.Equal(5, response.Items.Count);
             Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Change == "changed" && value.AfterRank == 20);
+            Assert.Contains(response.Items, value => value.Kind == "equipment" && value.Key == "config-instance" && value.Change == "changed");
             Assert.Contains(response.Items, value => value.Kind == "stackable" && value.Key == "/Lotus/New" && value.Change == "added");
+            Assert.Contains(response.Items, value => value.Kind == "upgrade" && value.Change == "changed" && value.BeforeTypeId == "/Lotus/OldMod" && value.AfterTypeId == "/Lotus/NewMod" && value.AfterRank == 5);
             Assert.DoesNotContain("private", JsonSerializer.Serialize(response), StringComparison.Ordinal);
+            Assert.DoesNotContain("secret", JsonSerializer.Serialize(response), StringComparison.Ordinal);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
+    public async Task InventoryChangesRejectsDifferentContexts()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-inventory-context-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            await using (var database = new SyncDatabase(Path.Combine(root, "data.db")))
+            {
+                var first = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                    DateTimeOffset.UtcNow.AddMinutes(-1), "native", "verified", "{}", "context-1", "snapshot", "account-a");
+                var second = first with { EventId = Guid.NewGuid(), Sequence = 2, ReceivedAt = DateTimeOffset.UtcNow,
+                    ContentHash = "context-2", ContextId = "account-b" };
+                var projection = new InventoryProjection(
+                    [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 10, null,
+                        InventoryFieldState.Known, InventoryFieldState.NotObserved, "{}")], [], [],
+                    new Dictionary<string, InventoryFieldState>());
+                await database.PublishInventoryAsync(first, projection);
+                await database.PublishInventoryAsync(second, projection);
+            }
+
+            var response = await new PlatformStatusService().GetInventoryChangesAsync();
+            Assert.Equal("context_mismatch", response.State);
+            Assert.Empty(response.Items);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
