@@ -95,7 +95,7 @@ export async function createCapture(value, sessionId, sequence, receivedAt, even
   const parsed = parseBounded(value);
   const body = JSON.stringify({ schemaVersion: 1, gameId: GAME_ID, source: "overwolf-native",
     kind: "inventory", sessionId, sequence, eventId, receivedAt,
-    completeness: "unverified", encoding: parsed.encoding, payload: parsed.text });
+    captureMode: "snapshot", completeness: "unverified", encoding: parsed.encoding, payload: parsed.text });
   // Ready marker is written after the immutable body; hash is integrity, NOT authentication.
   const fileName = `${eventId}.capture.json`;
   if (encoder.encode(body).length > 16 * 1024 * 1024) throw new Error("ENVELOPE_LIMIT");

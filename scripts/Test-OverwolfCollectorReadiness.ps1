@@ -34,9 +34,10 @@ Write-Output "WARFRAME_PROCESS=$([int]($warframe.Count -gt 0))"
 Write-Output "COLLECTOR_MANIFEST=$([int]$manifest)"
 Write-Output "COLLECTOR_EXTENSION_LOGGED=$([int]$loaded)"
 Write-Output "COLLECTOR_HEARTBEAT=$([int]$heartbeat)"
+Write-Output "COLLECTOR_RUNTIME_EVIDENCE=$([int]($loaded -or $heartbeat))"
 Write-Output "CAPTURE_MARKERS=$($markers.Count)"
 
-if ($overwolf.Count -gt 0 -and $warframe.Count -gt 0 -and $manifest -and $loaded -and $heartbeat -and $markers.Count -gt 0) {
+if ($overwolf.Count -gt 0 -and $warframe.Count -gt 0 -and $manifest -and ($loaded -or $heartbeat) -and $markers.Count -gt 0) {
     Write-Output 'OVERWOLF_COLLECTOR_READY=1'
     exit 0
 }

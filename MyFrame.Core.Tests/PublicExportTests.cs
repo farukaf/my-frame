@@ -7,6 +7,13 @@ namespace MyFrame.Core.Tests;
 public sealed class PublicExportTests
 {
     [Fact]
+    public void PublicExportUsesSeparateOfficialIndexAndDocumentHosts()
+    {
+        Assert.Equal("https://origin.warframe.com/PublicExport/index_en.txt.lzma", PublicExportIndexClient.DefaultIndexUrl);
+        Assert.Equal("https://content.warframe.com/PublicExport/", PublicExportDocumentClient.DefaultBaseUrl);
+    }
+
+    [Fact]
     public void ParsesHashFirstAndPathFirstIndexLines()
     {
         var entries = PublicExportIndexParser.Parse("# comment\nABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789 ExportWarframes_en.json.lzma\nExportWeapons_en.json.lzma 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
@@ -139,6 +146,43 @@ public sealed class PublicExportTests
         Assert.Equal(InventoryFieldState.Known, coverage["uniqueName"]);
         Assert.Equal(InventoryFieldState.Known, coverage["aliases"]);
         Assert.Equal(InventoryFieldState.NotObserved, coverage["category"]);
+    }
+
+    [Fact]
+    public async Task SharedRunnerPublishesLocalPublicExportFileWithItsParserVersion()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-file-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var source = Path.Combine(root, "ExportWeapons_en.json");
+        await File.WriteAllTextAsync(source, "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Blade\",\"pt\":\"Lâmina\"},\"category\":\"Weapon\"}]");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new PublicExportSyncRunner().RunFileAsync(database, host, source);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal(1, result.Records);
+        Assert.Equal("ExportWeapons_en.json", result.RelativePath);
+        Assert.Equal("public-export-file-1", result.ParserVersion);
+        Assert.Equal("Lâmina", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Aliases["pt"]);
+    }
+
+    [Fact]
+    public async Task SharedRunnerAggregatesLocalPublicExportDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-directory-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "ExportWeapons_en.json"), "[{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Blade\"}]");
+        await File.WriteAllTextAsync(Path.Combine(root, "ExportWarframes_en.json"), "[{\"uniqueName\":\"/Lotus/Frame\",\"name\":\"Frame\"}]");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new PublicExportSyncRunner().RunDirectoryAsync(database, host, root);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal(2, result.Records);
+        Assert.Equal("public-export-directory-1", result.ParserVersion);
+        Assert.Equal(2, (await database.GetPublicExportItemsAsync("public-export")).Count);
     }
 
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
