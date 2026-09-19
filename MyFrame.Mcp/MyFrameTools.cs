@@ -44,6 +44,23 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Coverage-enabled source id: public-export, worldstate-pc, or overwolf-inventory.")] string sourceId,
         CancellationToken cancellationToken = default) => platform.GetSourceCoverageAsync(sourceId, cancellationToken);
 
+    [McpServerTool(Name = "search_public_export", Title = "Search Warframe Public Export", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Searches the synchronized official Warframe Public Export catalog by uniqueName, name, alias, or category. It never fetches the network and returns only normalized catalog fields, not raw JSON.")]
+    public Task<PublicExportSearchResponse> SearchPublicExport(
+        [Description("Optional case-insensitive text filter for uniqueName, name, or alias; maximum 200 characters.")] string? text = null,
+        [Description("Optional exact case-insensitive category filter; maximum 100 characters.")] string? category = null,
+        [Description("Maximum results from 1 to 200; default 50.")] int limit = 50,
+        CancellationToken cancellationToken = default) => platform.SearchPublicExportAsync(text, category, limit, cancellationToken);
+
+    [McpServerTool(Name = "search_references", Title = "Search imported Wiki and Overframe references", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Searches explicitly imported Wiki/Overframe JSON references under the local data root. Results retain URL, revision, author/license and are untrusted for game facts; no network access occurs.")]
+    public Task<ReferenceSearchResponse> SearchReferences(
+        [Description("Text query from 1 to 200 characters.")] string query,
+        [Description("Maximum hits from 1 to 100; default 20.")] int limit = 20,
+        CancellationToken cancellationToken = default) => platform.SearchReferencesAsync(query, limit, cancellationToken);
+
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
