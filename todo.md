@@ -20,10 +20,10 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F1: implementar spike Native GEP, manifest 8954, probe estrutural e transporte marker/hash; testes sintéticos aprovados.
 - [ ] F1: carregar extensão no Overwolf e provar captura real sem ler AlecaFrame ([roteiro](docs/validacoes/2026-09-13-f1.md)).
 - [ ] F1: documentar schema/cobertura real, snapshots/deltas e requisitos de distribuição.
-- [ ] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos.
+- [x] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [x] F2: validar backup/reabertura e serialização do escritor em testes concorrentes.
-- [ ] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost.
-- [ ] F2: entregar página inicial de status com tentativas, erros e ação corretiva.
+- [x] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
+- [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
 - [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
@@ -164,8 +164,44 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F123: criar probe não-mutante de readiness Codex/Claude, registrando configuração ausente ([evidências](docs/validacoes/2026-09-13-f123.md)).
 - [x] F125: executar regressão determinística Core/MCP após o hardening ([evidências](docs/validacoes/2026-09-13-f125.md)).
 - [x] F126: criar runner sequencial da regressão da solução sem explosão de workers ([evidências](docs/validacoes/2026-09-13-f126.md)).
+- [x] F127: publicar distribuição 0.0.8 e validar pacote/stdio/Inspector distribuídos ([evidências](docs/validacoes/2026-09-13-f127.md)).
+- [x] F128: repetir tentativa F1 com Warframe real e registrar estado do Overwolf sem declarar captura ([evidências](docs/validacoes/2026-09-13-f128.md)).
+- [x] F130: conectar sincronização manual do Public Export ao App/SyncHost ([evidências](docs/validacoes/2026-09-13-f130.md)).
+- [x] F131: validar disponibilidade HTTP da fonte oficial Public Export sem gravar dados ([evidências](docs/validacoes/2026-09-13-f131.md)).
+- [x] F132: configurar decoder LZMA no fluxo de sincronização do App ([evidências](docs/validacoes/2026-09-13-f132.md)).
+- [x] F133: preservar aliases localizados do Public Export no SQLite ([evidências](docs/validacoes/2026-09-13-f133.md)).
+- [x] F134: oferecer executor local/automatizável de sincronização Public Export ([evidências](docs/validacoes/2026-09-13-f134.md)).
+- [x] F135: expor status sanitizado das fontes no executor local ([evidências](docs/validacoes/2026-09-13-f135.md)).
+- [x] F136: oferecer sincronização automatizável do World State oficial ([evidências](docs/validacoes/2026-09-13-f136.md)).
+- [x] F137: compartilhar orquestração Public Export entre App e CLI ([evidências](docs/validacoes/2026-09-13-f137.md)).
+- [x] F138: compartilhar orquestração World State entre App e CLI ([evidências](docs/validacoes/2026-09-13-f138.md)).
+- [x] F139: oferecer sincronização conjunta com resultado por fonte ([evidências](docs/validacoes/2026-09-13-f139.md)).
+- [x] F140: documentar agendamento Windows sem instalação automática ([evidências](docs/validacoes/2026-09-13-f140.md)).
+- [x] F142: registrar cobertura por campo do Public Export ([evidências](docs/validacoes/2026-09-13-f142.md)).
+- [x] F143: expor cobertura de fontes públicas no MCP ([evidências](docs/validacoes/2026-09-13-f143.md)).
+- [x] F144: expor busca local do catálogo Public Export no MCP ([evidências](docs/validacoes/2026-09-13-f144.md)).
+- [x] F145: anexar revisão/parser/cobertura à busca Public Export ([evidências](docs/validacoes/2026-09-13-f145.md)).
+- [x] F146: sugerir inbox My Frame na UI do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f146.md)).
+- [x] F147: criar gate read-only de prontidão do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f147.md)).
+- [x] F148: consolidar build, preflight do pacote e readiness Overwolf em um comando ([evidências](docs/validacoes/2026-09-13-f148.md)).
+- [x] F149: registrar heartbeat sanitizado para comprovar sessão do coletor Overwolf ([evidências](docs/validacoes/2026-09-13-f149.md)).
+- [x] F150: usar heartbeat como evidência primária de runtime no gate Overwolf ([evidências](docs/validacoes/2026-09-13-f150.md)).
+- [x] F151: permitir sincronização Public Export por JSON local, sem depender do transporte HTTP ([evidências](docs/validacoes/2026-09-13-f151.md)).
+- [x] F152: permitir sincronização World State por JSON local, preservando bounties e recompensas ([evidências](docs/validacoes/2026-09-13-f152.md)).
+- [x] F153: agregar múltiplos documentos Public Export locais em uma revisão de catálogo ([evidências](docs/validacoes/2026-09-13-f153.md)).
+- [x] F154: orquestrar Public Export e World State locais com resultado por fonte ([evidências](docs/validacoes/2026-09-13-f154.md)).
+- [x] F155: executar regressão completa após os fluxos locais ([evidências](docs/validacoes/2026-09-13-f155.md)).
+- [x] F156: expor busca MCP de referências Wiki/Overframe importadas com atribuição ([evidências](docs/validacoes/2026-09-13-f156.md)).
+- [x] F157: importar referências validadas pelo Sync CLI com hash e idempotência ([evidências](docs/validacoes/2026-09-13-f157.md)).
+- [x] F158: criar skill de pesquisa atribuída para Wiki/Overframe ([evidências](docs/validacoes/2026-09-13-f158.md)).
+- [x] F159: refletir referências importadas no status MCP/UI sem expor conteúdo ([evidências](docs/validacoes/2026-09-13-f159.md)).
+- [x] F160: executar regressão após importação/status/busca de referências ([evidências](docs/validacoes/2026-09-13-f160.md)).
+- [x] F161: executar preflight de homologação Overwolf e registrar bloqueio observável da extensão não carregada ([evidências](docs/validacoes/2026-09-13-f161.md)).
+- [x] F162: separar host do índice e host de documentos do Public Export para corrigir o 403 conhecido ([evidências](docs/validacoes/2026-09-13-f162.md)).
+- [x] F163: preservar modo snapshot/delta no envelope e na revisão SQLite, sem inferir deltas ([evidências](docs/validacoes/2026-09-13-f163.md)).
+- [x] F164: expor metadados snapshot/delta da revisão ativa no status MCP, sem payload ([evidências](docs/validacoes/2026-09-13-f164.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
-- [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
+- [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
 
 ## Baseline e pendências do MCP atual
