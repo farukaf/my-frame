@@ -12,7 +12,10 @@ if (localAppData) {
   $("folder-hint").textContent = "Inbox My Frame sugerida automaticamente; confirme antes de exportar.";
 }
 if (!api) for (const button of document.querySelectorAll("button")) button.disabled = true;
-$("start").onclick = () => collector.start();
+$("start").onclick = () => {
+  collector.start();
+  return writeHeartbeat();
+};
 $("stop").onclick = () => { collector.stop(); $("consent").checked = false; };
 addEventListener("unload", () => collector?.stop());
 
@@ -24,6 +27,19 @@ function write(name, text) {
     api.io.writeFileContents(`${folder}\\${name}`, text, api.io.enums.eEncoding.UTF8, false,
       result => result?.success ? resolve() : reject(new Error("WRITE_FAILED")));
   });
+}
+async function writeHeartbeat() {
+  try {
+    await write("collector-status.json", JSON.stringify({
+      schemaVersion: 1,
+      kind: "my-frame-collector",
+      state: "started",
+      timestampUtc: new Date().toISOString()
+    }));
+    $("export-status").textContent = "Sessão registrada na inbox; agora abra o Warframe.";
+  } catch {
+    $("export-status").textContent = "Captura iniciada, mas não foi possível registrar o heartbeat. Confirme a pasta.";
+  }
 }
 async function exporting(action) {
   $("report").disabled = $("capture").disabled = true;

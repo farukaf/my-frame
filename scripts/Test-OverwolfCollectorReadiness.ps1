@@ -12,6 +12,16 @@ $manifest = $null -ne $resolvedCollector -and (Test-Path -LiteralPath (Join-Path
 $markers = if (Test-Path -LiteralPath $CaptureDirectory) {
     @(Get-ChildItem -LiteralPath $CaptureDirectory -Filter '*.ready.json' -File -ErrorAction SilentlyContinue)
 } else { @() }
+$heartbeat = $false
+$heartbeatPath = Join-Path $CaptureDirectory 'collector-status.json'
+if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
+    try {
+        $status = Get-Content -LiteralPath $heartbeatPath -Raw | ConvertFrom-Json
+        $timestamp = [DateTimeOffset]::Parse([string]$status.timestampUtc, [Globalization.CultureInfo]::InvariantCulture)
+        $heartbeat = $status.schemaVersion -eq 1 -and $status.kind -eq 'my-frame-collector' -and
+            $status.state -eq 'started' -and (Get-Date).ToUniversalTime() - $timestamp.UtcDateTime -lt [TimeSpan]::FromHours(1)
+    } catch { $heartbeat = $false }
+}
 $overwolfLogRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Overwolf\Log'
 $loaded = $false
 if (Test-Path -LiteralPath $overwolfLogRoot) {
@@ -23,9 +33,11 @@ Write-Output "OVERWOLF_PROCESS=$([int]($overwolf.Count -gt 0))"
 Write-Output "WARFRAME_PROCESS=$([int]($warframe.Count -gt 0))"
 Write-Output "COLLECTOR_MANIFEST=$([int]$manifest)"
 Write-Output "COLLECTOR_EXTENSION_LOGGED=$([int]$loaded)"
+Write-Output "COLLECTOR_HEARTBEAT=$([int]$heartbeat)"
+Write-Output "COLLECTOR_RUNTIME_EVIDENCE=$([int]($loaded -or $heartbeat))"
 Write-Output "CAPTURE_MARKERS=$($markers.Count)"
 
-if ($overwolf.Count -gt 0 -and $warframe.Count -gt 0 -and $manifest -and $loaded -and $markers.Count -gt 0) {
+if ($overwolf.Count -gt 0 -and $warframe.Count -gt 0 -and $manifest -and ($loaded -or $heartbeat) -and $markers.Count -gt 0) {
     Write-Output 'OVERWOLF_COLLECTOR_READY=1'
     exit 0
 }
