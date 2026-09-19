@@ -87,13 +87,13 @@ public sealed class SyncDatabaseTests
             await db.InitializeAsync();
             Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
         }
-
         await using (var db = new SyncDatabase(path))
         {
             await db.RestoreAsync(backup);
             await db.InitializeAsync();
             Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
         }
+
         await using var verify = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
         await verify.OpenAsync();
         await using var check = verify.CreateCommand();
@@ -320,6 +320,24 @@ public sealed class SyncDatabaseTests
         Assert.Equal("instance-1", stored[0].InstanceId);
         Assert.Equal(InventoryFieldState.NotObserved, stored[0].ConfigState);
         Assert.Equal(InventoryFieldState.Known, coverage["equipment"]);
+    }
+
+    [Fact]
+    public async Task InventoryPublicationExposesCaptureModeWithoutMergingDeltas()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-capture-mode-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 3,
+            DateTimeOffset.UtcNow, "native", "unverified", "{\"equipment\":[]}", "capture-mode-hash", "delta");
+
+        await db.PublishInventoryAsync(envelope, new InventoryProjection([], [], [],
+            new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known }));
+
+        var status = await db.GetActiveInventoryRevisionStatusAsync();
+        Assert.NotNull(status);
+        Assert.Equal("delta", status!.CaptureMode);
+        Assert.Equal("unverified", status.Completeness);
+        Assert.Equal(3, status.Sequence);
     }
 
     [Fact]

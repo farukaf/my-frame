@@ -35,8 +35,18 @@ foreach ($file in $resultFiles) {
     $result = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
     if ([string]::IsNullOrWhiteSpace([string]$result.caseId)) { throw "Resultado sem caseId: $($file.Name)" }
     if ($byId.ContainsKey([string]$result.caseId)) { throw "Resultado duplicado: $($result.caseId)" }
-    foreach ($field in @('snapshotId', 'toolCalls', 'sources', 'coverage', 'criticalFailures')) {
+    foreach ($field in @('snapshotId', 'sourceRevision', 'toolCalls', 'sources', 'coverage', 'criticalFailures', 'model', 'skillVersion', 'latencyMs')) {
         if ($null -eq $result.$field) { throw "Resultado $($file.Name) sem campo '$field'." }
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$result.snapshotId) -or
+        [string]::IsNullOrWhiteSpace([string]$result.sourceRevision) -or
+        [string]::IsNullOrWhiteSpace([string]$result.model) -or
+        [string]::IsNullOrWhiteSpace([string]$result.skillVersion)) {
+        throw "Resultado $($file.Name) possui identidade/revisão/modelo incompletos."
+    }
+    if (@($result.toolCalls).Count -eq 0) { throw "Resultado $($file.Name) não registrou chamadas MCP." }
+    if (-not ($result.latencyMs -is [int] -or $result.latencyMs -is [long] -or $result.latencyMs -is [double] -or $result.latencyMs -is [decimal]) -or [double]$result.latencyMs -lt 0) {
+        throw "Resultado $($file.Name) possui latencyMs inválido."
     }
     if (@($result.criticalFailures).Count -gt 0) { throw "Falha crítica registrada em $($file.Name)." }
     $byId[[string]$result.caseId] = $result
