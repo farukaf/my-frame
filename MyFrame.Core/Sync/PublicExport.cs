@@ -148,7 +148,10 @@ public sealed class PublicExportIndexClient(HttpClient httpClient, Func<byte[], 
 
 public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneDecoder? lzmaDecoder = null)
 {
-    public const string DefaultBaseUrl = "https://origin.warframe.com/PublicExport/";
+    // The index is served by origin.warframe.com, while the JSON documents are
+    // served from the content host. Keeping these endpoints separate avoids a
+    // 403 from the origin host when resolving an index entry.
+    public const string DefaultBaseUrl = "https://content.warframe.com/PublicExport/";
     private readonly LzmaAloneDecoder _lzmaDecoder = lzmaDecoder ?? new();
 
     public async Task<SyncBatch> FetchBatchAsync(PublicExportIndexEntry entry, string sourceId = "public-export", Uri? baseUri = null, CancellationToken cancellationToken = default)
