@@ -9,7 +9,8 @@ public sealed record SyncSourceStatusRow(
     string State,
     string Detail,
     string Revision,
-    string LastRun);
+    string LastRun,
+    string ParserVersion);
 public sealed record SyncAttemptStatusRow(
     string SourceId,
     string State,
@@ -42,6 +43,13 @@ public sealed class SyncStatusReader
         return rows;
     }
 
+    public async Task<bool> HasSynchronizedDataAsync(CancellationToken cancellationToken = default)
+    {
+        var snapshot = await new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath)
+            .ReadAsync(cancellationToken);
+        return snapshot is not null;
+    }
+
     public async Task<IReadOnlyList<SyncAttemptStatusRow>> ReadRecentRunsAsync(CancellationToken cancellationToken = default)
     {
         var path = MyFrameStoragePaths.DataDatabasePath;
@@ -60,7 +68,7 @@ public sealed class SyncStatusReader
     }
 
     private static SyncSourceStatusRow NotInitialized((string Id, string Name) source) =>
-        new(source.Id, source.Name, "not_initialized", "No published revision", "—", "—");
+        new(source.Id, source.Name, "not_initialized", "No published revision", "—", "—", "—");
 
     private static SyncSourceStatusRow Map((string Id, string Name) source, MyFrame.Core.Sync.SyncStatus status)
     {
@@ -70,6 +78,7 @@ public sealed class SyncStatusReader
             : $"Error: {status.ErrorCode}";
         return new(source.Id, source.Name, state, detail,
             status.ActiveRevisionId ?? "—",
-            status.LastRunAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—");
+            status.LastRunAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—",
+            status.ParserVersion ?? "—");
     }
 }
