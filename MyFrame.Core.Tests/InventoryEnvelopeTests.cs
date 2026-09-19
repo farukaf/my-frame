@@ -9,11 +9,12 @@ public sealed class InventoryEnvelopeTests
     {
         var session = Guid.NewGuid();
         var eventId = Guid.NewGuid();
-        var envelope = $"{{\"schemaVersion\":1,\"gameId\":8954,\"source\":\"overwolf-native\",\"kind\":\"inventory\",\"sessionId\":\"{session:D}\",\"eventId\":\"{eventId:D}\",\"sequence\":4,\"receivedAt\":\"2026-09-13T12:00:00Z\",\"providerVersion\":\"native-1\",\"encoding\":\"json-object\",\"completeness\":\"unverified\",\"payload\":\"{{\\\"equipment\\\":[]}}\"}}";
+        var envelope = $"{{\"schemaVersion\":1,\"gameId\":8954,\"source\":\"overwolf-native\",\"kind\":\"inventory\",\"sessionId\":\"{session:D}\",\"eventId\":\"{eventId:D}\",\"sequence\":4,\"receivedAt\":\"2026-09-13T12:00:00Z\",\"providerVersion\":\"native-1\",\"contextId\":\"relay-alpha\",\"encoding\":\"json-object\",\"completeness\":\"unverified\",\"payload\":\"{{\\\"equipment\\\":[]}}\"}}";
         var result = InventoryEnvelopeParser.Parse(envelope);
         Assert.Equal(session, result.SessionId);
         Assert.Equal("unverified", result.Completeness);
         Assert.Equal("snapshot", result.CaptureMode);
+        Assert.Equal("relay-alpha", result.ContextId);
         Assert.Equal(64, result.ContentHash.Length);
     }
 
