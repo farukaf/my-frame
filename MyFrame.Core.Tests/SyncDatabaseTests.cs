@@ -87,7 +87,6 @@ public sealed class SyncDatabaseTests
             await db.InitializeAsync();
             Assert.Equal("legacy-unknown", (await db.GetStatusAsync("legacy"))!.ParserVersion);
         }
-
         await using (var db = new SyncDatabase(path))
         {
             await db.RestoreAsync(backup);
