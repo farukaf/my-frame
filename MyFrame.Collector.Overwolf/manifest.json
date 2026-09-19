@@ -1,0 +1,27 @@
+{
+  "manifest_version": 1,
+  "type": "WebApp",
+  "meta": {
+    "name": "My Frame Collector Dev",
+    "author": "My Frame",
+    "version": "0.1.0",
+    "minimum-overwolf-version": "0.309.0.0",
+    "description": "Local Warframe GEP capture and schema diagnostics. Development spike; no gameplay automation.",
+    "icon": "icon.png"
+  },
+  "permissions": ["GameInfo", "FileSystem"],
+  "data": {
+    "start_window": "main",
+    "game_events": [8954],
+    "game_targeting": { "type": "dedicated", "game_ids": [8954] },
+    "windows": {
+      "main": {
+        "file": "index.html",
+        "desktop_only": true,
+        "native_window": true,
+        "resizable": true,
+        "size": { "width": 900, "height": 760 }
+      }
+    }
+  }
+}

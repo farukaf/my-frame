@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>My Frame — coletor F1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Coletor Warframe · F1</h1>
+  <p>Spike local via Overwolf. Receber um evento não comprova inventário completo.</p>
+  <p id="availability" role="status">Carregando…</p>
+  <button id="start">Iniciar captura em memória</button>
+  <button id="stop">Parar e limpar memória</button>
+  <h2>Diagnóstico sem valores pessoais</h2>
+  <pre id="status" aria-live="polite"></pre>
+  <h2>Exportação local explícita</h2>
+  <label for="folder">Pasta absoluta de saída (recomendado: artifacts/collector-f1 do repositório)</label>
+  <input id="folder" placeholder="C:\caminho\my-frame\artifacts\collector-f1" autocomplete="off">
+  <button id="report">Salvar relatório de estrutura</button>
+  <label class="consent"><input type="checkbox" id="consent"> Autorizar uma cópia do inventário bruto nesta pasta. Pode conter dados pessoais. Não enviar ao GitHub nem à LLM. Excluir após a homologação.</label>
+  <button id="capture">Exportar captura privada + marcador</button>
+  <p id="export-status" role="status"></p>
+  <p>Não assina chat, não lê pastas AlecaFrame e não publica inventário no My Frame.
+    Fecha-se com a janela; não há autostart neste spike. Sem armazenamento automático.</p>
+  <script type="module" src="ui.mjs"></script>
+</body>
+</html>

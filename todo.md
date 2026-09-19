@@ -1,3 +1,10 @@
+# Ideias de Features não refinadas
+
+- Criar ordem de venda/compra no warframe market e a partir dos eventos do overwolf remover a ordem automaticamente.
+- Colocar na interface condições de remoção da ordem (tempo, inventario conter um dos itens (item da ordem, outro item feito com o item da ordem)
+
+
+
 # Entrega — plataforma de dados e hardening do MCP
 
 Plano novo, ainda não implementado: [plataforma de dados](docs/PLATAFORMA-DE-DADOS.md).
@@ -10,8 +17,9 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F0: registrar baseline de build/testes e auditar todas as dependências AlecaFrame ([evidências](docs/validacoes/2026-09-12-f0.md)).
 - [x] F0: reproduzir erro MCP interpretado como inventário vazio e criar regressão.
 - [x] F0: registrar capacidades mínimas, decisões abertas e mapeamento das pendências; PR #6 com base em `feat/local-mcp`.
-- [ ] F1: provar captura real GEP sem ler AlecaFrame; escolher runtime e transporte.
-- [ ] F1: documentar schema/cobertura, snapshots/deltas e requisitos de distribuição.
+- [x] F1: implementar spike Native GEP, manifest 8954, probe estrutural e transporte marker/hash; testes sintéticos aprovados.
+- [ ] F1: carregar extensão no Overwolf e provar captura real sem ler AlecaFrame ([roteiro](docs/validacoes/2026-09-13-f1.md)).
+- [ ] F1: documentar schema/cobertura real, snapshots/deltas e requisitos de distribuição.
 - [ ] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos.
 - [ ] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost.
 - [ ] F2: entregar página inicial de status com tentativas, erros e ação corretiva.

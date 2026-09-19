@@ -30,6 +30,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [Pesquisa: documentação, fontes, evidências e lacunas](docs/FONTES-DE-DADOS.md)
 - [Testes: matriz, homologação e gates de aprovação](docs/VALIDACAO-PLATAFORMA.md)
 - [F0: auditoria e evidências de execução](docs/validacoes/2026-09-12-f0.md)
+- [F1: coletor Overwolf e roteiro de homologação](docs/validacoes/2026-09-13-f1.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
