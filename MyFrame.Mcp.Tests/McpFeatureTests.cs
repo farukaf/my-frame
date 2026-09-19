@@ -225,9 +225,10 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     [Fact]
     public async Task RealStdioServerListsAndCallsStructuredCapabilities()
     {
+        var configuration = Directory.GetParent(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar))!.Name;
         var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+                "..", "..", "..", "..", "MyFrame.Mcp", "bin", configuration, "net10.0", "win-x64", "MyFrame.Mcp.exe"));
         Assert.True(File.Exists(server), $"Server was not built at {server}");
         using var data = new TemporaryFolder();
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
