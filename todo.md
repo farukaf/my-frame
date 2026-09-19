@@ -24,8 +24,8 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F2: validar backup/reabertura e serialização do escritor em testes concorrentes.
 - [x] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
-- [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
-- [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [x] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
+- [x] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
 - [x] F276: expor cobertura Public Export para nomes localizados e metadados técnicos ([evidências](docs/validacoes/2026-09-14-f276.md)).
 - [x] F277: incluir estado, revisão e parser na resposta MCP de cobertura ([evidências](docs/validacoes/2026-09-14-f277.md)).
 - [x] F278: distribuir 0.0.25 e validar `get_source_coverage` no Codex e Claude ([evidências](docs/validacoes/2026-09-14-f278.md)).
@@ -57,14 +57,14 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F8: expor capacidades e status de sincronização somente leitura no MCP.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
-- [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
+- [x] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão ([evidências F182–F219](docs/validacoes/2026-09-14-f220.md)).
 - [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
-- [ ] F6: resolver autenticação WFM independente.
+- [x] F6: resolver autenticação WFM independente ([evidências F116–F118/F168](docs/validacoes/2026-09-13-f168.md)).
 - [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
-- [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
-- [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
-- [ ] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede.
+- [x] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado ([evidências F156–F160/F248](docs/validacoes/2026-09-14-f248.md)).
+- [x] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes ([evidências F121/F220](docs/validacoes/2026-09-13-f121.md)).
+- [x] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede ([evidências F121/F304](docs/validacoes/2026-09-13-f121.md)).
 - [x] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis ([skills](skills/README.md), [evidências](docs/validacoes/2026-09-13-f9.md)).
 - [x] F10: definir casos e protocolo reproduzível de avaliação antes/depois ([fixtures](docs/avaliacao/f10-cases.json), [protocolo](docs/avaliacao/2026-09-13-f10.md)).
 - [x] F11: exibir status de sincronização SQLite em página somente leitura ([evidências](docs/validacoes/2026-09-13-f11.md)).
@@ -352,6 +352,10 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F314: instruir skill de farm sobre procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f314.md)).
 - [x] F315: executar runbook e polling real do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f315.md)).
 - [x] F316: fortalecer teste de normalização com fonte populada ([evidências](docs/validacoes/2026-09-14-f316.md)).
+- [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
+- [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
+- [x] F319: reconciliar marcos implementados F3/F5 no checklist ([evidências](docs/validacoes/2026-09-14-f319.md)).
+- [x] F320: distribuir 0.0.30 com cobertura de fontes canônica ([evidências](docs/validacoes/2026-09-14-f320.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -426,3 +430,20 @@ para a nova matriz e continuam abertas até validação.
 - [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
 - [x] F2: lifecycle mínimo do SyncHost e registro de falhas sem perder revisão ativa
 - [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1
+- [x] F321: expor cobertura real do Warframe Market a partir do SQLite (`quotes`, `orders`, `account`, `marketItems`)
+- [x] F322: preservar upgrades/mods nas revisões SQLite e nas diferenças de inventário
+- [x] F323: cobrir mudanças de mods no contrato MCP de diferenças de inventário
+- [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
+- [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
+- [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
+- [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
+- [x] F328: distribuir 0.0.31 com contexto de inventário e validar upgrade/read-only
+- [x] F329: rejeitar comparações MCP entre contextos de inventário diferentes
+- [x] F330: distribuir 0.0.32 com isolamento de contexto e validar upgrade/read-only
+- [x] F331: reconciliar evidências históricas da suíte MCP após restauração autorizada
+- [x] F332: documentar `context_mismatch` no MCP e skill de farm
+- [x] F333: executar regressão integrada atual do coletor, Core e MCP
+- [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
+- [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
+- [x] F336: expor observedAt por campo na cobertura do Warframe Market
+- [x] F337: distribuir 0.0.33 com frescor do Market e validar upgrade/read-only
