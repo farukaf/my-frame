@@ -17,7 +17,7 @@ public sealed class AlecaFramePath(string directoryPath) : IAlecaFramePath
 
     private static string Normalize(string path)
     {
-        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("AlecaFrame directory is required.", nameof(path));
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
         return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
     }
 }

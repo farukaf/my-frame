@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MyFrame.Core.Sync;
 
 namespace MyFrame.Core;
 
@@ -68,6 +69,7 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
     private readonly IReadOnlyPriceCache _prices;
     private readonly IMarketStateStore _marketState;
     private readonly IMarketItemIndexStore _marketItems;
+    private readonly ISynchronizedDataReader? _synchronizedData;
     private readonly MyFrameLocalDataOptions _paths;
     private readonly TimeProvider _time;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -83,7 +85,8 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         IAlecaCatalogReader catalogReader, IRecommendationEngine engine,
         IMyFrameSettingsStore settingsStore, IReadOnlyPriceCache prices,
         IMarketStateStore marketState, IMarketItemIndexStore marketItems,
-        MyFrameLocalDataOptions? paths = null, TimeProvider? timeProvider = null)
+        MyFrameLocalDataOptions? paths = null, TimeProvider? timeProvider = null,
+        ISynchronizedDataReader? synchronizedData = null)
     {
         _inventoryReader = inventoryReader;
         _catalogReader = catalogReader;
@@ -92,6 +95,7 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         _prices = prices;
         _marketState = marketState;
         _marketItems = marketItems;
+        _synchronizedData = synchronizedData;
         _paths = paths ?? MyFrameLocalDataOptions.Shared;
         _time = timeProvider ?? TimeProvider.System;
         ConfigureSharedWatcher();
@@ -183,6 +187,10 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
     {
         var warnings = new List<SnapshotWarning>();
         var sources = new Dictionary<string, SnapshotSource>(StringComparer.Ordinal);
+        var synchronized = await TryReadSynchronizedAsync(cancellationToken).ConfigureAwait(false);
+        if (synchronized is not null)
+            return await ComposeSynchronizedAsync(synchronized, settings,
+                now, sources, warnings, cancellationToken).ConfigureAwait(false);
         if (settings is null || string.IsNullOrWhiteSpace(settings.AlecaFrameDirectory))
         {
             sources["settings"] = new("missing", null, false, "SETUP_REQUIRED");
@@ -304,6 +312,40 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
             account, orders, quotes, settings, sources, warnings, false, availabilityConfirmed, reevaluateAt);
     }
 
+    private async Task<SynchronizedDataSnapshot?> TryReadSynchronizedAsync(CancellationToken cancellationToken)
+    {
+        if (_synchronizedData is null) return null;
+        try { return await _synchronizedData.ReadAsync(cancellationToken).ConfigureAwait(false); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<MyFrameSnapshot> ComposeSynchronizedAsync(
+        SynchronizedDataSnapshot synchronized, MyFrameSettingsDocument? settings, DateTimeOffset now,
+        Dictionary<string, SnapshotSource> sources, List<SnapshotWarning> warnings,
+        CancellationToken cancellationToken)
+    {
+        var inventory = InventoryCatalogAlignment.AlignToCatalog(synchronized.Inventory, synchronized.Catalog);
+        var quotes = await _prices.LoadAllAsync(cancellationToken).ConfigureAwait(false);
+        var marketState = await _marketState.LoadAsync(cancellationToken).ConfigureAwait(false);
+        var orders = marketState?.ValidationState.Equals("invalidated", StringComparison.OrdinalIgnoreCase) == true
+            ? [] : marketState?.Orders ?? [];
+        var account = marketState?.ValidationState.Equals("invalidated", StringComparison.OrdinalIgnoreCase) == true
+            ? null : marketState?.Account;
+        var effectiveSettings = settings ?? new MyFrameSettingsDocument(1, 0, "", 10, 1, synchronized.RetrievedAt);
+        sources["settings"] = new(settings is null ? "missing" : "valid", settings?.UpdatedAt);
+        sources["inventory"] = new("valid", synchronized.RetrievedAt, false, "SYNC_DATABASE");
+        sources["catalog"] = new("partial", synchronized.RetrievedAt, false, "PUBLIC_EXPORT_MINIMAL");
+        sources["prices"] = quotes.Count == 0 ? new("missing", null) : new("stale", quotes.Values.Max(x => x.RetrievedAt));
+        sources["orders"] = marketState is null ? new("missing", null) : new("unverified", marketState.RetrievedAt);
+        warnings.Add(new("SYNC_DATABASE_PARTIAL", "Inventory and catalog came from My Frame SQLite; catalog components and player progression fields are not observed yet."));
+        var recommendations = _engine.Evaluate(inventory, synchronized.Catalog, quotes, orders, effectiveSettings.RecommendationSettings);
+        return new(Guid.NewGuid().ToString("N"), now, now, inventory, synchronized.Catalog, recommendations,
+            account, orders, quotes, effectiveSettings, sources, warnings, false, false, now + TimeSpan.FromSeconds(30));
+    }
+
     private static DateTimeOffset CatalogTimestamp(string directory)
     {
         var path = Path.Combine(directory, "cachedData", "json");
@@ -389,13 +431,14 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
     private sealed record RetainedSnapshot(MyFrameSnapshot Snapshot, DateTimeOffset RetainedAt);
 
     private sealed record SourceFingerprint(string Settings, string Inventory, string Catalog,
-        string Prices, string Orders, string MarketItems)
+        string Prices, string Orders, string MarketItems, string DataDatabase)
     {
         public static SourceFingerprint Capture(MyFrameLocalDataOptions paths, string? alecaDirectory) => new(
             Stamp(paths.SettingsPath),
             Stamp(string.IsNullOrWhiteSpace(alecaDirectory) ? null : Path.Combine(alecaDirectory, "lastData.dat")),
             DirectoryStamp(string.IsNullOrWhiteSpace(alecaDirectory) ? null : Path.Combine(alecaDirectory, "cachedData", "json")),
-            Stamp(paths.PriceCachePath), Stamp(paths.MarketStatePath), Stamp(paths.MarketItemIndexPath));
+            Stamp(paths.PriceCachePath), Stamp(paths.MarketStatePath), Stamp(paths.MarketItemIndexPath),
+            Stamp(Path.Combine(Path.GetDirectoryName(paths.SettingsPath)!, "data.db")));
 
         private static string Stamp(string? path)
         {
