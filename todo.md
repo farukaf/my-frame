@@ -355,6 +355,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
 - [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
 - [x] F319: reconciliar marcos implementados F3/F5 no checklist ([evidências](docs/validacoes/2026-09-14-f319.md)).
+- [x] F320: distribuir 0.0.30 com cobertura de fontes canônica ([evidências](docs/validacoes/2026-09-14-f320.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -429,3 +430,20 @@ para a nova matriz e continuam abertas até validação.
 - [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
 - [x] F2: lifecycle mínimo do SyncHost e registro de falhas sem perder revisão ativa
 - [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1
+- [x] F321: expor cobertura real do Warframe Market a partir do SQLite (`quotes`, `orders`, `account`, `marketItems`)
+- [x] F322: preservar upgrades/mods nas revisões SQLite e nas diferenças de inventário
+- [x] F323: cobrir mudanças de mods no contrato MCP de diferenças de inventário
+- [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
+- [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
+- [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
+- [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
+- [x] F328: distribuir 0.0.31 com contexto de inventário e validar upgrade/read-only
+- [x] F329: rejeitar comparações MCP entre contextos de inventário diferentes
+- [x] F330: distribuir 0.0.32 com isolamento de contexto e validar upgrade/read-only
+- [x] F331: reconciliar evidências históricas da suíte MCP após restauração autorizada
+- [x] F332: documentar `context_mismatch` no MCP e skill de farm
+- [x] F333: executar regressão integrada atual do coletor, Core e MCP
+- [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
+- [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
+- [x] F336: expor observedAt por campo na cobertura do Warframe Market
+- [x] F337: distribuir 0.0.33 com frescor do Market e validar upgrade/read-only
