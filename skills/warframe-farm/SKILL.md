@@ -46,7 +46,10 @@ metadata:
 7. Se o objetivo envolver progresso desde a última captura, consulte
    `get_inventory_history` e `get_inventory_changes`; só trate adições,
    remoções ou alterações como completas quando as duas revisões forem
-   `complete`, nunca quando a resposta estiver `partial`.
+   `complete`, nunca quando a resposta estiver `partial`. Se houver `contextId`,
+   use-o para confirmar que as revisões pertencem ao mesmo contexto; contexto
+   ausente não deve ser inventado. Se a ferramenta retornar `context_mismatch`,
+   não compare progresso nem some alterações entre as revisões.
 
 ## Saída
 
