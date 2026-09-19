@@ -27,7 +27,7 @@ public sealed record SyncHistoryResponse(IReadOnlyList<SyncRunDto> Items);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
 public sealed record InventoryCoverageResponse(IReadOnlyList<InventoryCoverageDto> Items);
 public sealed record InventoryRevisionDto(string RevisionId, string ContentHash, long Sequence,
-    string Completeness, string CaptureMode, DateTimeOffset RetrievedAt);
+    string Completeness, string CaptureMode, DateTimeOffset RetrievedAt, string? ContextId = null);
 public sealed record InventoryHistoryResponse(DateTimeOffset ServedAt, string State,
     IReadOnlyList<InventoryRevisionDto> Items);
 public sealed record InventoryChangeDto(string Kind, string Key, string Change,
@@ -35,7 +35,8 @@ public sealed record InventoryChangeDto(string Kind, string Key, string Change,
     int? BeforeQuantity, int? AfterQuantity, string BeforeState, string AfterState);
 public sealed record InventoryChangesResponse(DateTimeOffset ServedAt, string State,
     string? FromRevisionId, string? ToRevisionId, IReadOnlyList<InventoryChangeDto> Items);
-public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
+public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State,
+    DateTimeOffset? ObservedAt = null);
 public sealed record SourceCoverageResponse(IReadOnlyList<SourceCoverageDto> Items,
     DateTimeOffset? ServedAt = null, string? State = null, string? ActiveRevisionId = null,
     string? ParserVersion = null);
@@ -199,7 +200,7 @@ public sealed class PlatformStatusService
         var revisions = await database.GetInventoryRevisionSummariesAsync(limit, cancellationToken);
         return new(DateTimeOffset.UtcNow, revisions.Count == 0 ? "not_initialized" : "available",
             revisions.Select(value => new InventoryRevisionDto(value.RevisionId, value.ContentHash,
-                value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt)).ToArray());
+                value.Sequence, value.Completeness, value.CaptureMode, value.RetrievedAt, value.ContextId)).ToArray());
     }
 
     public async Task<InventoryChangesResponse> GetInventoryChangesAsync(
@@ -221,6 +222,9 @@ public sealed class PlatformStatusService
         var before = await database.GetInventoryRevisionDataAsync(from.RevisionId, cancellationToken);
         var after = await database.GetInventoryRevisionDataAsync(to.RevisionId, cancellationToken);
         if (before is null || after is null) return new(DateTimeOffset.UtcNow, "not_found", from.RevisionId, to.RevisionId, []);
+        if (before.Summary.ContextId is not null && after.Summary.ContextId is not null &&
+            !string.Equals(before.Summary.ContextId, after.Summary.ContextId, StringComparison.Ordinal))
+            return new(DateTimeOffset.UtcNow, "context_mismatch", from.RevisionId, to.RevisionId, []);
         if (before.Summary.CaptureMode == "delta" || after.Summary.CaptureMode == "delta")
             return new(DateTimeOffset.UtcNow, "partial", from.RevisionId, to.RevisionId, []);
 
@@ -232,7 +236,8 @@ public sealed class PlatformStatusService
             equipmentBefore.TryGetValue(key, out var oldValue);
             equipmentAfter.TryGetValue(key, out var newValue);
             var changed = oldValue is null || newValue is null || oldValue.TypeId != newValue.TypeId ||
-                oldValue.Rank != newValue.Rank || oldValue.RankState != newValue.RankState || oldValue.ConfigState != newValue.ConfigState;
+                oldValue.Rank != newValue.Rank || oldValue.RankState != newValue.RankState ||
+                oldValue.ConfigState != newValue.ConfigState || oldValue.ConfigJson != newValue.ConfigJson;
             if (changed)
                 changes.Add(new("equipment", key, oldValue is null ? "added" : newValue is null ? "removed" : "changed",
                     oldValue?.TypeId, newValue?.TypeId, oldValue?.Rank, newValue?.Rank, null, null,
@@ -327,9 +332,16 @@ public sealed class PlatformStatusService
                 ["marketItems"] = index is not null && index.ByNormalizedName.Count > 0
                     ? InventoryFieldState.Known : InventoryFieldState.NotObserved
             };
+            var observedAt = new Dictionary<string, DateTimeOffset?>(StringComparer.Ordinal)
+            {
+                ["quotes"] = quotes.Count == 0 ? null : quotes.Values.Max(value => value.RetrievedAt),
+                ["orders"] = state?.RetrievedAt,
+                ["account"] = state?.RetrievedAt,
+                ["marketItems"] = index?.RetrievedAt
+            };
             var observed = fields.Values.Any(value => value == InventoryFieldState.Known);
             return new(fields.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString())).ToArray(),
+                .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString(), observedAt[pair.Key])).ToArray(),
                 DateTimeOffset.UtcNow, observed ? "available" : "not_initialized");
         }
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
