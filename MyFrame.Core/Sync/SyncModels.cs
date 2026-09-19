@@ -34,3 +34,8 @@ public sealed record SyncRunSummary(
     long RecordsAccepted,
     long RecordsRejected,
     string? ErrorCode);
+
+public sealed record InventoryRevisionStatus(
+    string CaptureMode,
+    string Completeness,
+    long Sequence);

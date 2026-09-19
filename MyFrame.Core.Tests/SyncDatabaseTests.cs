@@ -323,6 +323,24 @@ public sealed class SyncDatabaseTests
     }
 
     [Fact]
+    public async Task InventoryPublicationExposesCaptureModeWithoutMergingDeltas()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-capture-mode-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 3,
+            DateTimeOffset.UtcNow, "native", "unverified", "{\"equipment\":[]}", "capture-mode-hash", "delta");
+
+        await db.PublishInventoryAsync(envelope, new InventoryProjection([], [], [],
+            new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known }));
+
+        var status = await db.GetActiveInventoryRevisionStatusAsync();
+        Assert.NotNull(status);
+        Assert.Equal("delta", status!.CaptureMode);
+        Assert.Equal("unverified", status.Completeness);
+        Assert.Equal(3, status.Sequence);
+    }
+
+    [Fact]
     public async Task InventoryPublicationPreservesAttributedUpgrades()
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-upgrades-{Guid.NewGuid():N}.db");
