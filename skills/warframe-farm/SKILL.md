@@ -25,7 +25,7 @@ metadata:
    Overwolf. Consulte `get_source_coverage("public-export")` antes de listar pré-requisitos;
    só use componentes e relíquias quando esses campos estiverem `Known`.
    Diferencie tipo desconhecido de quantidade desconhecida.
-3. Para um item com `itemId` estável, prefira `get_acquisition` para consolidar componentes, relíquias e bounties na mesma resposta. Quando precisar explorar atividades, consulte `get_world_state` ou `get_activity` (preferencialmente com `syndicate`, `reward` e `limit` quando procurar uma recompensa específica)
+3. Para um item com `itemId` estável, prefira `get_acquisition` para consolidar componentes, relíquias e bounties na mesma resposta; registre `worldStateRevisionId` e `worldStateParserVersion` antes de atribuir as bounties. Quando precisar explorar atividades, consulte `get_world_state` ou `get_activity` (preferencialmente com `syndicate`, `reward` e `limit` quando procurar uma recompensa específica)
    e verifique `state`, `activeRevisionId` e `coverage` antes de usar a lista.
    Só use bounties quando `state=available` e a ativação/expiração cobrir o
    horário; `not_initialized`/`failed` exige sincronização ou confirmação
@@ -46,7 +46,10 @@ metadata:
 7. Se o objetivo envolver progresso desde a última captura, consulte
    `get_inventory_history` e `get_inventory_changes`; só trate adições,
    remoções ou alterações como completas quando as duas revisões forem
-   `complete`, nunca quando a resposta estiver `partial`.
+   `complete`, nunca quando a resposta estiver `partial`. Se houver `contextId`,
+   use-o para confirmar que as revisões pertencem ao mesmo contexto; contexto
+   ausente não deve ser inventado. Se a ferramenta retornar `context_mismatch`,
+   não compare progresso nem some alterações entre as revisões.
 
 ## Saída
 
