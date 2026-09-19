@@ -22,9 +22,12 @@ if (Test-Path -LiteralPath $output) {
 }
 
 New-Item -ItemType Directory -Path $output -Force | Out-Null
+dotnet restore (Join-Path $repository 'MyFrame.Mcp\MyFrame.Mcp.csproj') -r $RuntimeIdentifier
+if ($LASTEXITCODE -ne 0) { throw 'MCP restore failed.' }
 dotnet publish (Join-Path $repository 'MyFrame.App\MyFrame.App.csproj') `
     -c $Configuration -f net10.0-windows10.0.19041.0 -r $RuntimeIdentifier `
     --self-contained true -p:PublishSingleFile=true -p:PublishDir="$output\"
+if ($LASTEXITCODE -ne 0) { throw 'Application distribution publish failed.' }
 
 $required = @('MyFrame.App.exe', 'MyFrame.Mcp.exe')
 foreach ($name in $required) {
