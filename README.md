@@ -183,6 +183,9 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F90 — skill de farm com procedência de fonte](docs/validacoes/2026-09-13-f90.md)
 - [Validação F91 — skill de builds com procedência do arsenal](docs/validacoes/2026-09-13-f91.md)
 - [Validação F92 — skill de economia com procedência do mercado](docs/validacoes/2026-09-13-f92.md)
+- [Validação F93 — migração de parserVersion em SQLite legado](docs/validacoes/2026-09-13-f93.md)
+- [Validação F94 — suíte completa da solução](docs/validacoes/2026-09-13-f94.md)
+- [Validação F95 — rollback da migração SQLite](docs/validacoes/2026-09-13-f95.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
