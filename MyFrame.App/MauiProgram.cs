@@ -34,6 +34,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<LocalSettings>();
         builder.Services.AddSingleton<SyncStatusReader>();
         builder.Services.AddSingleton<WorldStateSyncService>();
+        builder.Services.AddSingleton<PublicExportSyncService>();
         builder.Services.AddSingleton<CollectorCaptureInboxService>();
         builder.Services.AddSingleton<CollectorCaptureInboxWatcher>();
         builder.Services.AddSingleton<WindowPlacementService>();
@@ -47,8 +48,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IMarketStateStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IMarketItemIndexStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
+        builder.Services.AddSingleton<ProtectedFileMarketTokenStore>(_ => new ProtectedFileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath));
+        builder.Services.AddSingleton<MarketCredentialService>(p => new MarketCredentialService(
+            p.GetRequiredService<ProtectedFileMarketTokenStore>()));
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
-            new HttpClient(), new ProtectedFileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
+            new HttpClient(), p.GetRequiredService<ProtectedFileMarketTokenStore>(),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
         builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
