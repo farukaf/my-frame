@@ -69,9 +69,55 @@ public sealed class PublicExportTests
         Assert.Contains("uniqueName", batch.PayloadJson);
     }
 
+    [Fact]
+    public async Task HostPublishesFetchedPublicExportRecordsAtomically()
+    {
+        const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\",\"category\":\"Melee\"}]";
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-export-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        var result = await host.RunPublicExportOnceAsync("public-export", new PublicExportDocumentClient(client),
+            new PublicExportIndexEntry("ExportWeapons_en.json", "fixture"), new Uri("https://fixture.invalid/PublicExport/"));
+
+        Assert.NotNull(result);
+        var records = await database.GetPublicExportItemsAsync("public-export");
+        Assert.Equal("Test", Assert.Single(records).Name);
+    }
+
+    [Fact]
+    public async Task HostResolvesLatestIndexEntryBeforePublishing()
+    {
+        const string document = "[{\"uniqueName\":\"/Lotus/Latest\",\"name\":\"Latest\"}]";
+        using var client = new HttpClient(new RoutedFixtureHandler(
+            "ExportWeapons_en.json!fixture", document));
+        var index = new PublicExportIndexClient(client, bytes => System.Text.Encoding.UTF8.GetString(bytes));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-latest-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await host.RunPublicExportLatestOnceAsync("public-export", index,
+            new PublicExportDocumentClient(client), "ExportWeapons_en.json",
+            new Uri("https://fixture.invalid/index"), new Uri("https://fixture.invalid/PublicExport/"));
+
+        Assert.NotNull(result);
+        Assert.Equal("Latest", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Name);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+    }
+
+    private sealed class RoutedFixtureHandler(string index, string document) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var payload = request.RequestUri?.AbsolutePath.EndsWith("/index", StringComparison.Ordinal) == true
+                ? index : document;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent(payload, System.Text.Encoding.UTF8, "text/plain") });
+        }
     }
 }

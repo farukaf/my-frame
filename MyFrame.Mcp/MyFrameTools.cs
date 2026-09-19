@@ -17,6 +17,79 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     [Description("Returns read-only status for local sources and their last error. It never starts network synchronization or changes the database.")]
     public Task<SyncStatusResponse> GetSyncStatus(CancellationToken cancellationToken = default) => platform.GetSyncStatusAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_capture_inbox_status", Title = "Get capture inbox status", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns read-only metadata about local Overwolf capture markers. It never reads payload contents, imports files, starts synchronization, or exposes the inbox path.")]
+    public Task<CaptureInboxStatusResponse> GetCaptureInboxStatus(CancellationToken cancellationToken = default) =>
+        platform.GetCaptureInboxStatusAsync(cancellationToken);
+
+    [McpServerTool(Name = "get_sync_history", Title = "Get synchronization history", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns recent sanitized synchronization attempts from SQLite. It never reads payloads or starts synchronization.")]
+    public Task<IReadOnlyList<SyncRunDto>> GetSyncHistory(
+        [Description("Number of attempts from 1 to 100; default 20.")] int limit = 20,
+        [Description("Optional exact source id, such as overwolf-inventory or public-export.")] string? sourceId = null,
+        CancellationToken cancellationToken = default) => platform.GetSyncHistoryAsync(limit, sourceId, cancellationToken);
+
+    [McpServerTool(Name = "get_inventory_coverage", Title = "Get inventory coverage", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns field-level inventory coverage states from the synchronized SQLite projection. It never returns raw payloads or treats unobserved fields as absent.")]
+    public Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
+        platform.GetInventoryCoverageAsync(cancellationToken);
+
+    [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
+    public Task<IReadOnlyList<InventoryEquipmentDto>> GetEquipment(
+        [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
+        [Description("Maximum number of instances from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetInventoryEquipmentAsync(typeId, limit, cancellationToken);
+
+    [McpServerTool(Name = "get_mods", Title = "Get observed mods and upgrades", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns observed mod/upgrade metadata attributed to an equipment instance when the capture supplied that relation. Missing attribution remains null; no build capacity or polarity is inferred.")]
+    public Task<IReadOnlyList<InventoryUpgradeDto>> GetMods(
+        [Description("Optional exact equipment instanceId filter.")] string? ownerInstanceId = null,
+        [Description("Optional source array filter, such as mods, upgrades, or RawUpgrades.")] string? sourceField = null,
+        [Description("Maximum number of entries from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetInventoryUpgradesAsync(
+        ownerInstanceId, sourceField, limit, cancellationToken);
+
+    [McpServerTool(Name = "get_loadout", Title = "Get equipment loadouts", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns each observed equipment instance together with its observed rank/configuration and explicitly attributed mods/upgrades. Missing relations remain empty or unknown; no build compatibility is inferred.")]
+    public Task<IReadOnlyList<LoadoutDto>> GetLoadout(
+        [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
+        [Description("Maximum number of loadouts from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetLoadoutsAsync(typeId, limit, cancellationToken);
+
+    [McpServerTool(Name = "get_bounties", Title = "Get active bounties", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns currently active World State bounties with jobs, standing stages and attributed rewards. It never invents missing rewards or treats an unavailable World State as an empty game state.")]
+    public Task<WorldStateBountiesResponse> GetBounties(
+        [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetBountiesAsync(limit, syndicate, reward, cancellationToken);
+
+    [McpServerTool(Name = "get_world_state", Title = "Get current World State", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns the current World State source status, active bounties with rewards, and supported planetary cycles. It is read-only and never fetches the network.")]
+    public Task<WorldStateResponse> GetWorldState(
+        [Description("Maximum number of active bounties from 1 to 200; default 100.")] int limit = 100,
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetWorldStateAsync(limit, syndicate, reward, cancellationToken);
+
+    [McpServerTool(Name = "get_activity", Title = "Get current activities", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns current bounty activities and planetary cycles using the same World State revision, coverage and validity rules as get_world_state. An optional reward filter narrows bounties without inventing missing rewards.")]
+    public Task<WorldStateResponse> GetActivity(
+        [Description("Maximum number of active activities from 1 to 200; default 100.")] int limit = 100,
+        [Description("Optional case-insensitive exact syndicate filter, such as Entrati or Ostrons.")] string? syndicate = null,
+        [Description("Optional case-insensitive text filter matched against reward item names, such as Mother Token.")] string? reward = null,
+        CancellationToken cancellationToken = default) => platform.GetActivityAsync(limit, syndicate, reward, cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

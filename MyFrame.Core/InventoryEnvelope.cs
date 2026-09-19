@@ -34,13 +34,21 @@ public sealed record InventoryStackableRecord(
     InventoryFieldState QuantityState,
     string RawJson);
 
+public sealed record InventoryUpgradeRecord(
+    string? OwnerInstanceId,
+    string SourceField,
+    string? UpgradeId,
+    int? Rank,
+    string RawJson);
+
 public sealed record InventoryUnknownRecord(string Kind, string RawJson, string ReasonCode);
 
 public sealed record InventoryProjection(
     IReadOnlyList<InventoryEquipmentRecord> Equipment,
     IReadOnlyList<InventoryStackableRecord> Stackables,
     IReadOnlyList<InventoryUnknownRecord> Unknown,
-    IReadOnlyDictionary<string, InventoryFieldState> Coverage);
+    IReadOnlyDictionary<string, InventoryFieldState> Coverage,
+    IReadOnlyList<InventoryUpgradeRecord>? Upgrades = null);
 
 public static class InventoryEnvelopeParser
 {
@@ -96,7 +104,8 @@ public static class InventoryPayloadParser
         var coverage = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal);
         var equipment = ReadEquipment(root, coverage, maximumRecords);
         var stackables = ReadStackables(root, coverage, maximumRecords);
-        return new(equipment, stackables, ReadUnknown(root, equipment.Count + stackables.Count, maximumRecords), coverage);
+        var upgrades = ReadUpgrades(root, coverage, maximumRecords);
+        return new(equipment, stackables, ReadUnknown(root, equipment.Count + stackables.Count, maximumRecords), coverage, upgrades);
     }
 
     private static IReadOnlyList<InventoryEquipmentRecord> ReadEquipment(JsonElement root, Dictionary<string, InventoryFieldState> coverage, int max)
@@ -137,8 +146,55 @@ public static class InventoryPayloadParser
     {
         var result = new List<InventoryUnknownRecord>();
         foreach (var property in root.EnumerateObject())
-            if (property.Name is not ("equipment" or "stackables"))
+            if (!property.Name.Equals("equipment", StringComparison.OrdinalIgnoreCase) &&
+                !property.Name.Equals("stackables", StringComparison.OrdinalIgnoreCase) &&
+                !property.Name.Equals("mods", StringComparison.OrdinalIgnoreCase) &&
+                !property.Name.Equals("upgrades", StringComparison.OrdinalIgnoreCase) &&
+                !property.Name.Equals("rawupgrades", StringComparison.OrdinalIgnoreCase))
                 result.Add(new(property.Name, property.Value.GetRawText(), "FIELD_NOT_MAPPED"));
+        return result;
+    }
+
+    private static IReadOnlyList<InventoryUpgradeRecord> ReadUpgrades(
+        JsonElement root, Dictionary<string, InventoryFieldState> coverage, int max)
+    {
+        var result = new List<InventoryUpgradeRecord>();
+        var observed = false;
+        foreach (var property in root.EnumerateObject().Where(property =>
+            property.Name.Equals("mods", StringComparison.OrdinalIgnoreCase) ||
+            property.Name.Equals("upgrades", StringComparison.OrdinalIgnoreCase) ||
+            property.Name.Equals("rawupgrades", StringComparison.OrdinalIgnoreCase)))
+        {
+            observed = true;
+            if (property.Value.ValueKind != JsonValueKind.Array)
+            {
+                coverage[$"upgrades.{property.Name}"] = InventoryFieldState.Invalid;
+                continue;
+            }
+
+            coverage[$"upgrades.{property.Name}"] = InventoryFieldState.Known;
+            foreach (var item in property.Value.EnumerateArray())
+            {
+                if (result.Count >= max) throw new InvalidDataException("INVENTORY_RECORDS_TOO_LARGE");
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    result.Add(new(null, property.Name, null, null, item.GetRawText()));
+                    continue;
+                }
+
+                result.Add(new(
+                    StringValue(item, "ownerInstanceId") ?? StringValue(item, "instanceId"),
+                    property.Name,
+                    StringValue(item, "upgradeId") ?? StringValue(item, "uniqueName") ??
+                        StringValue(item, "typeId") ?? StringValue(item, "id") ?? StringValue(item, "name"),
+                    IntValue(item, "rank") ?? IntValue(item, "level"),
+                    item.GetRawText()));
+            }
+        }
+
+        if (!observed) coverage["upgrades"] = InventoryFieldState.NotObserved;
+        else if (result.Count > 0 && !coverage.Keys.Any(key => key.StartsWith("upgrades.", StringComparison.Ordinal)))
+            coverage["upgrades"] = InventoryFieldState.Known;
         return result;
     }
 
