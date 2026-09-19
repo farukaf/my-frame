@@ -9,9 +9,10 @@ internal static class AppLogging
     private static readonly object Gate = new();
     private static bool _configured;
 
-    internal static string DirectoryPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "MyFrame", "logs");
+    internal static string DirectoryPath => Environment.GetEnvironmentVariable("MYFRAME_LOG_ROOT") is { Length: > 0 } overridePath
+        ? Path.GetFullPath(overridePath)
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "MyFrame", "logs");
 
     internal static void Configure()
     {
