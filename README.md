@@ -171,6 +171,21 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F78 — adaptador World State oficial](docs/validacoes/2026-09-13-f78.md)
 - [Validação F79 — procedência do parser no status](docs/validacoes/2026-09-13-f79.md)
 - [Validação F80 — identificação automática da fonte World State](docs/validacoes/2026-09-13-f80.md)
+- [Validação F81 — fallback controlado do World State](docs/validacoes/2026-09-13-f81.md)
+- [Validação F82 — procedência do parser na UI](docs/validacoes/2026-09-13-f82.md)
+- [Validação F83 — procedência no resultado do sync](docs/validacoes/2026-09-13-f83.md)
+- [Validação F84 — proteção contra fallback em schema inválido](docs/validacoes/2026-09-13-f84.md)
+- [Validação F85 — fluxo oficial até SQLite](docs/validacoes/2026-09-13-f85.md)
+- [Validação F86 — verificador do endpoint World State](docs/validacoes/2026-09-13-f86.md)
+- [Validação F87 — verificador offline por fixture](docs/validacoes/2026-09-13-f87.md)
+- [Validação F88 — detecção explícita de Mother Token](docs/validacoes/2026-09-13-f88.md)
+- [Validação F89 — leitura concorrente app/MCP](docs/validacoes/2026-09-13-f89.md)
+- [Validação F90 — skill de farm com procedência de fonte](docs/validacoes/2026-09-13-f90.md)
+- [Validação F91 — skill de builds com procedência do arsenal](docs/validacoes/2026-09-13-f91.md)
+- [Validação F92 — skill de economia com procedência do mercado](docs/validacoes/2026-09-13-f92.md)
+- [Validação F93 — migração de parserVersion em SQLite legado](docs/validacoes/2026-09-13-f93.md)
+- [Validação F94 — suíte completa da solução](docs/validacoes/2026-09-13-f94.md)
+- [Validação F95 — rollback da migração SQLite](docs/validacoes/2026-09-13-f95.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
