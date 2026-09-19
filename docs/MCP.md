@@ -215,14 +215,14 @@ permitir filtros e paginação previsível.
 | Ferramenta | Finalidade e filtros principais |
 | --- | --- |
 | `get_capabilities` | Capacidades disponíveis, parciais e pendentes de validação externa. |
-| `get_sync_status` | Estado somente leitura das fontes, última tentativa, revisão ativa, contagens aceitas/rejeitadas e erro sanitizado. |
+| `get_sync_status` | Estado somente leitura das fontes, última tentativa, revisão ativa, versão do parser, contagens aceitas/rejeitadas e erro sanitizado. |
 | `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
-| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte; aceita filtro opcional por sindicato. |
+| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte; aceita filtros opcionais por sindicato e texto da recompensa. |
 | `get_world_state` | Estado da fonte, revisão ativa, bounties, ciclos planetários e cobertura observada; limite de 1–200 bounties e filtros opcionais por sindicato e texto da recompensa. |
 | `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, validade e cobertura do World State; pode filtrar texto da recompensa. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
