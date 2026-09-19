@@ -131,6 +131,27 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task OfficialWorldStateFlowsThroughHostAndPersistsProvenance()
+    {
+        const string json = """
+            {"Timestamp":{"$date":{"$numberLong":"1789291200000"}},"SyndicateMissions":[{"Tag":"DeimosSyndicate","Activation":{"$date":{"$numberLong":"1789290900000"}},"Expiry":{"$date":{"$numberLong":"1789294500000"}},"Jobs":[{"jobType":"DeimosMission","rewards":"/Lotus/Types/Gameplay/Deimos/Jobs/DeimosMissionRewards","minEnemyLevel":10,"maxEnemyLevel":20,"xpAmounts":[100,200]}] }]}
+            """;
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-official-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await host.RunWorldStateOnceAsync(new WorldStateClient(client));
+
+        Assert.NotNull(result);
+        var status = await database.GetStatusAsync("worldstate-pc");
+        Assert.Equal("worldstate-official-1", status!.ParserVersion);
+        var bounty = Assert.Single(await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.FromUnixTimeMilliseconds(1789291201000)));
+        Assert.Equal("Entrati", bounty.Syndicate);
+        Assert.Empty(bounty.Jobs[0].Rewards);
+    }
+
+    [Fact]
     public async Task NewWorldStateRevisionReplacesPreviousCoverage()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-coverage-{Guid.NewGuid():N}");
