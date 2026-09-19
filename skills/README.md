@@ -14,4 +14,5 @@ Contrato comum:
 7. citar fonte/revisão e declarar o que falta confirmar.
 
 Skills disponíveis: `warframe-builds`, `warframe-farm` (v3, World State com
-revisão/cobertura/procedência) e `warframe-economy` (v2, mercado com procedência).
+revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
+e `warframe-research` (v1, referências importadas com atribuição).
