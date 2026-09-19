@@ -19,7 +19,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
+        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -259,7 +259,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
                 [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true,
                 new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved });
-            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1));
+            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1, "worldstate-official-1"));
         }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
         environment["MYFRAME_DATA_ROOT"] = data.Path;
@@ -279,6 +279,22 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var tools = await client.ListToolsAsync();
         var resources = await client.ListResourcesAsync();
         var prompts = await client.ListPromptsAsync();
+        var concurrentLocalRead = Task.Run(async () =>
+        {
+            await using var localDatabase = new SyncDatabase(Path.Combine(data.Path, "data.db"));
+            for (var index = 0; index < 10; index++)
+            {
+                var localBounties = await localDatabase.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow);
+                Assert.Single(localBounties);
+                await Task.Delay(10);
+            }
+        });
+        var concurrentMcpRead = client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["syndicate"] = "Entrati" }).AsTask();
+        await Task.WhenAll(concurrentLocalRead, concurrentMcpRead);
+        var concurrentResult = await concurrentMcpRead;
+        Assert.NotEqual(true, concurrentResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(concurrentResult.StructuredContent));
         var result = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["includeAccount"] = false });
         var coverageResult = await client.CallToolAsync("get_inventory_coverage");
@@ -288,9 +304,19 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var loadoutResult = await client.CallToolAsync("get_loadout",
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
+        var rewardBountiesResult = await client.CallToolAsync("get_bounties",
+            new Dictionary<string, object?> { ["reward"] = "endo" });
         var syncStatusResult = await client.CallToolAsync("get_sync_status");
+        var activityResult = await client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["syndicate"] = "Entrati" });
+        var rewardActivityResult = await client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["reward"] = "endo" });
         var worldStateResult = await client.CallToolAsync("get_world_state",
             new Dictionary<string, object?> { ["limit"] = 50, ["syndicate"] = "entrati" });
+        var filteredWorldState = await client.CallToolAsync("get_world_state",
+            new Dictionary<string, object?> { ["syndicate"] = "Ostrons" });
+        var invalidWorldState = await client.CallToolAsync("get_world_state",
+            new Dictionary<string, object?> { ["limit"] = 0 });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -298,7 +324,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(18, tools.Count);
+        Assert.Equal(19, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
@@ -323,21 +349,32 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotNull(loadoutResult.StructuredContent);
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, bountiesResult.IsError);
+        Assert.NotEqual(true, rewardBountiesResult.IsError);
         Assert.NotNull(bountiesResult.StructuredContent);
         Assert.NotEqual(true, syncStatusResult.IsError);
         var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
         Assert.Contains("activeRevisionId", syncStatusJson);
+        Assert.Contains("worldstate-official-1", syncStatusJson);
         Assert.Contains("acceptedRecords", syncStatusJson);
+        Assert.Contains("warframe-market", syncStatusJson);
         var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);
         Assert.Contains("available", bountiesJson);
         Assert.Contains("Entrati", bountiesJson);
         Assert.Contains("Endo", bountiesJson);
         Assert.NotEqual(true, worldStateResult.IsError);
+        Assert.NotEqual(true, activityResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(rewardBountiesResult.StructuredContent));
+        Assert.NotEqual(true, rewardActivityResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(activityResult.StructuredContent));
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(rewardActivityResult.StructuredContent));
         var worldStateJson = JsonSerializer.Serialize(worldStateResult.StructuredContent);
         Assert.Contains("cetusCycle", worldStateJson);
         Assert.Contains("Entrati", worldStateJson);
         Assert.Contains("motherTokens", worldStateJson);
         Assert.Contains("activeRevisionId", worldStateJson);
+        var filteredWorldStateJson = JsonSerializer.Serialize(filteredWorldState.StructuredContent);
+        Assert.DoesNotContain("deimos-f33", filteredWorldStateJson);
+        Assert.True(invalidWorldState.IsError);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),
