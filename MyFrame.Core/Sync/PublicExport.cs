@@ -132,6 +132,14 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
 
     public async Task<SyncBatch> FetchBatchAsync(PublicExportIndexEntry entry, string sourceId = "public-export", Uri? baseUri = null, CancellationToken cancellationToken = default)
     {
+        var publication = await FetchPublicationAsync(entry, sourceId, baseUri, cancellationToken);
+        return publication.Batch;
+    }
+
+    public async Task<(SyncBatch Batch, IReadOnlyList<PublicExportRecord> Records)> FetchPublicationAsync(
+        PublicExportIndexEntry entry, string sourceId = "public-export", Uri? baseUri = null,
+        CancellationToken cancellationToken = default)
+    {
         var path = entry.RelativePath;
         if (path.EndsWith(".lzma", StringComparison.OrdinalIgnoreCase)) path = path[..^5];
         var uri = new Uri((baseUri ?? new Uri(DefaultBaseUrl)), path);
@@ -142,6 +150,6 @@ public sealed class PublicExportDocumentClient(HttpClient httpClient, LzmaAloneD
         var json = bytes.Length >= 5 && bytes[0] == 0x5D ? _lzmaDecoder.Decode(bytes) : new UTF8Encoding(false, true).GetString(bytes);
         var records = PublicExportDocumentParser.Parse(json);
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-        return new SyncBatch(sourceId, hash, json, records.Count, "public-export-1");
+        return (new SyncBatch(sourceId, hash, json, records.Count, "public-export-1"), records);
     }
 }
