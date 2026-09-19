@@ -436,3 +436,14 @@ para a nova matriz e continuam abertas até validação.
 - [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
 - [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
 - [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
+- [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
+- [x] F328: distribuir 0.0.31 com contexto de inventário e validar upgrade/read-only
+- [x] F329: rejeitar comparações MCP entre contextos de inventário diferentes
+- [x] F330: distribuir 0.0.32 com isolamento de contexto e validar upgrade/read-only
+- [x] F331: reconciliar evidências históricas da suíte MCP após restauração autorizada
+- [x] F332: documentar `context_mismatch` no MCP e skill de farm
+- [x] F333: executar regressão integrada atual do coletor, Core e MCP
+- [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
+- [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
+- [x] F336: expor observedAt por campo na cobertura do Warframe Market
+- [x] F337: distribuir 0.0.33 com frescor do Market e validar upgrade/read-only
