@@ -5,7 +5,9 @@ namespace MyFrame.Mcp;
 
 public sealed record CapabilityDto(string Name, string State, string Detail);
 public sealed record CapabilitiesResponse(DateTimeOffset ServedAt, IReadOnlyList<CapabilityDto> Capabilities);
-public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState, DateTimeOffset? LastRunAt, string? ErrorCode);
+public sealed record SyncSourceStatusDto(string SourceId, string State, string? LastRunState,
+    DateTimeOffset? LastRunAt, string? ErrorCode, string? ActiveRevisionId, string? ParserVersion,
+    long AcceptedRecords, long RejectedRecords);
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
 public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
     int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode);
@@ -28,11 +30,12 @@ public sealed record WorldStateBountiesResponse(DateTimeOffset ServedAt, string 
     DateTimeOffset? LastAttemptAt, string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties);
 public sealed record WorldStateCycleDto(string Name, string? State, DateTimeOffset? Activation, DateTimeOffset? Expiry);
 public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, DateTimeOffset? LastAttemptAt,
-    string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles);
+    string? ErrorCode, IReadOnlyList<WorldStateBountyDto> Bounties, IReadOnlyList<WorldStateCycleDto> Cycles,
+    IReadOnlyDictionary<string, string> Coverage, string? ActiveRevisionId);
 
 public sealed class PlatformStatusService
 {
-    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "market-public", "references"];
+    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references"];
     public CapabilitiesResponse GetCapabilities() => new(DateTimeOffset.UtcNow,
     [
         new("inventory.overwolf", "pending_external_validation", "Native GEP contract is implemented; real capture and Arsenal comparison are still required."),
@@ -52,8 +55,10 @@ public sealed class PlatformStatusService
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
             values.Add(status is null
-                ? new(sourceId, "not_initialized", null, null, null)
-                : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt, status.ErrorCode));
+                ? new(sourceId, "not_initialized", null, null, null, null, null, 0, 0)
+                : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
+                    status.ErrorCode, status.ActiveRevisionId, status.ParserVersion,
+                    status.AcceptedRecords, status.RejectedRecords));
         }
         return new(DateTimeOffset.UtcNow, values);
     }
@@ -160,18 +165,24 @@ public sealed class PlatformStatusService
     }
 
     public async Task<WorldStateBountiesResponse> GetBountiesAsync(
-        int limit = 100, string? syndicate = null, CancellationToken cancellationToken = default)
+        int limit = 100, string? syndicate = null, string? reward = null,
+        CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
             throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+        if (reward?.Length > 200)
+            throw new ArgumentOutOfRangeException(nameof(reward), "reward is limited to 200 characters.");
 
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
         var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
         var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
+        var normalizedReward = string.IsNullOrWhiteSpace(reward) ? null : reward.Trim();
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode, bounties
             .Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
                 string.Equals(bounty.Syndicate, syndicate, StringComparison.OrdinalIgnoreCase))
+            .Where(bounty => normalizedReward is null || bounty.Jobs.Any(job =>
+                job.Rewards.Any(value => value.Item.Contains(normalizedReward, StringComparison.OrdinalIgnoreCase))))
             .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
             bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                 job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
@@ -179,22 +190,35 @@ public sealed class PlatformStatusService
     }
 
     public async Task<WorldStateResponse> GetWorldStateAsync(int limit = 100, string? syndicate = null,
+        string? reward = null,
         CancellationToken cancellationToken = default)
     {
         if (limit is < 1 or > 200)
             throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+        if (reward?.Length > 200)
+            throw new ArgumentOutOfRangeException(nameof(reward), "reward is limited to 200 characters.");
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var status = await database.GetStatusAsync("worldstate-pc", cancellationToken);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow, cancellationToken);
         var cycles = await database.GetCurrentWorldStateCyclesAsync(cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync("worldstate-pc", cancellationToken);
         var state = status is null ? "not_initialized" : status.LastRunState == "published" ? "available" : status.LastRunState ?? "unknown";
+        var normalizedReward = string.IsNullOrWhiteSpace(reward) ? null : reward.Trim();
         return new(DateTimeOffset.UtcNow, state, status?.LastRunAt, status?.ErrorCode,
             bounties.Where(bounty => string.IsNullOrWhiteSpace(syndicate) ||
                 string.Equals(bounty.Syndicate, syndicate, StringComparison.OrdinalIgnoreCase))
+                .Where(bounty => normalizedReward is null || bounty.Jobs.Any(job =>
+                    job.Rewards.Any(value => value.Item.Contains(normalizedReward, StringComparison.OrdinalIgnoreCase))))
                 .Take(limit).Select(bounty => new WorldStateBountyDto(bounty.Id, bounty.Syndicate,
                 bounty.Activation, bounty.Expiry, bounty.Jobs.Select(job => new WorldStateJobDto(job.Id, job.Type,
                     job.UniqueName, job.MinimumMasteryRank, job.StandingStages, job.Rewards.Select(reward =>
                         new WorldStateRewardDto(reward.Item, reward.Chance, reward.Count, reward.Rarity)).ToArray())).ToArray())).ToArray(),
-            cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray());
+            cycles.Select(cycle => new WorldStateCycleDto(cycle.Name, cycle.State, cycle.Activation, cycle.Expiry)).ToArray(),
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal),
+            status?.ActiveRevisionId);
     }
+
+    public Task<WorldStateResponse> GetActivityAsync(int limit = 100, string? syndicate = null,
+        string? reward = null,
+        CancellationToken cancellationToken = default) => GetWorldStateAsync(limit, syndicate, reward, cancellationToken);
 }
