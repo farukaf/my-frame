@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Runtime.Versioning;
 using MyFrame.Core;
 
 namespace MyFrame.Core.Tests;
 
+[SupportedOSPlatform("windows")]
 public sealed class WarframeMarketClientTests
 {
     [Fact]
@@ -51,6 +53,64 @@ public sealed class WarframeMarketClientTests
         Assert.NotNull(handler.Requests[0].Authorization);
     }
 
+    [Fact]
+    public async Task ProtectedCredentialStoreEncryptsAndClearsTheToken()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = System.IO.Path.Combine(directory.Path, "market.token");
+        var store = new ProtectedFileMarketTokenStore(path);
+        const string token = "sensitive-market-token";
+
+        await store.SaveAsync(token);
+        var bytes = await File.ReadAllBytesAsync(path);
+        Assert.DoesNotContain(token, Encoding.UTF8.GetString(bytes));
+        Assert.Equal(token, await store.ReadAsync());
+
+        await store.ClearAsync();
+        Assert.Null(await store.ReadAsync());
+    }
+
+    [Fact]
+    public async Task ProtectedCredentialStoreReadsLegacyPlaintextWithoutRewritingIt()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = System.IO.Path.Combine(directory.Path, "market.token");
+        const string token = "legacy-market-token";
+        await File.WriteAllTextAsync(path, token);
+        var store = new ProtectedFileMarketTokenStore(path);
+
+        Assert.Equal(token, await store.ReadAsync());
+        Assert.Equal(token, await File.ReadAllTextAsync(path));
+    }
+
+    [Fact]
+    public async Task CredentialServiceValidatesSavesAndRevokesWithoutExposingTheToken()
+    {
+        var store = new MemoryCredentialStore();
+        var service = new MarketCredentialService(store);
+        var token = CreateToken(DateTimeOffset.UtcNow.AddHours(1));
+
+        Assert.Equal(MarketCredentialState.Missing, (await service.GetStatusAsync()).State);
+        var saved = await service.SaveAsync(token);
+        Assert.Equal(MarketCredentialState.Valid, saved.State);
+        Assert.Equal(token, store.Value);
+        Assert.Equal(MarketCredentialState.Valid, (await service.GetStatusAsync()).State);
+
+        await service.RevokeAsync();
+        Assert.Null(store.Value);
+    }
+
+    [Fact]
+    public void CredentialServiceClassifiesExpiredAndMalformedValues()
+    {
+        Assert.Equal(MarketCredentialState.Expired,
+            MarketCredentialService.Classify(CreateToken(DateTimeOffset.UtcNow.AddMinutes(-1))).State);
+        Assert.Equal(MarketCredentialState.Invalid,
+            MarketCredentialService.Classify("not-a-jwt").State);
+        Assert.Throws<ArgumentException>(() => new MarketCredentialService(new MemoryCredentialStore())
+            .SaveAsync("not-a-jwt").GetAwaiter().GetResult());
+    }
+
     private static string CreateToken(DateTimeOffset expires)
     {
         static string Encode(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
@@ -79,5 +139,21 @@ public sealed class WarframeMarketClientTests
     private sealed class StaticTokenStore(string? token) : IMarketTokenStore
     {
         public Task<string?> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(token);
+    }
+
+    private sealed class MemoryCredentialStore : IMarketCredentialStore
+    {
+        public string? Value { get; private set; }
+        public Task<string?> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(Value);
+        public Task SaveAsync(string token, CancellationToken cancellationToken = default)
+        {
+            Value = token;
+            return Task.CompletedTask;
+        }
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+        {
+            Value = null;
+            return Task.CompletedTask;
+        }
     }
 }
