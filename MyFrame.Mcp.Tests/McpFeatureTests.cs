@@ -279,6 +279,22 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var tools = await client.ListToolsAsync();
         var resources = await client.ListResourcesAsync();
         var prompts = await client.ListPromptsAsync();
+        var concurrentLocalRead = Task.Run(async () =>
+        {
+            await using var localDatabase = new SyncDatabase(Path.Combine(data.Path, "data.db"));
+            for (var index = 0; index < 10; index++)
+            {
+                var localBounties = await localDatabase.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow);
+                Assert.Single(localBounties);
+                await Task.Delay(10);
+            }
+        });
+        var concurrentMcpRead = client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["syndicate"] = "Entrati" }).AsTask();
+        await Task.WhenAll(concurrentLocalRead, concurrentMcpRead);
+        var concurrentResult = await concurrentMcpRead;
+        Assert.NotEqual(true, concurrentResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(concurrentResult.StructuredContent));
         var result = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["includeAccount"] = false });
         var coverageResult = await client.CallToolAsync("get_inventory_coverage");
