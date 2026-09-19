@@ -347,7 +347,7 @@ public sealed class SyncDatabaseTests
         var path = Path.Combine(Path.GetTempPath(), $"myframe-upgrades-{Guid.NewGuid():N}.db");
         await using var db = new SyncDatabase(path);
         var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
-            DateTimeOffset.UtcNow, "test", "verified", "{\"mods\":[]}", "upgrades-hash");
+            DateTimeOffset.UtcNow, "test", "verified", "{\"mods\":[]}", "upgrades-hash", "snapshot", "relay-alpha");
         var projection = new InventoryProjection([], [], [],
             new Dictionary<string, InventoryFieldState> { ["upgrades.mods"] = InventoryFieldState.Known },
             [new InventoryUpgradeRecord("instance-1", "mods", "/Lotus/Mod", 5, "{\"id\":\"/Lotus/Mod\",\"rank\":5}")]);
@@ -359,6 +359,14 @@ public sealed class SyncDatabaseTests
         Assert.Equal("instance-1", upgrade.OwnerInstanceId);
         Assert.Equal("/Lotus/Mod", upgrade.UpgradeId);
         Assert.Equal(5, upgrade.Rank);
+
+        var revisions = await db.GetInventoryRevisionSummariesAsync();
+        var revision = Assert.Single(revisions);
+        var revisionData = await db.GetInventoryRevisionDataAsync(revision.RevisionId);
+        var attributed = Assert.Single(revisionData!.Upgrades!);
+        Assert.Equal("mods", attributed.SourceField);
+        Assert.Equal("instance-1", attributed.OwnerInstanceId);
+        Assert.Equal("relay-alpha", revision.ContextId);
     }
 
     [Fact]
