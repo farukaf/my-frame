@@ -99,6 +99,40 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F59: persistir e expor cobertura do World State no MCP ([evidências](docs/validacoes/2026-09-13-f59.md)).
 - [x] F60: substituir cobertura World State a cada revisão publicada ([evidências](docs/validacoes/2026-09-13-f60.md)).
 - [x] F61: substituir cobertura do inventário a cada revisão publicada ([evidências](docs/validacoes/2026-09-13-f61.md)).
+- [x] F62: expor a revisão SQLite ativa junto do World State no MCP ([evidências](docs/validacoes/2026-09-13-f62.md)).
+- [x] F63: executar gate MCP read-only com stdin EOF, stdout vazio e data root limpo ([evidências](docs/validacoes/2026-09-13-f63.md)).
+- [x] F64: validar pacote Overwolf e testes de framing/UI do coletor ([evidências](docs/validacoes/2026-09-13-f64.md)).
+- [x] F65: publicar artefato Windows 0.0.7 e executar smoke do MCP distribuído ([evidências](docs/validacoes/2026-09-13-f65.md)).
+- [x] F66: validar a estrutura dos três casos da matriz F10 ([evidências](docs/validacoes/2026-09-13-f66.md)).
+- [x] F67: registrar nova tentativa interativa do gate F1 sem declarar captura real ([evidências](docs/validacoes/2026-09-13-f67.md)).
+- [x] F68: priorizar SQLite sincronizado quando dados legados AlecaFrame também existem ([evidências](docs/validacoes/2026-09-13-f68.md)).
+- [x] F69: não gravar caminho AlecaFrame em configurações novas ([evidências](docs/validacoes/2026-09-13-f69.md)).
+- [x] F70: comunicar na UI que AlecaFrame é importação legada opcional ([evidências](docs/validacoes/2026-09-13-f70.md)).
+- [x] F71: alinhar skill de farm a revisão/cobertura do World State ([evidências](docs/validacoes/2026-09-13-f71.md)).
+- [x] F72: alinhar identificador Warframe Market entre UI, Core e MCP ([evidências](docs/validacoes/2026-09-13-f72.md)).
+- [x] F73: validar filtro de sindicato e limite inválido do World State no stdio ([evidências](docs/validacoes/2026-09-13-f73.md)).
+- [x] F74: alinhar skill de builds a cobertura e revisão de inventário ([evidências](docs/validacoes/2026-09-13-f74.md)).
+- [x] F75: expor consulta de atividades atuais com revisão World State ([evidências](docs/validacoes/2026-09-13-f75.md)).
+- [x] F76: filtrar atividades World State por texto de recompensa sem inferir ausência ([evidências](docs/validacoes/2026-09-13-f76.md)).
+- [x] F77: manter filtro de recompensa consistente em bounties, atividades e World State ([evidências](docs/validacoes/2026-09-13-f77.md)).
+- [x] F78: adaptar aliases do World State oficial e tornar o endpoint DE a fonte padrão ([evidências](docs/validacoes/2026-09-13-f78.md)).
+- [x] F79: expor a versão do parser na página/status MCP para rastrear procedência ([evidências](docs/validacoes/2026-09-13-f79.md)).
+- [x] F80: derivar automaticamente a versão do parser pela fonte World State usada ([evidências](docs/validacoes/2026-09-13-f80.md)).
+- [x] F81: habilitar fallback comunitário somente para falhas de transporte da fonte oficial ([evidências](docs/validacoes/2026-09-13-f81.md)).
+- [x] F82: exibir a procedência do parser na página visual de status ([evidências](docs/validacoes/2026-09-13-f82.md)).
+- [x] F83: informar a procedência do parser no resultado imediato do sync World State ([evidências](docs/validacoes/2026-09-13-f83.md)).
+- [x] F84: testar que payload oficial inválido não aciona fallback comunitário ([evidências](docs/validacoes/2026-09-13-f84.md)).
+- [x] F85: validar publicação completa do World State oficial até SQLite e status ([evidências](docs/validacoes/2026-09-13-f85.md)).
+- [x] F86: criar verificador operacional do endpoint World State e registrar gate externo ([evidências](docs/validacoes/2026-09-13-f86.md)).
+- [x] F87: permitir validação offline do contrato World State por fixture ([evidências](docs/validacoes/2026-09-13-f87.md)).
+- [x] F88: validar detecção positiva de Mother Token somente em recompensa explícita ([evidências](docs/validacoes/2026-09-13-f88.md)).
+- [x] F89: validar leitura concorrente app/MCP sobre a mesma base SQLite WAL ([evidências](docs/validacoes/2026-09-13-f89.md)).
+- [x] F90: alinhar skill de farm a capacidades, parserVersion e fallback comunitário ([evidências](docs/validacoes/2026-09-13-f90.md)).
+- [x] F91: alinhar skill de builds a capacidades, revisão e procedência do arsenal ([evidências](docs/validacoes/2026-09-13-f91.md)).
+- [x] F92: alinhar skill de economia a estado, revisão e procedência do mercado ([evidências](docs/validacoes/2026-09-13-f92.md)).
+- [x] F93: migrar parserVersion ausente em revisões SQLite legadas sem perda de dados ([evidências](docs/validacoes/2026-09-13-f93.md)).
+- [x] F94: executar suíte completa da solução e build integrado do App/MCP ([evidências](docs/validacoes/2026-09-13-f94.md)).
+- [x] F95: validar backup/rollback e reaplicação da migração SQLite legada ([evidências](docs/validacoes/2026-09-13-f95.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
