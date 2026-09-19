@@ -8,7 +8,7 @@ namespace MyFrame.Mcp;
 public sealed class MyFrameResources(MyFrameQueryService queries, JsonSerializerOptions json)
 {
     public const string Instructions =
-        "My Frame is read-only and never refreshes the market. Start with get_overview. " +
+        "My Frame is read-only and never refreshes the market. Start with get_capabilities and get_sync_status, then get_overview. " +
         "Reuse snapshotId across one analysis and follow nextCursor for lists. Check isError before " +
         "reading structuredContent; missing structuredContent is never an empty inventory. " +
         "On SNAPSHOT_EXPIRED or CURSOR_EXPIRED, start a new analysis with get_overview and restart " +
@@ -27,6 +27,8 @@ public sealed class MyFrameResources(MyFrameQueryService queries, JsonSerializer
         # My Frame MCP schema v1
 
         - `itemId` is the stable technical identifier accepted by `get_item`; names are display/search data.
+        - `get_capabilities` distinguishes available, partial, optional, import-only and externally pending data.
+        - `get_sync_status` is read-only; `not_initialized` means no local sync revision exists and does not trigger network work.
         - Stackable `quantity` is aggregated. Equipment `quantity` is `null`, `quantityKnown=false`, while `owned=true` records presence.
         - Platinum and ducat fields are numeric and named with their unit. A missing price is `null`, never zero.
         - `snapshotId` fixes items, totals, rules, and source generations for one analysis. `servedAt` and current age can change.
