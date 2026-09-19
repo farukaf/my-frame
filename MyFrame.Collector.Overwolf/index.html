@@ -15,8 +15,9 @@
   <h2>Diagnóstico sem valores pessoais</h2>
   <pre id="status" aria-live="polite"></pre>
   <h2>Exportação local explícita</h2>
-  <label for="folder">Pasta absoluta de saída (recomendado: artifacts/collector-f1 do repositório)</label>
+  <label for="folder">Pasta absoluta de saída (a inbox My Frame é sugerida quando disponível)</label>
   <input id="folder" placeholder="C:\caminho\my-frame\artifacts\collector-f1" autocomplete="off">
+  <p id="folder-hint" role="status">Informe uma pasta absoluta; a exportação nunca ocorre automaticamente.</p>
   <button id="report">Salvar relatório de estrutura</button>
   <label class="consent"><input type="checkbox" id="consent"> Autorizar uma cópia do inventário bruto nesta pasta. Pode conter dados pessoais. Não enviar ao GitHub nem à LLM. Excluir após a homologação.</label>
   <button id="capture">Exportar captura privada + marcador</button>
