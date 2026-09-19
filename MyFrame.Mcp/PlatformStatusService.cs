@@ -11,7 +11,8 @@ public sealed record SyncSourceStatusDto(string SourceId, string State, string? 
     long AcceptedRecords, long RejectedRecords);
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
 public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
-    int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode);
+    int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode,
+    string? ActiveCaptureMode = null, string? ActiveCompleteness = null, long? ActiveSequence = null);
 public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
@@ -66,6 +67,21 @@ public sealed class PlatformStatusService
         foreach (var sourceId in SourceIds)
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
+            if (sourceId == "references" && status is null)
+            {
+                var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+                long count = 0, rejected = 0;
+                if (Directory.Exists(directory))
+                    foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+                    {
+                        try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); count++; }
+                        catch (InvalidDataException) { rejected++; }
+                        catch (JsonException) { rejected++; }
+                    }
+                values.Add(new(sourceId, count == 0 ? "not_initialized" : rejected == 0 ? "available" : "partial", null, null, null,
+                    null, count == 0 ? null : "reference-file-1", count, rejected));
+                continue;
+            }
             values.Add(status is null
                 ? new(sourceId, "not_initialized", null, null, null, null, null, 0, 0)
                 : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
@@ -93,8 +109,10 @@ public sealed class PlatformStatusService
 
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         var status = await database.GetStatusAsync("overwolf-inventory", cancellationToken);
+        var revision = await database.GetActiveInventoryRevisionStatusAsync(cancellationToken);
         return new(DateTimeOffset.UtcNow, markers.Length == 0 ? "ready" : "pending",
-            markers.Length, newest, status?.ErrorCode);
+            markers.Length, newest, status?.ErrorCode, revision?.CaptureMode,
+            revision?.Completeness, revision?.Sequence);
     }
 
     public async Task<IReadOnlyList<SyncRunDto>> GetSyncHistoryAsync(

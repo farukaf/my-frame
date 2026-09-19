@@ -7,6 +7,13 @@ namespace MyFrame.Core.Tests;
 public sealed class PublicExportTests
 {
     [Fact]
+    public void PublicExportUsesSeparateOfficialIndexAndDocumentHosts()
+    {
+        Assert.Equal("https://origin.warframe.com/PublicExport/index_en.txt.lzma", PublicExportIndexClient.DefaultIndexUrl);
+        Assert.Equal("https://content.warframe.com/PublicExport/", PublicExportDocumentClient.DefaultBaseUrl);
+    }
+
+    [Fact]
     public void ParsesHashFirstAndPathFirstIndexLines()
     {
         var entries = PublicExportIndexParser.Parse("# comment\nABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789 ExportWarframes_en.json.lzma\nExportWeapons_en.json.lzma 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
