@@ -259,7 +259,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             var world = new WorldStateSnapshot(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, "fixture",
                 [bounty], [new WorldStateCycle("cetusCycle", "day", DateTimeOffset.UtcNow.AddMinutes(-10), DateTimeOffset.UtcNow.AddMinutes(50))], "world-f33", true,
                 new Dictionary<string, InventoryFieldState> { ["motherTokens"] = InventoryFieldState.NotObserved });
-            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1));
+            await database.PublishWorldStateAsync(world, new SyncBatch("worldstate-pc", "world-f33", "{}", 1, "worldstate-official-1"));
         }
         var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
         environment["MYFRAME_DATA_ROOT"] = data.Path;
@@ -279,6 +279,22 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var tools = await client.ListToolsAsync();
         var resources = await client.ListResourcesAsync();
         var prompts = await client.ListPromptsAsync();
+        var concurrentLocalRead = Task.Run(async () =>
+        {
+            await using var localDatabase = new SyncDatabase(Path.Combine(data.Path, "data.db"));
+            for (var index = 0; index < 10; index++)
+            {
+                var localBounties = await localDatabase.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow);
+                Assert.Single(localBounties);
+                await Task.Delay(10);
+            }
+        });
+        var concurrentMcpRead = client.CallToolAsync("get_activity",
+            new Dictionary<string, object?> { ["syndicate"] = "Entrati" }).AsTask();
+        await Task.WhenAll(concurrentLocalRead, concurrentMcpRead);
+        var concurrentResult = await concurrentMcpRead;
+        Assert.NotEqual(true, concurrentResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(concurrentResult.StructuredContent));
         var result = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["includeAccount"] = false });
         var coverageResult = await client.CallToolAsync("get_inventory_coverage");
@@ -338,6 +354,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotEqual(true, syncStatusResult.IsError);
         var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
         Assert.Contains("activeRevisionId", syncStatusJson);
+        Assert.Contains("worldstate-official-1", syncStatusJson);
         Assert.Contains("acceptedRecords", syncStatusJson);
         Assert.Contains("warframe-market", syncStatusJson);
         var bountiesJson = JsonSerializer.Serialize(bountiesResult.StructuredContent);

@@ -1,7 +1,8 @@
 ---
 name: warframe-farm
-version: 2
 description: Montar planos de farm e progressão rastreáveis por aquisição, atividade e inventário.
+metadata:
+  version: "3"
 ---
 
 # Farm and progression
@@ -10,6 +11,7 @@ description: Montar planos de farm e progressão rastreáveis por aquisição, a
 
 - Execute o contrato comum.
 - Fixe `snapshotId`, horário e plataforma.
+- Consulte `get_capabilities` e `get_sync_status` antes dos dados; registre `activeRevisionId` e `parserVersion` da fonte World State.
 - Para atividades, use apenas bounties cuja ativação/expiração cubra o horário da consulta.
 
 ## Procedimento
@@ -21,6 +23,8 @@ description: Montar planos de farm e progressão rastreáveis por aquisição, a
    Só use bounties quando `state=available` e a ativação/expiração cobrir o
    horário; `not_initialized`/`failed` exige sincronização ou confirmação
    externa. `get_bounties` continua como compatibilidade para somente bounties.
+   Se `parserVersion=worldstate-community-1`, identifique a resposta como
+   fallback comunitário; não a apresente como confirmação oficial da DE.
 4. Relacione cada recompensa a sua fonte, tier, chance, quantidade e condição.
    `chance` não é garantia nem taxa de tokens por hora.
 5. Compare alternativas por restrições do usuário (solo, tempo, MR, equipamento,
