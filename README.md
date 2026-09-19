@@ -57,6 +57,7 @@ de domínio. A aplicação fornece os dados; a LLM compõe recomendações e pla
 - [F233: skills condicionadas à prontidão da captura](docs/validacoes/2026-09-14-f233.md)
 - [F234: verificador local do contrato das skills](docs/validacoes/2026-09-14-f234.md)
 - [F235: distribuição 0.0.15 e upgrade side-by-side](docs/validacoes/2026-09-14-f235.md)
+- [F236: smoke read-only do MCP distribuído](docs/validacoes/2026-09-14-f236.md)
 
 A captura completa do inventário e o acesso permitido às fontes comunitárias ainda
 precisam ser comprovados. Os recursos descritos abaixo continuam sendo os atuais.
