@@ -64,6 +64,62 @@ public sealed class SyncHost : IAsyncDisposable
         }
     }
 
+    public Task<SyncPublicationResult?> RunPublicExportOnceAsync(string sourceId,
+        PublicExportDocumentClient client, PublicExportIndexEntry entry, Uri? baseUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return RunCatalogOnceAsync(sourceId,
+            token => client.FetchPublicationAsync(entry, sourceId, baseUri, token), cancellationToken);
+    }
+
+    public Task<SyncPublicationResult?> RunPublicExportLatestOnceAsync(string sourceId,
+        PublicExportIndexClient indexClient, PublicExportDocumentClient documentClient,
+        string relativePath, Uri? indexUri = null, Uri? baseUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(indexClient);
+        ArgumentNullException.ThrowIfNull(documentClient);
+        if (string.IsNullOrWhiteSpace(relativePath)) throw new ArgumentException("Export path is required.", nameof(relativePath));
+        return RunCatalogOnceAsync(sourceId, async token =>
+        {
+            var entries = await indexClient.FetchIndexAsync(indexUri, token);
+            var entry = entries.FirstOrDefault(value => string.Equals(value.RelativePath, relativePath, StringComparison.Ordinal));
+            if (entry is null) throw new InvalidDataException("PUBLIC_EXPORT_ENTRY_NOT_FOUND");
+            return await documentClient.FetchPublicationAsync(entry, sourceId, baseUri, token);
+        }, cancellationToken);
+    }
+
+    public async Task<SyncPublicationResult?> RunWorldStateOnceAsync(WorldStateClient client,
+        Uri? uri = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        await StartAsync(cancellationToken);
+        try
+        {
+            var (snapshot, batch) = await client.FetchAsync(uri, cancellationToken);
+            var result = await _database.PublishWorldStateAsync(snapshot, batch, cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception error)
+        {
+            await _database.RecordFailureAsync("worldstate-pc", ErrorCode(error), cancellationToken);
+            _lastRunAt = DateTimeOffset.UtcNow;
+            return null;
+        }
+    }
+
+    public async Task<int> RunMaintenanceAsync(int maximumRevisionsPerSource = 3,
+        CancellationToken cancellationToken = default)
+    {
+        await StartAsync(cancellationToken);
+        var removed = await _database.PruneRetainedAsync(maximumRevisionsPerSource, cancellationToken);
+        _lastRunAt = DateTimeOffset.UtcNow;
+        return removed;
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         await _lifecycle.WaitAsync(cancellationToken);
