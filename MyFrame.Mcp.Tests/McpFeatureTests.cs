@@ -35,6 +35,12 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal("community", hit.License);
             Assert.Equal("tester", hit.Author);
             Assert.False(hit.TrustedForFacts);
+            var status = await new PlatformStatusService().GetSyncStatusAsync();
+            var referenceStatus = Assert.Single(status.Sources, value => value.SourceId == "references");
+            Assert.Equal("partial", referenceStatus.State);
+            Assert.Equal("reference-file-1", referenceStatus.ParserVersion);
+            Assert.Equal(1, referenceStatus.AcceptedRecords);
+            Assert.Equal(1, referenceStatus.RejectedRecords);
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
