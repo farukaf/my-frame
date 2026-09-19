@@ -235,12 +235,13 @@
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="14">
-                                    <Grid ColumnDefinitions="2*,*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                                    <Grid ColumnDefinitions="2*,*,2*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
                                         <Label Text="{Binding DisplayName}" TextColor="#F4F7FB" FontFamily="OpenSansSemibold" />
                                         <Label Grid.Column="1" Text="{Binding State}" TextColor="#7DE2D1" />
                                         <Label Grid.Column="2" Text="{Binding LastRun}" Style="{StaticResource Muted}" HorizontalTextAlignment="End" />
                                         <Label Grid.Row="1" Text="{Binding Detail}" Style="{StaticResource Muted}" />
                                         <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Revision, StringFormat='Revision: {0}'}" Style="{StaticResource Muted}" HorizontalTextAlignment="End" />
+                                        <Label Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding ParserVersion, StringFormat='Parser: {0}'}" Style="{StaticResource Muted}" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
