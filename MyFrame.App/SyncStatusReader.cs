@@ -10,6 +10,11 @@ public sealed record SyncSourceStatusRow(
     string Detail,
     string Revision,
     string LastRun);
+public sealed record SyncAttemptStatusRow(
+    string SourceId,
+    string State,
+    string StartedAt,
+    string Detail);
 
 public sealed class SyncStatusReader
 {
@@ -35,6 +40,23 @@ public sealed class SyncStatusReader
             rows.Add(status is null ? NotInitialized(source) : Map(source, status));
         }
         return rows;
+    }
+
+    public async Task<IReadOnlyList<SyncAttemptStatusRow>> ReadRecentRunsAsync(CancellationToken cancellationToken = default)
+    {
+        var path = MyFrameStoragePaths.DataDatabasePath;
+        if (!File.Exists(path)) return [];
+        await using var database = new SyncDatabase(path);
+        var runs = await database.GetRecentRunsAsync(sourceId: null, limit: 30, cancellationToken: cancellationToken);
+        return runs.Select(run => new SyncAttemptStatusRow(
+            run.SourceId,
+            run.State,
+            run.StartedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
+            $"{run.StartedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} · " +
+            (run.ErrorCode is null
+                ? $"Accepted {run.RecordsAccepted:N0}; rejected {run.RecordsRejected:N0}"
+                : $"Error: {run.ErrorCode}")))
+            .ToArray();
     }
 
     private static SyncSourceStatusRow NotInitialized((string Id, string Name) source) =>

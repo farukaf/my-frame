@@ -17,6 +17,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     public string CollectorCaptureDirectory => collectorCaptureInbox.DirectoryPath;
     public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
+    public ObservableCollection<SyncAttemptStatusRow> SyncAttempts { get; } = [];
 
     [RelayCommand]
     public async Task RefreshSyncStatusAsync()
@@ -29,6 +30,9 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
             var rows = await reader.ReadAsync();
             SyncSources.Clear();
             foreach (var row in rows) SyncSources.Add(row);
+            var attempts = await reader.ReadRecentRunsAsync();
+            SyncAttempts.Clear();
+            foreach (var attempt in attempts) SyncAttempts.Add(attempt);
             SyncStatusMessage = "Read-only view of the shared My Frame SQLite store.";
         }
         catch (Exception error)
