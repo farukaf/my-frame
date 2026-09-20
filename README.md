@@ -101,6 +101,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F9 — skills de domínio para clientes LLM](docs/validacoes/2026-09-13-f9.md)
 - [Avaliação F10 — casos reproduzíveis de respostas MCP](docs/avaliacao/2026-09-13-f10.md)
 - Verificador local: `./scripts/Test-F10Evaluation.ps1`
+- [Validação F11 — página visual de status de sincronização](docs/validacoes/2026-09-13-f11.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

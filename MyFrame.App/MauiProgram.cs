@@ -32,6 +32,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAlecaFrameChangeMonitor, FileSystemAlecaFrameChangeMonitor>();
         builder.Services.AddSingleton(new AlecaFrameDirectorySettings(automaticAlecaDirectory));
         builder.Services.AddSingleton<LocalSettings>();
+        builder.Services.AddSingleton<SyncStatusReader>();
         builder.Services.AddSingleton<WindowPlacementService>();
         builder.Services.AddSingleton<IFolderPicker, MauiFolderPicker>();
         builder.Services.AddSingleton<IExternalBrowser, MauiExternalBrowser>();
