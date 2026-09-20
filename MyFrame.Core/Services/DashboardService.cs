@@ -69,8 +69,8 @@ public sealed class DashboardService : IDashboardService
             if (_snapshotProvider is not null)
             {
                 var local = await _snapshotProvider.GetAsync(cancellationToken: cancellationToken);
-                inventory = local.Inventory ?? throw new InvalidDataException("AlecaFrame inventory is unavailable.");
-                _catalog = local.Catalog ?? throw new InvalidDataException("AlecaFrame catalog is unavailable.");
+                inventory = local.Inventory ?? throw new InvalidDataException("Synchronized inventory is unavailable.");
+                _catalog = local.Catalog ?? throw new InvalidDataException("Synchronized catalog is unavailable.");
                 quotes = local.Quotes.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
                 account = local.Account;
                 orders = local.Orders;

@@ -54,13 +54,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _logger.LogInformation("Dashboard view initialized");
         await SyncStatus.RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
-        if (directoryError is not null)
+        var hasSynchronizedData = false;
+        try
         {
-            GlobalStatus.StatusMessage = "AlecaFrame data folder needs to be configured.";
+            hasSynchronizedData = await SyncStatus.HasSynchronizedDataAsync();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or NotSupportedException)
+        {
+            _logger.LogWarning(error, "Synchronized SQLite data could not be inspected during startup");
+        }
+        if (directoryError is not null && !hasSynchronizedData)
+        {
+            GlobalStatus.StatusMessage = "No synchronized Warframe data is available yet.";
             Settings.AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
             ShowSection("Settings");
             return;
         }
+        if (directoryError is not null)
+            GlobalStatus.StatusMessage = "Using synchronized My Frame data; legacy AlecaFrame import is optional.";
         await RefreshCoreAsync();
     }
 
