@@ -485,30 +485,14 @@ public sealed class SyncDatabase : IAsyncDisposable
             }.ToString()))
             await using (var backupTarget = new SqliteConnection(new SqliteConnectionStringBuilder
             {
-                DataSource = temporary, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false
+                DataSource = _path, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false
             }.ToString()))
             {
                 await backupSource.OpenAsync(cancellationToken);
                 await backupTarget.OpenAsync(cancellationToken);
                 backupSource.BackupDatabase(backupTarget);
             }
-            for (var attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    if (File.Exists(_path)) File.SetAttributes(_path, FileAttributes.Normal);
-                    File.Move(temporary, _path, true);
-                    break;
-                }
-                catch (IOException) when (attempt < 20)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
-                }
-                catch (UnauthorizedAccessException) when (attempt < 20)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
-                }
-            }
+            SqliteConnection.ClearAllPools();
             foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
