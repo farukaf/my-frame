@@ -41,12 +41,23 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
+        await EnsureSchemaCompatibilityAsync(connection, cancellationToken);
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
         command.Parameters.AddWithValue("$at", DateTimeOffset.UtcNow.ToString("O"));
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task EnsureSchemaCompatibilityAsync(SqliteConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT MAX(version) FROM schema_migrations;";
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        if (value is not null && value is not DBNull && Convert.ToInt32(value) > SchemaVersion)
+            throw new NotSupportedException("SYNC_SCHEMA_NEWER");
     }
 
     public async Task<SyncPublicationResult> PublishAsync(SyncBatch batch, CancellationToken cancellationToken = default)
