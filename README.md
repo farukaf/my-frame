@@ -167,6 +167,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F74 — skill de builds alinhada à cobertura v2](docs/validacoes/2026-09-13-f74.md)
 - [Validação F75 — consulta de atividades no MCP](docs/validacoes/2026-09-13-f75.md)
 - [Validação F76 — filtro de recompensa nas atividades](docs/validacoes/2026-09-13-f76.md)
+- [Validação F77 — filtro de recompensa consistente](docs/validacoes/2026-09-13-f77.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

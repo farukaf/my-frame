@@ -289,6 +289,8 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var loadoutResult = await client.CallToolAsync("get_loadout",
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
+        var rewardBountiesResult = await client.CallToolAsync("get_bounties",
+            new Dictionary<string, object?> { ["reward"] = "endo" });
         var syncStatusResult = await client.CallToolAsync("get_sync_status");
         var activityResult = await client.CallToolAsync("get_activity",
             new Dictionary<string, object?> { ["syndicate"] = "Entrati" });
@@ -332,6 +334,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotNull(loadoutResult.StructuredContent);
         Assert.Contains("/Lotus/Mod", JsonSerializer.Serialize(loadoutResult.StructuredContent));
         Assert.NotEqual(true, bountiesResult.IsError);
+        Assert.NotEqual(true, rewardBountiesResult.IsError);
         Assert.NotNull(bountiesResult.StructuredContent);
         Assert.NotEqual(true, syncStatusResult.IsError);
         var syncStatusJson = JsonSerializer.Serialize(syncStatusResult.StructuredContent);
@@ -344,6 +347,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains("Endo", bountiesJson);
         Assert.NotEqual(true, worldStateResult.IsError);
         Assert.NotEqual(true, activityResult.IsError);
+        Assert.Contains("deimos-f33", JsonSerializer.Serialize(rewardBountiesResult.StructuredContent));
         Assert.NotEqual(true, rewardActivityResult.IsError);
         Assert.Contains("deimos-f33", JsonSerializer.Serialize(activityResult.StructuredContent));
         Assert.Contains("deimos-f33", JsonSerializer.Serialize(rewardActivityResult.StructuredContent));
