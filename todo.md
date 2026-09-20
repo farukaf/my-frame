@@ -130,6 +130,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F90: alinhar skill de farm a capacidades, parserVersion e fallback comunitário ([evidências](docs/validacoes/2026-09-13-f90.md)).
 - [x] F91: alinhar skill de builds a capacidades, revisão e procedência do arsenal ([evidências](docs/validacoes/2026-09-13-f91.md)).
 - [x] F92: alinhar skill de economia a estado, revisão e procedência do mercado ([evidências](docs/validacoes/2026-09-13-f92.md)).
+- [x] F93: migrar parserVersion ausente em revisões SQLite legadas sem perda de dados ([evidências](docs/validacoes/2026-09-13-f93.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
