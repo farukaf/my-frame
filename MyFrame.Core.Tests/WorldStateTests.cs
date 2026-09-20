@@ -79,6 +79,19 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientLabelsParserByWorldStateEndpoint()
+    {
+        const string json = "{\"Timestamp\":{\"$date\":{\"$numberLong\":\"1789291200000\"}},\"SyndicateMissions\":[]}";
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+
+        var official = await new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.DefaultUrl));
+        var community = await new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.CommunityFallbackUrl));
+
+        Assert.Equal("worldstate-official-1", official.Batch.ParserVersion);
+        Assert.Equal("worldstate-community-1", community.Batch.ParserVersion);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedWorldStateRevision()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[{\"id\":\"job-1\",\"type\":\"Sample bounty\",\"rewardPoolDrops\":[{\"item\":\"Endo\",\"chance\":50,\"count\":100,\"rarity\":\"Common\"}]}]}] }";
