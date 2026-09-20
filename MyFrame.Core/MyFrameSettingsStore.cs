@@ -27,6 +27,7 @@ public static class MyFrameStoragePaths
     public static string PriceCachePath => Path.Combine(RootDirectory, "market-quotes.json");
     public static string MarketStatePath => Path.Combine(RootDirectory, "market-data.dat");
     public static string MarketItemIndexPath => Path.Combine(RootDirectory, "market-items.dat");
+    public static string MarketTokenPath => Path.Combine(RootDirectory, "warframe-market.token");
     public static string DefaultAlecaFrameDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlecaFrame");
 }

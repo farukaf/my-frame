@@ -40,6 +40,17 @@ public sealed class WarframeMarketClientTests
         Assert.Empty(handler.Requests);
     }
 
+    [Fact]
+    public async Task UsesIndependentCredentialStoreWithoutAlecaPath()
+    {
+        var handler = new RecordingHandler();
+        var client = new WarframeMarketClient(new HttpClient(handler), new StaticTokenStore(CreateToken(DateTimeOffset.UtcNow.AddHours(1))));
+        var account = await client.GetAccountAsync();
+        Assert.Equal("Tenno", account?.IngameName);
+        Assert.Single(handler.Requests);
+        Assert.NotNull(handler.Requests[0].Authorization);
+    }
+
     private static string CreateToken(DateTimeOffset expires)
     {
         static string Encode(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
@@ -64,4 +75,9 @@ public sealed class WarframeMarketClientTests
     }
 
     private sealed record RequestRecord(HttpMethod Method, string? Authorization);
+
+    private sealed class StaticTokenStore(string? token) : IMarketTokenStore
+    {
+        public Task<string?> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(token);
+    }
 }
