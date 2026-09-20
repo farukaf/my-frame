@@ -17,14 +17,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
         IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader,
-        CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher collectorCaptureWatcher)
+        CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher collectorCaptureWatcher,
+        WorldStateSyncService worldStateSync)
     {
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
         GlobalStatus = new(); ExternalBrowser = externalBrowser;
         Sales = new(settings);
-        SyncStatus = new(syncStatusReader, collectorCaptureInbox, collectorCaptureWatcher, logger);
+        SyncStatus = new(syncStatusReader, collectorCaptureInbox, collectorCaptureWatcher, worldStateSync, logger);
         collectorCaptureWatcher.CaptureDetected += (_, _) => SyncStatus.HandleCaptureDetected();
         Settings = new(alecaPath, directorySettings, preferences, localSettings, folderPicker, settings, RefreshCoreAsync,
             message => GlobalStatus.StatusMessage = message);
