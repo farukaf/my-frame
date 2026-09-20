@@ -41,6 +41,22 @@ public sealed class WorldStateTests
         Assert.Equal(0, result.Batch.RecordCount);
     }
 
+    [Fact]
+    public async Task HostPublishesFetchedWorldStateRevision()
+    {
+        const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[]}] }";
+        using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await host.RunWorldStateOnceAsync(new WorldStateClient(client), new Uri("https://fixture.invalid/world"));
+
+        Assert.NotNull(result);
+        var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.Parse("2026-09-13T12:30:00Z"));
+        Assert.Equal("Entrati", Assert.Single(bounties).Syndicate);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>

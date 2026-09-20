@@ -132,6 +132,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F39 — manutenção do SyncHost](docs/validacoes/2026-09-13-f39.md)
 - [Validação F40 — preflight sem mutação de schema futuro](docs/validacoes/2026-09-13-f40.md)
 - [Validação F41 — publicação integrada do Public Export](docs/validacoes/2026-09-13-f41.md)
+- [Validação F42 — publicação integrada do World State](docs/validacoes/2026-09-13-f42.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
