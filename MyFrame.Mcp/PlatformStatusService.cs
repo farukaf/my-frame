@@ -9,6 +9,9 @@ public sealed record SyncSourceStatusDto(string SourceId, string State, string? 
 public sealed record SyncStatusResponse(DateTimeOffset ServedAt, IReadOnlyList<SyncSourceStatusDto> Sources);
 public sealed record CaptureInboxStatusResponse(DateTimeOffset ServedAt, string State,
     int PendingMarkers, DateTimeOffset? NewestMarkerAt, string? LastErrorCode);
+public sealed record SyncRunDto(string RunId, string SourceId, string State,
+    DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
+    long RecordsAccepted, long RecordsRejected, string? ErrorCode);
 
 public sealed class PlatformStatusService
 {
@@ -58,5 +61,15 @@ public sealed class PlatformStatusService
         var status = await database.GetStatusAsync("overwolf-inventory", cancellationToken);
         return new(DateTimeOffset.UtcNow, markers.Length == 0 ? "ready" : "pending",
             markers.Length, newest, status?.ErrorCode);
+    }
+
+    public async Task<IReadOnlyList<SyncRunDto>> GetSyncHistoryAsync(
+        int limit = 20, string? sourceId = null, CancellationToken cancellationToken = default)
+    {
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var runs = await database.GetRecentRunsAsync(sourceId, Math.Clamp(limit, 1, 100), cancellationToken);
+        return runs.Select(run => new SyncRunDto(run.RunId, run.SourceId, run.State,
+            run.StartedAt, run.FinishedAt, run.RecordsReceived, run.RecordsAccepted,
+            run.RecordsRejected, run.ErrorCode)).ToArray();
     }
 }
