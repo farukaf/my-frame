@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using System.Text.Json;
 
 namespace MyFrame.Core.Sync;
 
@@ -33,6 +34,11 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
+            CREATE TABLE IF NOT EXISTS worldstate_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), source_timestamp TEXT, retrieved_at TEXT NOT NULL, is_current INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS worldstate_bounties(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), bounty_id TEXT NOT NULL, syndicate TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, bounty_id));
+            CREATE TABLE IF NOT EXISTS worldstate_jobs(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, type TEXT, unique_name TEXT, minimum_mastery_rank INTEGER, standing_stages_json TEXT NOT NULL, PRIMARY KEY(revision_id, bounty_id, job_id));
+            CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
+            CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
@@ -42,14 +48,14 @@ public sealed class SyncDatabase : IAsyncDisposable
     }
 
     public async Task<SyncPublicationResult> PublishAsync(SyncBatch batch, CancellationToken cancellationToken = default)
-        => await PublishInternalAsync(batch, null, null, cancellationToken);
+        => await PublishInternalAsync(batch, null, null, null, cancellationToken);
 
     public async Task<SyncPublicationResult> PublishCatalogAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord> records, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(records);
         if (records.Count != batch.RecordCount) throw new ArgumentException("Catalog record count does not match batch.", nameof(records));
         if (records.Select(record => record.UniqueName).Distinct(StringComparer.Ordinal).Count() != records.Count) throw new ArgumentException("Catalog contains duplicate unique names.", nameof(records));
-        return await PublishInternalAsync(batch, records, null, cancellationToken);
+        return await PublishInternalAsync(batch, records, null, null, cancellationToken);
     }
 
     public async Task<SyncPublicationResult> PublishInventoryAsync(InventoryEnvelope envelope, InventoryProjection projection, CancellationToken cancellationToken = default)
@@ -58,7 +64,14 @@ public sealed class SyncDatabase : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(projection);
         if (envelope.Completeness is not ("verified" or "unverified")) throw new ArgumentException("Inventory completeness is invalid.", nameof(envelope));
         var batch = new SyncBatch("overwolf-inventory", envelope.ContentHash, envelope.PayloadJson, projection.Equipment.Count + projection.Stackables.Count, "overwolf-native-1");
-        return await PublishInternalAsync(batch, null, (envelope, projection), cancellationToken);
+        return await PublishInternalAsync(batch, null, (envelope, projection), null, cancellationToken);
+    }
+
+    public async Task<SyncPublicationResult> PublishWorldStateAsync(WorldStateSnapshot snapshot, SyncBatch batch, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (!string.Equals(batch.SourceId, "worldstate-pc", StringComparison.Ordinal) || !string.Equals(batch.ContentHash, snapshot.ContentHash, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("World State batch does not match snapshot.", nameof(batch));
+        return await PublishInternalAsync(batch, null, null, (snapshot, batch), cancellationToken);
     }
 
     public async Task<IReadOnlyList<PublicExportRecord>> GetPublicExportItemsAsync(string sourceId, CancellationToken cancellationToken = default)
@@ -101,7 +114,27 @@ public sealed class SyncDatabase : IAsyncDisposable
         return records;
     }
 
-    private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, (InventoryEnvelope Envelope, InventoryProjection Projection)? inventory, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WorldStateBounty>> GetCurrentWorldStateBountiesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT b.bounty_id, b.syndicate, b.activation, b.expiry
+            FROM worldstate_bounties b JOIN worldstate_revisions wr ON wr.revision_id=b.revision_id
+            JOIN source_revisions r ON r.revision_id=wr.revision_id
+            WHERE r.source_id='worldstate-pc' AND r.state='active' AND (b.activation IS NULL OR b.activation <= $now) AND (b.expiry IS NULL OR b.expiry > $now)
+            ORDER BY b.bounty_id;
+            """;
+        command.Parameters.AddWithValue("$now", now.ToString("O"));
+        var result = new List<WorldStateBounty>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), ParseDate(reader, 2), ParseDate(reader, 3), []));
+        return result;
+    }
+
+    private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, (InventoryEnvelope Envelope, InventoryProjection Projection)? inventory, (WorldStateSnapshot Snapshot, SyncBatch Batch)? worldState = null, CancellationToken cancellationToken = default)
     {
         Validate(batch);
         await _writer.WaitAsync(cancellationToken);
@@ -149,6 +182,25 @@ public sealed class SyncDatabase : IAsyncDisposable
                     var unknown = data.Projection.Unknown[index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_unknown(revision_id, ordinal, kind, reason_code, raw_json) VALUES ($revision, $ordinal, $kind, $reason, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$kind", unknown.Kind), ("$reason", unknown.ReasonCode), ("$raw", unknown.RawJson));
                 }
+            }
+            if (worldState is { } world)
+            {
+                await CommandAsync(connection, transaction, "INSERT INTO worldstate_revisions(revision_id, source_timestamp, retrieved_at, is_current) VALUES ($revision, $sourceTimestamp, $retrieved, 1);", cancellationToken, ("$revision", revisionId), ("$sourceTimestamp", (object?)world.Snapshot.SourceTimestamp?.ToString("O") ?? DBNull.Value), ("$retrieved", world.Snapshot.RetrievedAt.ToString("O")));
+                foreach (var bounty in world.Snapshot.Bounties)
+                {
+                    await CommandAsync(connection, transaction, "INSERT INTO worldstate_bounties(revision_id, bounty_id, syndicate, activation, expiry) VALUES ($revision, $id, $syndicate, $activation, $expiry);", cancellationToken, ("$revision", revisionId), ("$id", bounty.Id), ("$syndicate", (object?)bounty.Syndicate ?? DBNull.Value), ("$activation", (object?)bounty.Activation?.ToString("O") ?? DBNull.Value), ("$expiry", (object?)bounty.Expiry?.ToString("O") ?? DBNull.Value));
+                    foreach (var job in bounty.Jobs)
+                    {
+                        await CommandAsync(connection, transaction, "INSERT INTO worldstate_jobs(revision_id, bounty_id, job_id, type, unique_name, minimum_mastery_rank, standing_stages_json) VALUES ($revision, $bounty, $job, $type, $unique, $mr, $stages);", cancellationToken, ("$revision", revisionId), ("$bounty", bounty.Id), ("$job", job.Id), ("$type", (object?)job.Type ?? DBNull.Value), ("$unique", (object?)job.UniqueName ?? DBNull.Value), ("$mr", (object?)job.MinimumMasteryRank ?? DBNull.Value), ("$stages", JsonSerializer.Serialize(job.StandingStages)));
+                        for (var index = 0; index < job.Rewards.Count; index++)
+                        {
+                            var reward = job.Rewards[index];
+                            await CommandAsync(connection, transaction, "INSERT INTO worldstate_rewards(revision_id, bounty_id, job_id, ordinal, item, chance, count, rarity) VALUES ($revision, $bounty, $job, $ordinal, $item, $chance, $count, $rarity);", cancellationToken, ("$revision", revisionId), ("$bounty", bounty.Id), ("$job", job.Id), ("$ordinal", index), ("$item", reward.Item), ("$chance", (object?)reward.Chance ?? DBNull.Value), ("$count", (object?)reward.Count ?? DBNull.Value), ("$rarity", (object?)reward.Rarity ?? DBNull.Value));
+                        }
+                    }
+                }
+                foreach (var cycle in world.Snapshot.Cycles)
+                    await CommandAsync(connection, transaction, "INSERT INTO worldstate_cycles(revision_id, name, state, activation, expiry) VALUES ($revision, $name, $state, $activation, $expiry);", cancellationToken, ("$revision", revisionId), ("$name", cycle.Name), ("$state", (object?)cycle.State ?? DBNull.Value), ("$activation", (object?)cycle.Activation?.ToString("O") ?? DBNull.Value), ("$expiry", (object?)cycle.Expiry?.ToString("O") ?? DBNull.Value));
             }
             await transaction.CommitAsync(cancellationToken);
             return new SyncPublicationResult(runId, revisionId, false, batch.RecordCount);
@@ -219,5 +271,6 @@ public sealed class SyncDatabase : IAsyncDisposable
     }
     private static async Task ExecuteAsync(SqliteConnection connection, string sql, CancellationToken token = default) { await using var command = connection.CreateCommand(); command.CommandText = sql; await command.ExecuteNonQueryAsync(token); }
     private static async Task CommandAsync(SqliteConnection c, SqliteTransaction? t, string sql, CancellationToken token, params (string Name, object Value)[] args) { await using var command = c.CreateCommand(); if (t is not null) command.Transaction = t; command.CommandText = sql; foreach (var (name, value) in args) command.Parameters.AddWithValue(name, value); await command.ExecuteNonQueryAsync(token); }
+    private static DateTimeOffset? ParseDate(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : DateTimeOffset.Parse(reader.GetString(ordinal));
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
 }
