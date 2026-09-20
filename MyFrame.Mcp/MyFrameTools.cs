@@ -37,6 +37,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
     public Task<IReadOnlyList<InventoryCoverageDto>> GetInventoryCoverage(CancellationToken cancellationToken = default) =>
         platform.GetInventoryCoverageAsync(cancellationToken);
 
+    [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
+    public Task<IReadOnlyList<InventoryEquipmentDto>> GetEquipment(
+        [Description("Optional exact typeId/uniqueName filter.")] string? typeId = null,
+        [Description("Maximum number of instances from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetInventoryEquipmentAsync(typeId, limit, cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]

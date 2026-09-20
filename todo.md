@@ -70,6 +70,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F30: expor cobertura por campo do inventário no MCP sem transformar ausência em zero ([evidências](docs/validacoes/2026-09-13-f30.md)).
 - [x] F31: validar fluxo sintético coletor → inbox → SQLite → leitor/MCP stdio ([evidências](docs/validacoes/2026-09-13-f31.md)).
 - [x] F32: testar upgrade de banco legado com migração compatível sem perda de schema ([evidências](docs/validacoes/2026-09-13-f32.md)).
+- [x] F33: expor equipamentos instanciados, rank/config e cobertura no MCP ([evidências](docs/validacoes/2026-09-13-f33.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
