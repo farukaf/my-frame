@@ -67,7 +67,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (directoryError is not null && !hasSynchronizedData)
         {
             GlobalStatus.StatusMessage = "No synchronized Warframe data is available yet.";
-            Settings.AlecaFrameDirectoryMessage = $"{directoryError} Choose the AlecaFrame data folder to continue.";
+            Settings.AlecaFrameDirectoryMessage = $"{directoryError} You can choose a legacy folder, but it is not required for SQLite data.";
             ShowSection("Settings");
             return;
         }

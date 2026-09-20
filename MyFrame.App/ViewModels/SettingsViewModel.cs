@@ -36,7 +36,7 @@ public partial class SettingsViewModel : ObservableObject
     }
     [ObservableProperty] public partial bool IsVisible { get; set; }
     [ObservableProperty] public partial string AlecaFrameDirectory { get; set; } = "";
-    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Using the detected AlecaFrame folder.";
+    [ObservableProperty] public partial string AlecaFrameDirectoryMessage { get; set; } = "Optional legacy import. Synchronized SQLite data is preferred.";
     [ObservableProperty] public partial string McpExecutablePath { get; set; } = "";
     [ObservableProperty] public partial string CodexMcpCommand { get; set; } = "";
     [ObservableProperty] public partial string ClaudeMcpCommand { get; set; } = "";
@@ -55,7 +55,7 @@ public partial class SettingsViewModel : ObservableObject
         _localSettings.AlecaFrameDirectory = directory;
         _alecaPath.SetDirectory(directory);
         AlecaFrameDirectory = directory;
-        AlecaFrameDirectoryMessage = "Folder saved. Legacy inventory and catalog import use this location; market credentials stay in My Frame storage.";
+        AlecaFrameDirectoryMessage = "Legacy folder saved. SQLite synchronized data remains the primary source.";
         _setStatus?.Invoke("AlecaFrame folder configured. Loading data…");
         await _refresh();
     }
@@ -64,11 +64,11 @@ public partial class SettingsViewModel : ObservableObject
     private void ResetAlecaFrameDirectory()
     {
         _preferences.Remove(AlecaFrameDirectorySettings.PreferenceKey);
-        _localSettings.AlecaFrameDirectory = _directorySettings.AutomaticDirectory;
-        _alecaPath.SetDirectory(_directorySettings.AutomaticDirectory);
+        _localSettings.AlecaFrameDirectory = string.Empty;
+        _alecaPath.SetDirectory(string.Empty);
         AlecaFrameDirectory = _alecaPath.DirectoryPath;
         var error = AlecaFrameDirectorySettings.ValidationError(AlecaFrameDirectory);
-        AlecaFrameDirectoryMessage = error is null ? "Restored automatic detection (%LOCALAPPDATA%\\AlecaFrame)." : $"Automatic location restored, but it is not ready: {error}";
+        AlecaFrameDirectoryMessage = error is null ? "Legacy folder cleared; SQLite synchronized data remains primary." : $"Legacy folder cleared. SQLite data remains usable; optional import is not ready: {error}";
         if (error is not null) _setStatus?.Invoke("AlecaFrame data folder needs to be configured.");
     }
 
