@@ -110,6 +110,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F70: comunicar na UI que AlecaFrame é importação legada opcional ([evidências](docs/validacoes/2026-09-13-f70.md)).
 - [x] F71: alinhar skill de farm a revisão/cobertura do World State ([evidências](docs/validacoes/2026-09-13-f71.md)).
 - [x] F72: alinhar identificador Warframe Market entre UI, Core e MCP ([evidências](docs/validacoes/2026-09-13-f72.md)).
+- [x] F73: validar filtro de sindicato e limite inválido do World State no stdio ([evidências](docs/validacoes/2026-09-13-f73.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
