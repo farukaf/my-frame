@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView x:Class="MyFrame.App.Components.SyncStatus" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid IsVisible="{Binding IsVisible}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14">
+    <Grid IsVisible="{Binding IsVisible}" RowDefinitions="Auto,Auto,Auto,*,180" RowSpacing="14">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
             <VerticalStackLayout Spacing="2">
                 <Label Text="Synchronization status" Style="{DynamicResource Title}" />
@@ -27,6 +27,7 @@
                 <HorizontalStackLayout Spacing="8">
                     <ActivityIndicator IsRunning="{Binding IsImportingCollectorCaptures}" IsVisible="{Binding IsImportingCollectorCaptures}" Color="#7DE2D1" WidthRequest="16" />
                     <Label Text="{Binding CollectorCaptureMessage}" Style="{DynamicResource Muted}" VerticalOptions="Center" />
+                    <Label Text="{Binding CollectorCaptureNotice}" TextColor="#F4C76D" IsVisible="{Binding CollectorCaptureNoticeVisible}" />
                 </HorizontalStackLayout>
             </VerticalStackLayout>
         </Border>
@@ -46,5 +47,22 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+        <Border Grid.Row="4" Style="{DynamicResource Card}" Padding="12">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Recent synchronization attempts" Style="{DynamicResource SectionTitle}" />
+                <CollectionView ItemsSource="{Binding SyncAttempts}" SelectionMode="None">
+                    <CollectionView.EmptyView><Label Text="No synchronization attempts recorded." Style="{DynamicResource Muted}" /></CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="2*,*,2*" ColumnSpacing="10" Padding="0,2">
+                                <Label Text="{Binding SourceId}" Style="{DynamicResource Muted}" />
+                                <Label Grid.Column="1" Text="{Binding State}" TextColor="#7DE2D1" />
+                                <Label Grid.Column="2" Text="{Binding Detail}" Style="{DynamicResource Muted}" HorizontalTextAlignment="End" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
     </Grid>
 </ContentView>
