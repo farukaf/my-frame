@@ -45,6 +45,16 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Maximum number of instances from 1 to 200; default 100.")] int limit = 100,
         CancellationToken cancellationToken = default) => platform.GetInventoryEquipmentAsync(typeId, limit, cancellationToken);
 
+    [McpServerTool(Name = "get_mods", Title = "Get observed mods and upgrades", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Returns observed mod/upgrade metadata attributed to an equipment instance when the capture supplied that relation. Missing attribution remains null; no build capacity or polarity is inferred.")]
+    public Task<IReadOnlyList<InventoryUpgradeDto>> GetMods(
+        [Description("Optional exact equipment instanceId filter.")] string? ownerInstanceId = null,
+        [Description("Optional source array filter, such as mods, upgrades, or RawUpgrades.")] string? sourceField = null,
+        [Description("Maximum number of entries from 1 to 200; default 100.")] int limit = 100,
+        CancellationToken cancellationToken = default) => platform.GetInventoryUpgradesAsync(
+            ownerInstanceId, sourceField, limit, cancellationToken);
+
     [McpServerTool(Name = "get_overview", Title = "Get My Frame overview", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Start here. Returns inventory totals, source health, market coverage, active settings and an optional account name. Reuse its snapshotId for one consistent analysis.")]
