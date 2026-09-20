@@ -46,7 +46,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
 - [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
 - [ ] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede.
-- [ ] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis.
+- [x] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis ([skills](skills/README.md), [evidências](docs/validacoes/2026-09-13-f9.md)).
 - [ ] F9: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.

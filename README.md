@@ -98,3 +98,8 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F6 — credencial de mercado independente](docs/validacoes/2026-09-13-f6.md)
 - [Validação F7 — referências Wiki/Overframe](docs/validacoes/2026-09-13-f7.md)
 - [Validação F8 — capacidades e status MCP](docs/validacoes/2026-09-13-f8.md)
+- [Validação F9 — skills de domínio para clientes LLM](docs/validacoes/2026-09-13-f9.md)
+
+As skills versionadas para análise de builds, farm/progressão e economia ficam em
+[`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
+cobertura, fontes e incerteza; não substituem os dados do MCP.
