@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
-$artifactRoot = Join-Path $repository 'artifacts'
+$artifactRoot = Join-Path $repository 'artifacts\distribution\packages'
 $output = Join-Path $artifactRoot "MyFrame-$Version-$RuntimeIdentifier"
 
 if (Test-Path -LiteralPath $output) {
