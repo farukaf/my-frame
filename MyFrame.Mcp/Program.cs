@@ -32,6 +32,7 @@ builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>
 builder.Services.AddSingleton<CursorCodec>();
 builder.Services.AddSingleton<MyFrameQueryService>();
 builder.Services.AddSingleton<QueryExecutionGate>();
+builder.Services.AddSingleton<PlatformStatusService>();
 builder.Services.AddTransient<MyFrameTools>();
 
 var strictTools = StrictToolRegistration.Create(json);

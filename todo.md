@@ -36,6 +36,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F5: publicar World State em revisão SQLite independente.
 - [x] F6: separar cliente de mercado do caminho AlecaFrame e usar armazenamento My Frame.
 - [x] F7: contrato de referências atribuídas, busca e isolamento de conteúdo não confiável.
+- [x] F8: expor capacidades e status de sincronização somente leitura no MCP.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
