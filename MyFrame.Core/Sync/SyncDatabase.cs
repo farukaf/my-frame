@@ -181,11 +181,16 @@ public sealed class SyncDatabase : IAsyncDisposable
 
     public async Task<IReadOnlyDictionary<string, InventoryFieldState>> GetInventoryCoverageAsync(
         CancellationToken cancellationToken = default)
+        => await GetSourceCoverageAsync("overwolf-inventory", cancellationToken);
+
+    public async Task<IReadOnlyDictionary<string, InventoryFieldState>> GetSourceCoverageAsync(
+        string sourceId, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_path)) return new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal);
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT field_path, state FROM coverage WHERE source_id='overwolf-inventory' ORDER BY field_path;";
+        command.CommandText = "SELECT field_path, state FROM coverage WHERE source_id=$source ORDER BY field_path;";
+        command.Parameters.AddWithValue("$source", sourceId);
         var result = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
@@ -358,6 +363,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             if (worldState is { } world)
             {
                 await CommandAsync(connection, transaction, "INSERT INTO worldstate_revisions(revision_id, source_timestamp, retrieved_at, is_current) VALUES ($revision, $sourceTimestamp, $retrieved, 1);", cancellationToken, ("$revision", revisionId), ("$sourceTimestamp", (object?)world.Snapshot.SourceTimestamp?.ToString("O") ?? DBNull.Value), ("$retrieved", world.Snapshot.RetrievedAt.ToString("O")));
+                foreach (var field in world.Snapshot.Coverage)
+                    await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('worldstate-pc', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
                 foreach (var bounty in world.Snapshot.Bounties)
                 {
                     await CommandAsync(connection, transaction, "INSERT INTO worldstate_bounties(revision_id, bounty_id, syndicate, activation, expiry) VALUES ($revision, $id, $syndicate, $activation, $expiry);", cancellationToken, ("$revision", revisionId), ("$id", bounty.Id), ("$syndicate", (object?)bounty.Syndicate ?? DBNull.Value), ("$activation", (object?)bounty.Activation?.ToString("O") ?? DBNull.Value), ("$expiry", (object?)bounty.Expiry?.ToString("O") ?? DBNull.Value));
