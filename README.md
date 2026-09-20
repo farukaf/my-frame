@@ -93,3 +93,4 @@ Os logs registram etapas de inicialização, contagens, resultados de sincroniza
 e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F2 — SQLite e publicação transacional](docs/validacoes/2026-09-13-f2.md)
 - [Validação F3 — adaptador Public Export](docs/validacoes/2026-09-13-f3.md)
+- [Validação F4 — inventário rico e cobertura](docs/validacoes/2026-09-13-f4.md)

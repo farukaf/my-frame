@@ -30,6 +30,8 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
 - [x] F3: publicar registros Public Export normalizados junto da revisão SQLite em transação única.
+- [x] F4: contrato de envelope/projeção de inventário com cobertura e instâncias desconhecidas.
+- [x] F4: persistir inventário rico e campos desconhecidos na revisão SQLite.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
