@@ -108,6 +108,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F15 — comando operacional de importação](docs/validacoes/2026-09-13-f15.md)
 - [Validação F16 — preflight do pacote Overwolf](docs/validacoes/2026-09-13-f16.md)
 - [Validação F17 — inbox de captura e importação em lote](docs/validacoes/2026-09-13-f17.md)
+- [Validação F18 — integração da inbox no aplicativo](docs/validacoes/2026-09-13-f18.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

@@ -55,6 +55,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F15: expor importação validada como comando operacional do probe ([evidências](docs/validacoes/2026-09-13-f15.md)).
 - [x] F16: validar pacote Overwolf, arquivos do manifesto e ícone antes da homologação ([evidências](docs/validacoes/2026-09-13-f16.md)).
 - [x] F17: criar inbox Core para importar capturas validadas em lote, com consentimento e idempotência ([evidências](docs/validacoes/2026-09-13-f17.md)).
+- [x] F18: integrar importação da inbox à página de status do aplicativo, com consentimento explícito ([evidências](docs/validacoes/2026-09-13-f18.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
