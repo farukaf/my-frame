@@ -76,6 +76,51 @@ public sealed class SyncDatabase : IAsyncDisposable
         return await PublishInternalAsync(batch, null, null, (snapshot, batch), cancellationToken);
     }
 
+    public async Task<int> PruneRetainedAsync(int maximumRevisionsPerSource = 3,
+        CancellationToken cancellationToken = default)
+    {
+        if (maximumRevisionsPerSource is < 1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(maximumRevisionsPerSource),
+                "maximumRevisionsPerSource must be between 1 and 100.");
+
+        await _writer.WaitAsync(cancellationToken);
+        try
+        {
+            await InitializeAsync(cancellationToken);
+            await using var connection = await OpenAsync(SqliteOpenMode.ReadWrite, cancellationToken);
+            await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+            var candidates = new List<(string RevisionId, string SourceId)>();
+            await using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT revision_id, source_id FROM source_revisions WHERE state='retained' ORDER BY source_id, retrieved_at DESC, revision_id DESC;";
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                var retainedBySource = new Dictionary<string, int>(StringComparer.Ordinal);
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    var source = reader.GetString(1);
+                    var retained = retainedBySource.GetValueOrDefault(source);
+                    if (retained >= maximumRevisionsPerSource - 1)
+                        candidates.Add((reader.GetString(0), source));
+                    else
+                        retainedBySource[source] = retained + 1;
+                }
+            }
+
+            foreach (var candidate in candidates)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach (var table in new[] { "public_export_items", "inventory_equipment", "inventory_stackables", "inventory_unknown", "inventory_upgrades", "inventory_revisions", "worldstate_rewards", "worldstate_jobs", "worldstate_bounties", "worldstate_cycles", "worldstate_revisions" })
+                    await CommandAsync(connection, transaction, $"DELETE FROM {table} WHERE revision_id=$revision;", cancellationToken, ("$revision", candidate.RevisionId));
+                await CommandAsync(connection, transaction, "DELETE FROM source_revisions WHERE revision_id=$revision AND state='retained';", cancellationToken, ("$revision", candidate.RevisionId));
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return candidates.Count;
+        }
+        finally { _writer.Release(); }
+    }
+
     public async Task<IReadOnlyList<PublicExportRecord>> GetPublicExportItemsAsync(string sourceId, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_path)) return [];
