@@ -44,7 +44,7 @@ public sealed class WorldStateTests
     [Fact]
     public async Task HostPublishesFetchedWorldStateRevision()
     {
-        const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[]}] }";
+        const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[{\"id\":\"job-1\",\"type\":\"Sample bounty\",\"rewardPoolDrops\":[{\"item\":\"Endo\",\"chance\":50,\"count\":100,\"rarity\":\"Common\"}]}]}] }";
         using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
         var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-{Guid.NewGuid():N}");
         await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
@@ -55,6 +55,8 @@ public sealed class WorldStateTests
         Assert.NotNull(result);
         var bounties = await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.Parse("2026-09-13T12:30:00Z"));
         Assert.Equal("Entrati", Assert.Single(bounties).Syndicate);
+        Assert.Equal("Sample bounty", bounties[0].Jobs[0].Type);
+        Assert.Equal("Endo", bounties[0].Jobs[0].Rewards[0].Item);
     }
 
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
