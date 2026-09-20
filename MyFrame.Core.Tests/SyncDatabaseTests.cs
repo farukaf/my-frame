@@ -82,4 +82,28 @@ public sealed class SyncDatabaseTests
         Assert.Equal("SCHEMA_INVALID", status.ErrorCode);
         Assert.Equal("failed", status.LastRunState);
     }
+
+    [Fact]
+    public async Task CatalogPublicationStoresNormalizedItemsAtomically()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        var records = new[] { new PublicExportRecord("/Lotus/Test", "Lâmina", "Melee", null, new Dictionary<string, string>()) };
+        var result = await db.PublishCatalogAsync(new SyncBatch("public-export", "hash", "[]", 1), records);
+        var stored = await db.GetPublicExportItemsAsync("public-export");
+        Assert.False(result.AlreadyPublished);
+        Assert.Single(stored);
+        Assert.Equal("lamina", PublicExportIdentity.Canonicalize(stored[0].Name!));
+    }
+
+    [Fact]
+    public async Task HostPreservesHttpFailureCodeForStatusPage()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await using var host = new SyncHost(db);
+        await host.RunOnceAsync("public-export", _ => throw new HttpRequestException("PUBLIC_EXPORT_HTTP_403"));
+        var status = await db.GetStatusAsync("public-export");
+        Assert.Equal("PUBLIC_EXPORT_HTTP_403", status!.ErrorCode);
+    }
 }
