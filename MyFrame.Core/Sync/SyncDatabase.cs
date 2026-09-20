@@ -278,6 +278,27 @@ public sealed class SyncDatabase : IAsyncDisposable
         return result;
     }
 
+    public async Task<IReadOnlyList<WorldStateCycle>> GetCurrentWorldStateCyclesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT c.name, c.state, c.activation, c.expiry
+            FROM worldstate_cycles c JOIN worldstate_revisions wr ON wr.revision_id=c.revision_id
+            JOIN source_revisions r ON r.revision_id=wr.revision_id
+            WHERE r.source_id='worldstate-pc' AND r.state='active'
+            ORDER BY c.name;
+            """;
+        var result = new List<WorldStateCycle>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1),
+                ParseDate(reader, 2), ParseDate(reader, 3)));
+        return result;
+    }
+
     private async Task<SyncPublicationResult> PublishInternalAsync(SyncBatch batch, IReadOnlyList<PublicExportRecord>? records, (InventoryEnvelope Envelope, InventoryProjection Projection)? inventory, (WorldStateSnapshot Snapshot, SyncBatch Batch)? worldState = null, CancellationToken cancellationToken = default)
     {
         Validate(batch);

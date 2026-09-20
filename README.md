@@ -142,6 +142,8 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F49 — paridade World State SQLite→MCP](docs/validacoes/2026-09-13-f49.md)
 - [Validação F50 — paridade documental das ferramentas MCP](docs/validacoes/2026-09-13-f50.md)
 - [Validação F51 — teste automatizado de paridade documental](docs/validacoes/2026-09-13-f51.md)
+- [Validação F52 — World State completo no MCP](docs/validacoes/2026-09-13-f52.md)
+- [Validação F53 — limite de resposta do World State](docs/validacoes/2026-09-13-f53.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
