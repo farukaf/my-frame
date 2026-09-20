@@ -1,6 +1,7 @@
 using LiveChartsCore.SkiaSharpView.Maui;
 using Microsoft.Extensions.Logging;
 using MyFrame.Core;
+using MyFrame.Core.Sync;
 using Serilog;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 
@@ -48,6 +49,8 @@ public static class MauiProgram
             new HttpClient(), new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
+        builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
+            new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath));
         builder.Services.AddSingleton(p => new DashboardService(p.GetRequiredService<IAlecaFramePath>(),
             p.GetRequiredService<IAlecaFrameReader>(), p.GetRequiredService<IAlecaCatalogReader>(),
             p.GetRequiredService<IWarframeMarketClient>(), p.GetRequiredService<IPriceCache>(),
