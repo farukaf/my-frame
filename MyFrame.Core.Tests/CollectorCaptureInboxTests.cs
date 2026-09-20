@@ -14,6 +14,9 @@ public sealed class CollectorCaptureInboxTests
         await WriteCaptureAsync(folder.Path, valid: true);
         var databasePath = Path.Combine(folder.Path, "data.db");
         await using var database = new SyncDatabase(databasePath);
+        await database.PublishCatalogAsync(
+            new SyncBatch("public-export", "catalog", "[]", 1),
+            [new PublicExportRecord("/Lotus/Resource", "Resource", "Resource", null, new Dictionary<string, string>())]);
 
         var first = await CollectorCaptureInbox.ImportAsync(folder.Path, database, true);
         var second = await CollectorCaptureInbox.ImportAsync(folder.Path, database, true);
@@ -24,6 +27,9 @@ public sealed class CollectorCaptureInboxTests
         Assert.Equal("imported", Assert.Single(first.Items).State);
         Assert.Equal(1, second.AlreadyPublished);
         Assert.Equal("alreadyPublished", Assert.Single(second.Items).State);
+        var synchronized = await new SqliteSynchronizedDataReader(databasePath).ReadAsync();
+        Assert.NotNull(synchronized);
+        Assert.Equal(4, synchronized!.Inventory.Stackables["/Lotus/Resource"]);
     }
 
     [Fact]
