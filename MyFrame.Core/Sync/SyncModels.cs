@@ -16,6 +16,7 @@ public sealed record SyncPublicationResult(
 public sealed record SyncStatus(
     string SourceId,
     string? ActiveRevisionId,
+    string? ParserVersion,
     string? ActiveContentHash,
     string? LastRunState,
     DateTimeOffset? LastRunAt,
