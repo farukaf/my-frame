@@ -5,7 +5,7 @@ namespace MyFrame.Core.Sync;
 
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -40,6 +40,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
             """);
+        await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -80,7 +81,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name
+            SELECT i.unique_name, i.name, i.category, i.description, i.canonical_name, i.raw_json
             FROM public_export_items i JOIN source_revisions r ON r.revision_id=i.revision_id
             WHERE r.source_id=$source AND r.state='active' ORDER BY i.unique_name;
             """;
@@ -91,7 +92,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         {
             var uniqueName = reader.GetString(0);
             var name = reader.IsDBNull(1) ? null : reader.GetString(1);
-            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }));
+            records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["en"] = name ?? uniqueName }, reader.IsDBNull(5) ? null : reader.GetString(5)));
         }
         return records;
     }
@@ -184,7 +185,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             await CommandAsync(connection, transaction, "INSERT INTO source_revisions(revision_id, source_id, content_hash, payload_json, parser_version, record_count, state, retrieved_at, published_at) VALUES ($revision, $source, $hash, $payload, $parser, $count, 'active', $at, $at);", cancellationToken, ("$revision", revisionId), ("$source", batch.SourceId), ("$hash", batch.ContentHash), ("$payload", batch.PayloadJson), ("$parser", batch.ParserVersion), ("$count", batch.RecordCount), ("$at", now));
             if (records is not null)
                 foreach (var record in records)
-                    await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name) VALUES ($revision, $unique, $name, $category, $description, $canonical);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)));
+                    await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$raw", (object?)record.RawJson ?? "{}"));
             if (inventory is { } data)
             {
                 await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));
@@ -289,6 +290,18 @@ public sealed class SyncDatabase : IAsyncDisposable
     }
     private static async Task ExecuteAsync(SqliteConnection connection, string sql, CancellationToken token = default) { await using var command = connection.CreateCommand(); command.CommandText = sql; await command.ExecuteNonQueryAsync(token); }
     private static async Task CommandAsync(SqliteConnection c, SqliteTransaction? t, string sql, CancellationToken token, params (string Name, object Value)[] args) { await using var command = c.CreateCommand(); if (t is not null) command.Transaction = t; command.CommandText = sql; foreach (var (name, value) in args) command.Parameters.AddWithValue(name, value); await command.ExecuteNonQueryAsync(token); }
+    private static async Task EnsureColumnAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken = default)
+    {
+        await using var check = connection.CreateCommand();
+        check.CommandText = $"PRAGMA table_info([{table}]);";
+        await using var reader = await check.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) return;
+        await reader.DisposeAsync();
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE [{table}] ADD COLUMN [{column}] {definition};";
+        await alter.ExecuteNonQueryAsync(cancellationToken);
+    }
     private static DateTimeOffset? ParseDate(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : DateTimeOffset.Parse(reader.GetString(ordinal));
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
 }

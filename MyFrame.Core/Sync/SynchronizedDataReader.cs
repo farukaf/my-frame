@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace MyFrame.Core.Sync;
 
 public sealed record SynchronizedDataSnapshot(
@@ -32,24 +34,86 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
             File.GetLastWriteTimeUtc(databasePath), stackableValues, owned,
             new Dictionary<string, long>(StringComparer.Ordinal), 0, 0, "my-frame-sqlite");
 
-        var items = records.Select(record => new CatalogItem(
-            record.UniqueName,
-            record.Name ?? record.UniqueName,
-            record.Category ?? "Unknown",
-            "",
-            "",
-            false,
-            false,
-            false,
-            false,
-            null,
-            null,
-            null,
-            [],
-            [])).ToArray();
+        var items = records.Select(PublicExportCatalogMapper.Map).ToArray();
         var catalog = new CatalogSnapshot(items,
             items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal),
             new Dictionary<string, MarketIdentity>(StringComparer.Ordinal));
         return new(inventory, catalog, File.GetLastWriteTimeUtc(databasePath));
     }
+}
+
+internal static class PublicExportCatalogMapper
+{
+    public static CatalogItem Map(PublicExportRecord record)
+    {
+        if (string.IsNullOrWhiteSpace(record.RawJson))
+            return Minimal(record);
+        try
+        {
+            using var document = JsonDocument.Parse(record.RawJson);
+            var root = document.RootElement;
+            var components = ReadComponents(root);
+            var relics = ReadRelics(root);
+            return new(
+                record.UniqueName,
+                String(root, "name") ?? record.Name ?? record.UniqueName,
+                String(root, "category") ?? record.Category ?? "Unknown",
+                String(root, "productCategory") ?? String(root, "product_category") ?? "",
+                String(root, "imageName") ?? String(root, "image_name") ?? "",
+                Bool(root, "masterable") ?? Bool(root, "masterableType") ?? false,
+                Bool(root, "prime") ?? false,
+                Bool(root, "tradable") ?? false,
+                Bool(root, "vaulted") ?? false,
+                String(root, "estimatedVaultDate"),
+                String(root, "marketId"),
+                String(root, "marketSlug"),
+                components,
+                relics,
+                String(root, "itemType") ?? "");
+        }
+        catch (JsonException) { return Minimal(record); }
+    }
+
+    private static CatalogItem Minimal(PublicExportRecord record) => new(record.UniqueName,
+        record.Name ?? record.UniqueName, record.Category ?? "Unknown", "", "", false, false,
+        false, false, null, null, null, [], []);
+
+    private static IReadOnlyList<CatalogComponent> ReadComponents(JsonElement root)
+    {
+        if (!root.TryGetProperty("components", out var values) || values.ValueKind != JsonValueKind.Array) return [];
+        var result = new List<CatalogComponent>();
+        foreach (var value in values.EnumerateArray())
+        {
+            var unique = String(value, "uniqueName") ?? String(value, "unique_name");
+            var name = String(value, "name");
+            if (string.IsNullOrWhiteSpace(unique) || string.IsNullOrWhiteSpace(name)) continue;
+            result.Add(new(unique, name, Math.Max(1, Int(value, "itemCount") ?? Int(value, "count") ?? 1),
+                Math.Max(0, Int(value, "ducats") ?? 0), Bool(value, "tradable") ?? false,
+                String(value, "imageName") ?? ""));
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<RelicSource> ReadRelics(JsonElement root)
+    {
+        if (!root.TryGetProperty("relics", out var values) || values.ValueKind != JsonValueKind.Array) return [];
+        var result = new List<RelicSource>();
+        foreach (var value in values.EnumerateArray())
+        {
+            var relic = String(value, "relicName") ?? String(value, "relic");
+            var reward = String(value, "rewardName") ?? String(value, "item");
+            if (string.IsNullOrWhiteSpace(relic) || string.IsNullOrWhiteSpace(reward)) continue;
+            result.Add(new(relic, String(value, "rarity") ?? "Unknown", Double(value, "chance") ?? 0, false, reward));
+        }
+        return result;
+    }
+
+    private static string? String(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String ? property.GetString() : null;
+    private static int? Int(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var result) ? result : null;
+    private static double? Double(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var result) ? result : null;
+    private static bool? Bool(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.ValueKind is JsonValueKind.True or JsonValueKind.False ? property.GetBoolean() : null;
 }
