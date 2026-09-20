@@ -497,6 +497,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             {
                 try
                 {
+                    if (File.Exists(_path)) File.SetAttributes(_path, FileAttributes.Normal);
                     File.Move(temporary, _path, true);
                     break;
                 }
