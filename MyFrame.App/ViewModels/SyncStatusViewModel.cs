@@ -76,6 +76,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
 
     public void StartWatcher() => watcher.Start();
     public void StopWatcher() => watcher.Dispose();
+    public Task<bool> HasSynchronizedDataAsync(CancellationToken cancellationToken = default) => reader.HasSynchronizedDataAsync(cancellationToken);
     public void HandleCaptureDetected()
     {
         MainThread.BeginInvokeOnMainThread(async () =>

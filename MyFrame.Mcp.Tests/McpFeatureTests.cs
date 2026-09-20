@@ -289,7 +289,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             new Dictionary<string, object?> { ["typeId"] = "/Lotus/Weapon" });
         var bountiesResult = await client.CallToolAsync("get_bounties");
         var worldStateResult = await client.CallToolAsync("get_world_state",
-            new Dictionary<string, object?> { ["limit"] = 50 });
+            new Dictionary<string, object?> { ["limit"] = 50, ["syndicate"] = "entrati" });
         var invalid = await client.CallToolAsync("get_overview",
             new Dictionary<string, object?> { ["unexpected"] = true });
         var expired = await client.CallToolAsync("search_inventory",
@@ -330,6 +330,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.NotEqual(true, worldStateResult.IsError);
         var worldStateJson = JsonSerializer.Serialize(worldStateResult.StructuredContent);
         Assert.Contains("cetusCycle", worldStateJson);
+        Assert.Contains("Entrati", worldStateJson);
         Assert.NotEqual(true, result.IsError);
         Assert.True(invalid.IsError);
         Assert.Contains(invalid.Content.OfType<TextContentBlock>(),

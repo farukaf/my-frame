@@ -42,6 +42,13 @@ public sealed class SyncStatusReader
         return rows;
     }
 
+    public async Task<bool> HasSynchronizedDataAsync(CancellationToken cancellationToken = default)
+    {
+        var snapshot = await new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath)
+            .ReadAsync(cancellationToken);
+        return snapshot is not null;
+    }
+
     public async Task<IReadOnlyList<SyncAttemptStatusRow>> ReadRecentRunsAsync(CancellationToken cancellationToken = default)
     {
         var path = MyFrameStoragePaths.DataDatabasePath;
