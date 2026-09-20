@@ -154,6 +154,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F61 — substituição de cobertura do inventário](docs/validacoes/2026-09-13-f61.md)
 - [Validação F62 — revisão ativa no World State](docs/validacoes/2026-09-13-f62.md)
 - [Validação F63 — gate MCP read-only em data root limpo](docs/validacoes/2026-09-13-f63.md)
+- [Validação F64 — pacote e testes do coletor Overwolf](docs/validacoes/2026-09-13-f64.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

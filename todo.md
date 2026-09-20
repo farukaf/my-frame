@@ -101,6 +101,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F61: substituir cobertura do inventário a cada revisão publicada ([evidências](docs/validacoes/2026-09-13-f61.md)).
 - [x] F62: expor a revisão SQLite ativa junto do World State no MCP ([evidências](docs/validacoes/2026-09-13-f62.md)).
 - [x] F63: executar gate MCP read-only com stdin EOF, stdout vazio e data root limpo ([evidências](docs/validacoes/2026-09-13-f63.md)).
+- [x] F64: validar pacote Overwolf e testes de framing/UI do coletor ([evidências](docs/validacoes/2026-09-13-f64.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
