@@ -492,7 +492,23 @@ public sealed class SyncDatabase : IAsyncDisposable
                 await backupTarget.OpenAsync(cancellationToken);
                 backupSource.BackupDatabase(backupTarget);
             }
-            File.Move(temporary, _path, true);
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    if (File.Exists(_path)) File.SetAttributes(_path, FileAttributes.Normal);
+                    File.Move(temporary, _path, true);
+                    break;
+                }
+                catch (IOException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+            }
             foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
