@@ -16,7 +16,7 @@ description: Montar planos de farm e progressão rastreáveis por aquisição, a
 
 1. Normalize o objetivo para um `itemId` técnico e consulte posse/quantidade.
 2. Liste pré-requisitos e componentes faltantes; diferencie tipo desconhecido de quantidade desconhecida.
-3. Consulte `get_world_state` (preferencialmente com `syndicate` e `limit`)
+3. Consulte `get_world_state` ou `get_activity` (preferencialmente com `syndicate`, `reward` e `limit` quando procurar uma recompensa específica)
    e verifique `state`, `activeRevisionId` e `coverage` antes de usar a lista.
    Só use bounties quando `state=available` e a ativação/expiração cobrir o
    horário; `not_initialized`/`failed` exige sincronização ou confirmação
