@@ -1,4 +1,54 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView x:Class="MyFrame.App.Components.Settings" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:components="clr-namespace:MyFrame.App.Components">
-    <ScrollView IsVisible="{Binding IsVisible}"><VerticalStackLayout Spacing="16" MaximumWidthRequest="700" HorizontalOptions="Start"><Label Text="Settings" Style="{DynamicResource Title}"/><Border Style="{DynamicResource Card}"><VerticalStackLayout Spacing="12"><Label Text="AlecaFrame data folder" Style="{DynamicResource SectionTitle}"/><Label Text="Choose the folder containing lastData.dat and cachedData/json. The automatic location works for standard installations." TextColor="#8995A8"/><Label Text="My Frame can start without this folder. Configure it here before loading inventory data." TextColor="#F3C969" FontSize="12"/><Entry Text="{Binding AlecaFrameDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A"/><Label Text="{Binding AlecaFrameDirectoryMessage}" Style="{DynamicResource Muted}"/><HorizontalStackLayout Spacing="10"><Button Text="Choose folder" Command="{Binding SelectAlecaFrameDirectoryCommand}" BackgroundColor="#167C70" TextColor="White"/><Button Text="Use automatic location" Command="{Binding ResetAlecaFrameDirectoryCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6"/></HorizontalStackLayout></VerticalStackLayout></Border><Border Style="{DynamicResource Card}"><VerticalStackLayout Spacing="14"><Label Text="Ducats / platinum conversion" Style="{DynamicResource SectionTitle}"/><Label Text="Sets the threshold used by recommendations. Changes apply immediately." TextColor="#8995A8"/><components:DucatConversion/><Grid ColumnDefinitions="*,Auto" ColumnSpacing="18"><VerticalStackLayout Spacing="2"><Label Text="Reserve unvaulted Prime sets" TextColor="#F4F7FB"/><Label Text="Choose how many weapon or Warframe sets to hold for sale after they enter the vault. Use 0 to disable." Style="{DynamicResource Muted}"/></VerticalStackLayout><HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center"><Entry Text="{Binding UnvaultedPrimeSetsToReserve, Mode=TwoWay}" Keyboard="Numeric" MaxLength="2" WidthRequest="52" HeightRequest="40" HorizontalTextAlignment="Center" TextColor="#F4F7FB" BackgroundColor="#20283A"/><Label Text="sets" TextColor="#AEB8C8" VerticalOptions="Center"/></HorizontalStackLayout></Grid></VerticalStackLayout></Border></VerticalStackLayout></ScrollView>
+    <ScrollView IsVisible="{Binding IsVisible}">
+        <VerticalStackLayout Spacing="16" MaximumWidthRequest="700" HorizontalOptions="Start">
+            <Label Text="Settings" Style="{DynamicResource Title}" />
+            <Border Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="AlecaFrame data folder" Style="{DynamicResource SectionTitle}" />
+                    <Label Text="Choose the folder containing lastData.dat and cachedData/json. The automatic location works for standard installations." TextColor="#8995A8" />
+                    <Label Text="My Frame can start without this folder. Configure it here before loading inventory data." TextColor="#F3C969" FontSize="12" />
+                    <Entry Text="{Binding AlecaFrameDirectory}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                    <Label Text="{Binding AlecaFrameDirectoryMessage}" Style="{DynamicResource Muted}" />
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Choose folder" Command="{Binding SelectAlecaFrameDirectoryCommand}" BackgroundColor="#167C70" TextColor="White" />
+                        <Button Text="Use automatic location" Command="{Binding ResetAlecaFrameDirectoryCommand}" BackgroundColor="#20283A" TextColor="#D6DCE6" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+            <Border Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Ducats / platinum conversion" Style="{DynamicResource SectionTitle}" />
+                    <Label Text="Sets the threshold used by recommendations. Changes apply immediately." TextColor="#8995A8" />
+                    <components:DucatConversion />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Reserve unvaulted Prime sets" TextColor="#F4F7FB" />
+                            <Label Text="Choose how many weapon or Warframe sets to hold for sale after they enter the vault. Use 0 to disable." Style="{DynamicResource Muted}" />
+                        </VerticalStackLayout>
+                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Entry Text="{Binding UnvaultedPrimeSetsToReserve, Mode=TwoWay}" Keyboard="Numeric" MaxLength="2" WidthRequest="52" HeightRequest="40" HorizontalTextAlignment="Center" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                            <Label Text="sets" TextColor="#AEB8C8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Border Style="{DynamicResource Card}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="AI access (MCP)" Style="{DynamicResource SectionTitle}" />
+                    <Label Text="Connect Codex or Claude to the local read-only inventory. Your AI client may send returned data to its provider." TextColor="#8995A8" />
+                    <Label Text="Account identity is omitted by default. Prices and coverage may be incomplete." TextColor="#F3C969" FontSize="12" />
+                    <Label Text="Server executable" Style="{DynamicResource Muted}" />
+                    <Entry Text="{Binding McpExecutablePath}" IsReadOnly="True" TextColor="#F4F7FB" BackgroundColor="#20283A" />
+                    <Label Text="Codex" TextColor="#F4F7FB" FontAttributes="Bold" />
+                    <Editor Text="{Binding CodexMcpCommand}" IsReadOnly="True" AutoSize="TextChanges" TextColor="#D6DCE6" BackgroundColor="#20283A" />
+                    <Button Text="Copy Codex command" Command="{Binding CopyMcpCommandCommand}" CommandParameter="Codex" BackgroundColor="#167C70" TextColor="White" HorizontalOptions="Start" />
+                    <Label Text="Claude Code" TextColor="#F4F7FB" FontAttributes="Bold" />
+                    <Editor Text="{Binding ClaudeMcpCommand}" IsReadOnly="True" AutoSize="TextChanges" TextColor="#D6DCE6" BackgroundColor="#20283A" />
+                    <Button Text="Copy Claude command" Command="{Binding CopyMcpCommandCommand}" CommandParameter="Claude" BackgroundColor="#167C70" TextColor="White" HorizontalOptions="Start" />
+                    <Label Text="{Binding McpCopyMessage}" Style="{DynamicResource Muted}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentView>

@@ -1,7 +1,49 @@
-# Próximo marco — MCP local
+# Ideias de Features não refinadas
 
-Este checklist substitui o backlog visual concluído. O plano completo está em
-[docs/MCP.md](docs/MCP.md).
+- Criar ordem de venda/compra no warframe market e a partir dos eventos do overwolf remover a ordem automaticamente.
+- Colocar na interface condições de remoção da ordem (tempo, inventario conter um dos itens (item da ordem, outro item feito com o item da ordem)
+
+
+
+# Entrega — plataforma de dados e hardening do MCP
+
+Plano novo, ainda não implementado: [plataforma de dados](docs/PLATAFORMA-DE-DADOS.md).
+Evidências: [fontes](docs/FONTES-DE-DADOS.md) e
+[testes/gates](docs/VALIDACAO-PLATAFORMA.md). Marcar conclusão apenas com evidência
+do aceite; dependência externa bloqueada não equivale a conclusão.
+
+## Próxima evolução — F0 a F10
+
+- [x] F0: registrar baseline de build/testes e auditar todas as dependências AlecaFrame ([evidências](docs/validacoes/2026-09-12-f0.md)).
+- [x] F0: reproduzir erro MCP interpretado como inventário vazio e criar regressão.
+- [x] F0: registrar capacidades mínimas, decisões abertas e mapeamento das pendências; PR #6 com base em `feat/local-mcp`.
+- [x] F1: implementar spike Native GEP, manifest 8954, probe estrutural e transporte marker/hash; testes sintéticos aprovados.
+- [ ] F1: carregar extensão no Overwolf e provar captura real sem ler AlecaFrame ([roteiro](docs/validacoes/2026-09-13-f1.md)).
+- [ ] F1: documentar schema/cobertura real, snapshots/deltas e requisitos de distribuição.
+- [ ] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos.
+- [ ] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost.
+- [ ] F2: entregar página inicial de status com tentativas, erros e ação corretiva.
+- [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
+- [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
+- [ ] F4: validar contextos, deltas e conferência manual com o jogo.
+- [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
+- [ ] F6: migrar settings/caches com rollback e resolver autenticação WFM independente.
+- [ ] F6: comprovar instalação limpa sem AlecaFrame nem caches legados.
+- [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
+- [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
+- [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
+- [ ] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede.
+- [ ] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis.
+- [ ] F9: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
+- [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
+- [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
+
+## Baseline e pendências do MCP atual
+
+O checklist abaixo é histórico de implementação do [MCP v1](docs/MCP.md).
+Marcações existentes não certificam a plataforma futura. Pendências foram mapeadas
+para a nova matriz e continuam abertas até validação.
 
 ## Base compartilhada
 
@@ -14,7 +56,7 @@ Este checklist substitui o backlog visual concluído. O plano completo está em
 - [x] Centralizar pasta do AlecaFrame e preferências de recomendação em configuração comum.
 - [x] Migrar Preferences e caches pelo app, de forma idempotente e recuperável, preservando origens.
 - [x] Versionar settings/regras/contrato e publicar cada arquivo por substituição atômica.
-- [ ] Agrupar todos os caches de mercado em gerações transacionais com manifesto.
+- [ ] Garantir gerações consistentes de mercado: proposta de manifesto JSON substituída por SQLite em F2 (DB02–DB06); objetivo ainda pendente.
 - [x] Separar interfaces leitoras/escritoras e remover dependência de rede/token da composição MCP.
 - [x] Ler todas as cotações locais relevantes em lote, separando o orçamento online de 100 slugs.
 - [x] Definir DTOs MCP versionados, sem propriedades de apresentação nem caminhos locais.

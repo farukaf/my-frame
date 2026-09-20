@@ -26,6 +26,10 @@ public sealed class MarketStateStore : IMarketStateStore
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             return await JsonSerializer.DeserializeAsync<MarketState>(stream, cancellationToken: cancellationToken);
         }
+        catch (JsonException)
+        {
+            return null;
+        }
         finally { _gate.Release(); }
     }
 

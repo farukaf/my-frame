@@ -1,0 +1,9 @@
+:root { color-scheme: dark; font: 15px system-ui, sans-serif; background: #101a29; color: #e4effa; }
+body { max-width: 850px; margin: 24px auto; padding: 0 22px; }
+h1 { font-size: 25px; } h2 { font-size: 18px; margin-top: 26px; }
+p { line-height: 1.5; color: #bfcee0; }
+button { padding: 10px 14px; margin: 8px 8px 8px 0; border: 1px solid #6386aa; border-radius: 5px; background: #223e5c; color: white; cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+input:not([type="checkbox"]) { display: block; box-sizing: border-box; width: 100%; padding: 10px; margin-top: 8px; }
+pre { padding: 15px; background: #07111c; max-height: 290px; overflow: auto; white-space: pre-wrap; }
+.consent { display: block; margin: 12px 0; line-height: 1.5; }

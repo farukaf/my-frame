@@ -1,5 +1,10 @@
 # Roteiro do My Frame
 
+Este documento registra o roteiro e a baseline da versão atual, dependente do
+AlecaFrame. A próxima evolução está no [plano da plataforma de dados](PLATAFORMA-DE-DADOS.md),
+com [pesquisa e fontes](FONTES-DE-DADOS.md) e [matriz de testes](VALIDACAO-PLATAFORMA.md).
+As fases novas são planejamento, não funcionalidades já entregues.
+
 ## Objetivo
 
 O My Frame transforma os dados locais já mantidos pelo AlecaFrame em uma visão de

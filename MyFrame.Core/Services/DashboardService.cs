@@ -30,6 +30,7 @@ public sealed class DashboardService : IDashboardService
         IAlecaCatalogReader catalogReader, IWarframeMarketClient market, IPriceCache cache,
         IMarketStateStore marketState, IMarketItemIndexStore marketItems, IRecommendationEngine engine,
         ILogger<DashboardService>? logger = null,
+        IMyFrameSnapshotProvider? snapshotProvider = null,
         IAlecaFrameChangeMonitor? changeMonitor = null)
     {
         _marketState = marketState;
@@ -40,7 +41,7 @@ public sealed class DashboardService : IDashboardService
         _market = market;
         _cache = cache;
         _engine = engine;
-        _snapshotProvider = null;
+        _snapshotProvider = snapshotProvider;
         _logger = logger ?? NullLogger<DashboardService>.Instance;
         _changeMonitor = changeMonitor ?? new FileSystemAlecaFrameChangeMonitor();
         _alecaPath.Changed += OnAlecaDirectoryChanged;
