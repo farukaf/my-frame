@@ -43,6 +43,31 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public void ParsesOfficialWorldStateAliasesWithoutInventingRewardDrops()
+    {
+        var json = """
+            {"Timestamp":{"$date":{"$numberLong":"1789291200000"}},"SyndicateMissions":[{"Tag":"DeimosSyndicate","Activation":{"$date":{"$numberLong":"1789290900000"}},"Expiry":{"$date":{"$numberLong":"1789294500000"}},"Jobs":[{"jobType":"DeimosMission","rewards":"/Lotus/Types/Gameplay/Deimos/Jobs/DeimosMissionRewards","minEnemyLevel":10,"maxEnemyLevel":20,"xpAmounts":[100,200]}]}],"CetusCycle":{"State":"day","Activation":{"$date":{"$numberLong":"1789290000000"}},"Expiry":{"$date":{"$numberLong":"1789293600000"}}}}
+            """;
+
+        var snapshot = WorldStateParser.Parse(json, DateTimeOffset.FromUnixTimeMilliseconds(1789291201000));
+
+        var bounty = Assert.Single(snapshot.Bounties);
+        Assert.Equal("Entrati", bounty.Syndicate);
+        Assert.Equal("DeimosMission", bounty.Jobs[0].Type);
+        Assert.Equal(InventoryFieldState.Known, snapshot.Coverage["syndicateMissions"]);
+        Assert.Equal(InventoryFieldState.NotObserved, snapshot.Coverage["bountyRewards"]);
+        Assert.Equal(InventoryFieldState.NotObserved, snapshot.Coverage["motherTokens"]);
+        Assert.Equal("day", Assert.Single(snapshot.Cycles).State);
+    }
+
+    [Fact]
+    public void UsesOfficialWorldStateEndpointByDefault()
+    {
+        Assert.Equal("https://content.warframe.com/dynamic/worldState.php", WorldStateClient.DefaultUrl);
+        Assert.Equal("https://api.warframestat.us/pc", WorldStateClient.CommunityFallbackUrl);
+    }
+
+    [Fact]
     public async Task ClientProducesRevisionedSyncBatch()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[]}";
