@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MyFrame.App;
 
-public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher watcher, WorldStateSyncService worldStateSync, ILogger logger) : ObservableObject
+public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher watcher, WorldStateSyncService worldStateSync, PublicExportSyncService publicExportSync, ILogger logger) : ObservableObject
 {
     [ObservableProperty] public partial bool IsVisible { get; set; }
     [ObservableProperty] public partial bool IsLoadingSyncStatus { get; set; }
@@ -17,6 +17,8 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
     [ObservableProperty] public partial string WorldStateSyncMessage { get; set; } = "No World State synchronization requested.";
+    [ObservableProperty] public partial bool IsSyncingPublicExport { get; set; }
+    [ObservableProperty] public partial string PublicExportSyncMessage { get; set; } = "No Public Export synchronization requested.";
     public string CollectorCaptureDirectory => collectorCaptureInbox.DirectoryPath;
     public ObservableCollection<SyncSourceStatusRow> SyncSources { get; } = [];
     public ObservableCollection<SyncAttemptStatusRow> SyncAttempts { get; } = [];
@@ -109,5 +111,27 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
             WorldStateSyncMessage = "World State synchronization failed; previous data was preserved.";
         }
         finally { IsSyncingWorldState = false; }
+    }
+
+    [RelayCommand]
+    private async Task SyncPublicExportAsync()
+    {
+        if (IsSyncingPublicExport) return;
+        IsSyncingPublicExport = true;
+        PublicExportSyncMessage = "Fetching official Warframe Public Export…";
+        try
+        {
+            var result = await publicExportSync.RunAsync();
+            PublicExportSyncMessage = result.State == "published"
+                ? $"Public Export synchronized: {result.Records:N0} records; revision {result.RevisionId}; parser {result.ParserVersion ?? "unknown"}."
+                : $"Public Export synchronization failed: {result.ErrorCode ?? result.State}. Previous catalog preserved.";
+            await RefreshSyncStatusAsync();
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "Public Export synchronization failed");
+            PublicExportSyncMessage = "Public Export synchronization failed; previous catalog was preserved.";
+        }
+        finally { IsSyncingPublicExport = false; }
     }
 }

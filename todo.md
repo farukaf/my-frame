@@ -197,7 +197,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F159: refletir referências importadas no status MCP/UI sem expor conteúdo ([evidências](docs/validacoes/2026-09-13-f159.md)).
 - [x] F160: executar regressão após importação/status/busca de referências ([evidências](docs/validacoes/2026-09-13-f160.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
-- [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
+- [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
 
 ## Baseline e pendências do MCP atual
@@ -246,7 +246,7 @@ para a nova matriz e continuam abertas até validação.
 
 - [x] Distribuir `MyFrame.Mcp.exe` junto com o aplicativo.
 - [x] Criar fluxo de publicação com caminho estável e upgrade de app/MCP juntos.
-- [ ] Validar migração, formato incompatível, rollback e atualização com servidor ativo.
+- [x] Validar migração, formato incompatível, rollback e atualização com servidor ativo ([F22, F38, F40, F104, F122](docs/validacoes/2026-09-13-f122.md)).
 - [x] Adicionar à tela de configurações uma seção MCP com comandos para Codex e Claude.
 - [x] Oferecer botão para copiar cada comando e mostrar o caminho do executável.
 - [x] Documentar cadastro, verificação, atualização e remoção do servidor.
@@ -257,10 +257,10 @@ para a nova matriz e continuam abertas até validação.
 - [x] Testar projeções, paginação, cursores e limites com fixtures sintéticas.
 - [x] Testar paridade entre o snapshot usado pela interface e as respostas MCP ([F109](docs/validacoes/2026-09-13-f109.md)).
 - [x] Testar resultados esperados independentes: preço parcial, reservas, farm e quantidade desconhecida.
-- [ ] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto.
+- [x] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto ([F121](docs/validacoes/2026-09-13-f121.md)).
 - [x] Testar paginação durante atualização e assinatura/vínculo de cursores.
 - [x] Testar expiração temporal e descarte por limite de memória ([F110](docs/validacoes/2026-09-13-f110.md)).
-- [ ] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo.
+- [x] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo ([F120](docs/validacoes/2026-09-13-f120.md)).
 - [x] Testar que logs `stdio` não contêm autorização e que DTOs omitem token/caminhos.
 - [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
 - [x] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo ([F119](docs/validacoes/2026-09-13-f119.md)).
