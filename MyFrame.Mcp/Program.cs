@@ -23,8 +23,10 @@ builder.Services.AddSingleton(MyFrameLocalDataOptions.Shared);
 builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
 builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
 builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
-builder.Services.AddSingleton<IMyFrameSettingsStore>(_ =>
-    new JsonMyFrameSettingsStore(MyFrameStoragePaths.SettingsPath));
+builder.Services.AddSingleton<SqliteSettingsStore>(_ => new SqliteSettingsStore(
+    MyFrameStoragePaths.DataDatabasePath, MyFrameStoragePaths.SettingsPath));
+builder.Services.AddSingleton<IMyFrameSettingsStore>(provider =>
+    provider.GetRequiredService<SqliteSettingsStore>());
 builder.Services.AddSingleton(_ => new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath,
     MyFrameStoragePaths.PriceCachePath, MyFrameStoragePaths.MarketStatePath,
     MyFrameStoragePaths.MarketItemIndexPath));

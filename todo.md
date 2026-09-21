@@ -40,7 +40,8 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
-- [ ] F6: migrar settings/caches com rollback e resolver autenticação WFM independente.
+- [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
+- [ ] F6: resolver autenticação WFM independente.
 - [ ] F6: comprovar instalação limpa sem AlecaFrame nem caches legados.
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
 - [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
@@ -151,6 +152,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F111: exercitar erro MCP com root limpo, sem rede, escrita ou vazamento ([evidências](docs/validacoes/2026-09-13-f111.md)).
 - [x] F112: reconciliar a matriz com evidências e pendências externas explícitas ([evidências](docs/validacoes/2026-09-13-f112.md)).
 - [x] F113: migrar caches/estado de mercado para SQLite com importação legada não destrutiva ([evidências](docs/validacoes/2026-09-13-f113.md)).
+- [x] F114: migrar settings para SQLite com rollback pelo arquivo legado ([evidências](docs/validacoes/2026-09-13-f114.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -172,7 +174,7 @@ para a nova matriz e continuam abertas até validação.
 - [x] Centralizar pasta do AlecaFrame e preferências de recomendação em configuração comum.
 - [x] Migrar Preferences e caches pelo app, de forma idempotente e recuperável, preservando origens.
 - [x] Versionar settings/regras/contrato e publicar cada arquivo por substituição atômica.
-- [x] Garantir geração consistente dos caches/estado de mercado: JSON legado importado e novas escritas em SQLite ([F113](docs/validacoes/2026-09-13-f113.md)); settings continuam fora deste escopo.
+- [x] Garantir geração consistente de settings/caches: JSON legado importado e novas escritas em SQLite ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
 - [x] Separar interfaces leitoras/escritoras e remover dependência de rede/token da composição MCP.
 - [x] Ler todas as cotações locais relevantes em lote, separando o orçamento online de 100 slugs.
 - [x] Definir DTOs MCP versionados, sem propriedades de apresentação nem caminhos locais.
