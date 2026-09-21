@@ -66,6 +66,21 @@ public sealed class PlatformStatusService
         foreach (var sourceId in SourceIds)
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
+            if (sourceId == "references" && status is null)
+            {
+                var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+                long count = 0, rejected = 0;
+                if (Directory.Exists(directory))
+                    foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+                    {
+                        try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); count++; }
+                        catch (InvalidDataException) { rejected++; }
+                        catch (JsonException) { rejected++; }
+                    }
+                values.Add(new(sourceId, count == 0 ? "not_initialized" : rejected == 0 ? "available" : "partial", null, null, null,
+                    null, count == 0 ? null : "reference-file-1", count, rejected));
+                continue;
+            }
             values.Add(status is null
                 ? new(sourceId, "not_initialized", null, null, null, null, null, 0, 0)
                 : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
