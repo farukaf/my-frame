@@ -76,13 +76,13 @@ public static class PublicExportDocumentParser
                 continue;
             var uniqueName = unique.GetString();
             if (string.IsNullOrWhiteSpace(uniqueName)) continue;
-            var name = StringProperty(item, "name");
+            var aliases = LocalizedProperties(item, "name");
+            foreach (var alias in LocalizedProperties(item, "names"))
+                aliases[alias.Key] = alias.Value;
+            var name = aliases.GetValueOrDefault("en") ?? StringProperty(item, "name") ?? aliases.Values.FirstOrDefault();
             var category = StringProperty(item, "category");
             var description = StringProperty(item, "description");
-            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["en"] = name ?? uniqueName
-            };
+            aliases.TryAdd("en", name ?? uniqueName);
             records.Add(new PublicExportRecord(uniqueName, name, category, description, aliases, item.GetRawText()));
         }
         return records;
@@ -90,6 +90,27 @@ public static class PublicExportDocumentParser
 
     private static string? StringProperty(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    private static Dictionary<string, string> LocalizedProperties(JsonElement element, string name)
+    {
+        var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (!element.TryGetProperty(name, out var value)) return aliases;
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString();
+            if (!string.IsNullOrWhiteSpace(text)) aliases["en"] = text;
+            return aliases;
+        }
+        if (value.ValueKind != JsonValueKind.Object) return aliases;
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.String) continue;
+            var text = property.Value.GetString();
+            if (string.IsNullOrWhiteSpace(text) || property.Name.Length is < 2 or > 12) continue;
+            aliases[property.Name] = text;
+        }
+        return aliases;
+    }
 }
 
 public static class PublicExportIdentity

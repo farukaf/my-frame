@@ -39,6 +39,16 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public void PreservesLocalizedAliasesAndUsesEnglishAsPrimaryName()
+    {
+        var records = PublicExportDocumentParser.Parse("[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Blade\",\"pt\":\"Lâmina\",\"fr\":\"Lame\"}}]");
+        var record = Assert.Single(records);
+        Assert.Equal("Blade", record.Name);
+        Assert.Equal("Lâmina", record.Aliases["pt"]);
+        Assert.Equal("Lame", record.Aliases["fr"]);
+    }
+
+    [Fact]
     public void DecodesLzmaAlonePayloadWithOutputLimit()
     {
         var compressed = Convert.FromBase64String("XQAAgAD//////////wA0GUnujmgh////ueAAAA==");
@@ -72,7 +82,7 @@ public sealed class PublicExportTests
     [Fact]
     public async Task HostPublishesFetchedPublicExportRecordsAtomically()
     {
-        const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\",\"category\":\"Melee\"}]";
+        const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test\",\"pt\":\"Teste\"},\"category\":\"Melee\"}]";
         using var client = new HttpClient(new FixtureHandler(System.Text.Encoding.UTF8.GetBytes(json)));
         var root = Path.Combine(Path.GetTempPath(), $"myframe-public-export-{Guid.NewGuid():N}");
         await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
@@ -82,7 +92,10 @@ public sealed class PublicExportTests
 
         Assert.NotNull(result);
         var records = await database.GetPublicExportItemsAsync("public-export");
-        Assert.Equal("Test", Assert.Single(records).Name);
+        var record = Assert.Single(records);
+        Assert.Equal("Test", record.Name);
+        Assert.Equal("Test", record.Aliases["en"]);
+        Assert.Equal("Teste", record.Aliases["pt"]);
     }
 
     [Fact]
