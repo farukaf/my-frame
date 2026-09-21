@@ -60,6 +60,19 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void ToolSchemasUsePortableNullableKeyword()
+    {
+        var tools = StrictToolRegistration.Create(JsonOptions());
+
+        foreach (var tool in tools)
+        {
+            Assert.Empty(TypeArrayPaths(tool.ProtocolTool.InputSchema));
+            if (tool.ProtocolTool.OutputSchema is { } output)
+                Assert.Empty(TypeArrayPaths(output));
+        }
+    }
+
+    [Fact]
     public async Task CursorKeepsTheOriginalSnapshotWhenCurrentDataChanges()
     {
         var oldSnapshot = Snapshot("old", ("/a", "Alpha"), ("/b", "Beta"));
@@ -530,6 +543,33 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains(result.Content.OfType<TextContentBlock>(), content =>
             content.Text.Contains(code, StringComparison.Ordinal) &&
             content.Text.Contains(retryable, StringComparison.Ordinal));
+    }
+
+    private static IReadOnlyList<string> TypeArrayPaths(JsonElement schema)
+    {
+        var paths = new List<string>();
+        Walk(schema, "$", paths);
+        return paths;
+
+        static void Walk(JsonElement value, string path, List<string> matches)
+        {
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in value.EnumerateObject())
+                {
+                    var propertyPath = $"{path}.{property.Name}";
+                    if (property.NameEquals("type") && property.Value.ValueKind == JsonValueKind.Array)
+                        matches.Add(propertyPath);
+                    Walk(property.Value, propertyPath, matches);
+                }
+            }
+            else if (value.ValueKind == JsonValueKind.Array)
+            {
+                var index = 0;
+                foreach (var item in value.EnumerateArray())
+                    Walk(item, $"{path}[{index++}]", matches);
+            }
+        }
     }
 
     private static MyFrameQueryService Service(IMyFrameSnapshotProvider provider)
