@@ -163,6 +163,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F122: validar atualização com MCP antigo e novo ativos sobre a mesma raiz ([evidências](docs/validacoes/2026-09-13-f122.md)).
 - [x] F123: criar probe não-mutante de readiness Codex/Claude, registrando configuração ausente ([evidências](docs/validacoes/2026-09-13-f123.md)).
 - [x] F125: executar regressão determinística Core/MCP após o hardening ([evidências](docs/validacoes/2026-09-13-f125.md)).
+- [x] F126: criar runner sequencial da regressão da solução sem explosão de workers ([evidências](docs/validacoes/2026-09-13-f126.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
