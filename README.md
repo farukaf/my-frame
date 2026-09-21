@@ -188,6 +188,7 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F95 — rollback da migração SQLite](docs/validacoes/2026-09-13-f95.md)
 - [Validação F96 — MCP ativo após atualização do banco](docs/validacoes/2026-09-13-f96.md)
 - [Validação F97 — gate reproduzível do contrato MCP](docs/validacoes/2026-09-13-f97.md)
+- [Validação F98 — interoperabilidade local do coletor e probe](docs/validacoes/2026-09-13-f98.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,
