@@ -165,6 +165,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F125: executar regressão determinística Core/MCP após o hardening ([evidências](docs/validacoes/2026-09-13-f125.md)).
 - [x] F126: criar runner sequencial da regressão da solução sem explosão de workers ([evidências](docs/validacoes/2026-09-13-f126.md)).
 - [x] F127: publicar distribuição 0.0.8 e validar pacote/stdio/Inspector distribuídos ([evidências](docs/validacoes/2026-09-13-f127.md)).
+- [x] F128: repetir tentativa F1 com Warframe real e registrar estado do Overwolf sem declarar captura ([evidências](docs/validacoes/2026-09-13-f128.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
