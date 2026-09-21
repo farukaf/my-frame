@@ -60,6 +60,44 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void ToolSchemasUsePortableNullableKeyword()
+    {
+        var tools = StrictToolRegistration.Create(JsonOptions());
+
+        foreach (var tool in tools)
+        {
+            Assert.Empty(TypeArrayPaths(tool.ProtocolTool.InputSchema));
+            if (tool.ProtocolTool.OutputSchema is { } output)
+                Assert.Empty(TypeArrayPaths(output));
+        }
+    }
+
+    [Fact]
+    public async Task DashboardAndMcpReadTheSameSnapshotProvider()
+    {
+        var inventory = new InventorySnapshot(DateTimeOffset.UtcNow,
+            new Dictionary<string, int> { ["/parity/item"] = 7 },
+            new HashSet<string>(), new Dictionary<string, long>(), 1, 2, "parity");
+        var item = CatalogItem("/parity/item", "Parity Item");
+        var snapshot = Snapshot("parity-snapshot", inventory, [item]);
+        var provider = new FakeProvider(snapshot);
+        using var folder = new TemporaryFolder();
+        using var dashboard = new DashboardService(new ParityPath(folder.Path),
+            new EmptyInventoryReader(), new EmptyCatalogReader(), new EmptyMarket(),
+            new EmptyPriceCache(), new EmptyMarketState(), new EmptyMarketItems(),
+            new RecommendationEngine(), snapshotProvider: provider);
+
+        var uiSnapshot = await dashboard.RefreshAsync(refreshPrices: false);
+        var mcpPage = await Service(provider).SearchInventoryAsync(null, null, null, null,
+            "all", false, 50, null, null, default);
+
+        var mcpItem = Assert.Single(mcpPage.Items);
+        Assert.Equal(uiSnapshot.Inventory.Stackables["/parity/item"], mcpItem.Quantity);
+        Assert.Equal(uiSnapshot.Inventory.Stackables.Count, mcpPage.TotalCount);
+        Assert.Equal(item.Name, mcpItem.Name);
+    }
+
+    [Fact]
     public async Task CursorKeepsTheOriginalSnapshotWhenCurrentDataChanges()
     {
         var oldSnapshot = Snapshot("old", ("/a", "Alpha"), ("/b", "Beta"));
@@ -394,7 +432,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     {
         var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Release", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
         Assert.True(File.Exists(server), $"Server was not built at {server}");
 
         using var data = new TemporaryFolder();
@@ -435,6 +473,53 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task TwoRealStdioServersServeConcurrentCallsWithinBudget()
+    {
+        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Release", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        Assert.True(File.Exists(server), $"Server was not built at {server}");
+
+        using var firstData = new TemporaryFolder();
+        using var secondData = new TemporaryFolder();
+        var firstEnvironment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+        firstEnvironment["MYFRAME_DATA_ROOT"] = firstData.Path;
+        var secondEnvironment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+        secondEnvironment["MYFRAME_DATA_ROOT"] = secondData.Path;
+        var firstTransport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "my-frame-concurrent-1", Command = server, InheritEnvironmentVariables = false,
+            EnvironmentVariables = firstEnvironment, ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        var secondTransport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "my-frame-concurrent-2", Command = server, InheritEnvironmentVariables = false,
+            EnvironmentVariables = secondEnvironment, ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        await using var first = await McpClient.CreateAsync(firstTransport);
+        await using var second = await McpClient.CreateAsync(secondTransport);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var firstCall = first.CallToolAsync("get_capabilities").AsTask();
+        var secondCall = second.CallToolAsync("get_sync_status").AsTask();
+        await Task.WhenAll(firstCall, secondCall);
+        stopwatch.Stop();
+        var firstResult = await firstCall;
+        var secondResult = await secondCall;
+
+        Assert.NotEqual(true, firstResult.IsError);
+        Assert.NotEqual(true, secondResult.IsError);
+        Assert.NotNull(firstResult.StructuredContent);
+        Assert.NotNull(secondResult.StructuredContent);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5),
+            $"Concurrent stdio calls exceeded 5 seconds: {stopwatch.Elapsed.TotalMilliseconds:N0} ms.");
+
+        await first.DisposeAsync();
+        await second.DisposeAsync();
+        await Task.Delay(2_000);
+    }
+
+    [Fact]
     public async Task ValidSearchWithNoMatchesIsAnEmptyPageNotAnError()
     {
         var service = Service(new FakeProvider(Snapshot("snapshot", ("/a", "Alpha"))));
@@ -449,6 +534,33 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Null(page.NextCursor);
     }
 
+    [Fact]
+    public async Task WarmSearchHandlesTwentyThousandInventoryEntriesWithinBudget()
+    {
+        var values = Enumerable.Range(0, 20_000)
+            .Select(index => ($"/synthetic/item-{index:D5}", $"Synthetic Item {index:D5}"))
+            .ToArray();
+        var service = Service(new FakeProvider(Snapshot("large-snapshot", values)));
+
+        var warm = await service.SearchInventoryAsync(null, null, null, null,
+            "all", false, 100, null, null, default);
+        Assert.Equal(20_000, warm.TotalCount);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        PageResponse<InventoryItemDto>? page = null;
+        for (var index = 0; index < 5; index++)
+            page = await service.SearchInventoryAsync(null, null, null, null,
+                "all", false, 100, null, null, default);
+        stopwatch.Stop();
+
+        Assert.NotNull(page);
+        Assert.Equal(100, page!.Count);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5),
+            $"Warm 20k search exceeded 5 seconds: {stopwatch.Elapsed.TotalMilliseconds:N0} ms.");
+        Assert.True(JsonSerializer.Serialize(page).Length < 128 * 1024,
+            "The paged response exceeded the 128 KiB response budget.");
+    }
+
     private static void AssertTextOnlyError(CallToolResult result, string code, string retryable)
     {
         Assert.True(result.IsError);
@@ -456,6 +568,33 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         Assert.Contains(result.Content.OfType<TextContentBlock>(), content =>
             content.Text.Contains(code, StringComparison.Ordinal) &&
             content.Text.Contains(retryable, StringComparison.Ordinal));
+    }
+
+    private static IReadOnlyList<string> TypeArrayPaths(JsonElement schema)
+    {
+        var paths = new List<string>();
+        Walk(schema, "$", paths);
+        return paths;
+
+        static void Walk(JsonElement value, string path, List<string> matches)
+        {
+            if (value.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in value.EnumerateObject())
+                {
+                    var propertyPath = $"{path}.{property.Name}";
+                    if (property.NameEquals("type") && property.Value.ValueKind == JsonValueKind.Array)
+                        matches.Add(propertyPath);
+                    Walk(property.Value, propertyPath, matches);
+                }
+            }
+            else if (value.ValueKind == JsonValueKind.Array)
+            {
+                var index = 0;
+                foreach (var item in value.EnumerateArray())
+                    Walk(item, $"{path}[{index++}]", matches);
+            }
+        }
     }
 
     private static MyFrameQueryService Service(IMyFrameSnapshotProvider provider)
@@ -502,6 +641,55 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
 
     private static CatalogItem CatalogItem(string id, string name) => new(id, name, "Items", "",
         "", false, false, false, false, null, null, null, [], []);
+
+    private sealed class ParityPath(string directory) : IAlecaFramePath
+    {
+        public string DirectoryPath { get; private set; } = directory;
+        public event EventHandler<string>? Changed;
+        public void SetDirectory(string directoryPath)
+        {
+            DirectoryPath = directoryPath;
+            Changed?.Invoke(this, directoryPath);
+        }
+    }
+
+    private sealed class EmptyInventoryReader : IAlecaFrameReader
+    {
+        public Task<InventorySnapshot> ReadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply inventory for this parity test.");
+    }
+
+    private sealed class EmptyCatalogReader : IAlecaCatalogReader
+    {
+        public Task<CatalogSnapshot> LoadAsync(string alecaDirectory, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Snapshot provider should supply catalog for this parity test.");
+    }
+
+    private sealed class EmptyMarket : IWarframeMarketClient
+    {
+        public Task<MarketAccount?> GetAccountAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketAccount?>(null);
+        public Task<IReadOnlyList<MarketOrder>> GetMyOrdersAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<MarketOrder>>([]);
+        public Task<MarketQuote?> GetTopOrdersAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task<MarketItemIndex?> GetItemIndexAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+    }
+
+    private sealed class EmptyPriceCache : IPriceCache
+    {
+        public Task<MarketQuote?> GetAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult<MarketQuote?>(null);
+        public Task SetAsync(MarketQuote quote, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketState : IMarketStateStore
+    {
+        public Task<MarketState?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketState?>(null);
+        public Task SaveAsync(MarketState state, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyMarketItems : IMarketItemIndexStore
+    {
+        public Task<MarketItemIndex?> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult<MarketItemIndex?>(null);
+        public Task SaveAsync(MarketItemIndex index, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeProvider(params MyFrameSnapshot[] snapshots) : IMyFrameSnapshotProvider
     {

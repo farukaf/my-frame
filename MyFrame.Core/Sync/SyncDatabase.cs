@@ -492,7 +492,9 @@ public sealed class SyncDatabase : IAsyncDisposable
                 await backupTarget.OpenAsync(cancellationToken);
                 backupSource.BackupDatabase(backupTarget);
             }
-            SqliteConnection.ClearAllPools();`r`n            SqliteConnection.ClearAllPools();`r`n            foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
+            SqliteConnection.ClearAllPools();
+            SqliteConnection.ClearAllPools();
+            foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
         finally
