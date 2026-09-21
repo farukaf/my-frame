@@ -20,10 +20,10 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F1: implementar spike Native GEP, manifest 8954, probe estrutural e transporte marker/hash; testes sintéticos aprovados.
 - [ ] F1: carregar extensão no Overwolf e provar captura real sem ler AlecaFrame ([roteiro](docs/validacoes/2026-09-13-f1.md)).
 - [ ] F1: documentar schema/cobertura real, snapshots/deltas e requisitos de distribuição.
-- [ ] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos.
+- [x] F2: validar SQLite read-only/WAL, escritor único, backup e decisão de um/dois bancos ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [x] F2: validar backup/reabertura e serialização do escritor em testes concorrentes.
-- [ ] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost.
-- [ ] F2: entregar página inicial de status com tentativas, erros e ação corretiva.
+- [x] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
+- [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
 - [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
