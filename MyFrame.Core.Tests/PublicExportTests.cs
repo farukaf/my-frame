@@ -122,6 +122,10 @@ public sealed class PublicExportTests
         Assert.Equal("ExportWarframes_en.json", result.RelativePath);
         Assert.Equal("00_gFCc6M4iI-LF11CBMzq4FQ", result.RevisionTag);
         Assert.Equal("Teste", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Aliases["pt"]);
+        var coverage = await database.GetSourceCoverageAsync("public-export");
+        Assert.Equal(InventoryFieldState.Known, coverage["uniqueName"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["aliases"]);
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["category"]);
     }
 
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
