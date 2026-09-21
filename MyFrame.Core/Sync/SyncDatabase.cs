@@ -354,8 +354,22 @@ public sealed class SyncDatabase : IAsyncDisposable
             await CommandAsync(connection, transaction, "UPDATE source_revisions SET state='retained' WHERE source_id=$source AND state='active';", cancellationToken, ("$source", batch.SourceId));
             await CommandAsync(connection, transaction, "INSERT INTO source_revisions(revision_id, source_id, content_hash, payload_json, parser_version, record_count, state, retrieved_at, published_at) VALUES ($revision, $source, $hash, $payload, $parser, $count, 'active', $at, $at);", cancellationToken, ("$revision", revisionId), ("$source", batch.SourceId), ("$hash", batch.ContentHash), ("$payload", batch.PayloadJson), ("$parser", batch.ParserVersion), ("$count", batch.RecordCount), ("$at", now));
             if (records is not null)
+            {
                 foreach (var record in records)
                     await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, aliases_json, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $aliases, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$aliases", JsonSerializer.Serialize(record.Aliases)), ("$raw", (object?)record.RawJson ?? "{}"));
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='public-export';", cancellationToken);
+                foreach (var field in new[]
+                {
+                    (Path: "uniqueName", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.UniqueName))),
+                    (Path: "name", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Name))),
+                    (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
+                    (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
+                    (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
+                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson)))
+                })
+                    await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
+                        ("$field", field.Path), ("$state", (field.Observed ? InventoryFieldState.Known : InventoryFieldState.NotObserved).ToString()), ("$at", now), ("$detail", $"records={records.Count}"));
+            }
             if (inventory is { } data)
             {
                 await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));

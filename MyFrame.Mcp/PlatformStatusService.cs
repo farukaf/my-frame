@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MyFrame.Core;
 using MyFrame.Core.Sync;
 
@@ -15,6 +16,17 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
+public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
+public sealed record PublicExportItemDto(string UniqueName, string? Name, string? Category,
+    string? Description, IReadOnlyDictionary<string, string> Aliases);
+public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
+    string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
+    IReadOnlyList<PublicExportItemDto> Items);
+public sealed record ReferenceSearchHitDto(string Kind, string Title, string SectionId,
+    string? SectionTitle, string Snippet, double Score, string Url, string Revision,
+    string? License, string? Author, bool TrustedForFacts);
+public sealed record ReferenceSearchResponse(DateTimeOffset ServedAt, string State,
+    int Documents, int RejectedDocuments, IReadOnlyList<ReferenceSearchHitDto> Hits);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
@@ -54,6 +66,21 @@ public sealed class PlatformStatusService
         foreach (var sourceId in SourceIds)
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
+            if (sourceId == "references" && status is null)
+            {
+                var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+                long count = 0, rejected = 0;
+                if (Directory.Exists(directory))
+                    foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+                    {
+                        try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); count++; }
+                        catch (InvalidDataException) { rejected++; }
+                        catch (JsonException) { rejected++; }
+                    }
+                values.Add(new(sourceId, count == 0 ? "not_initialized" : rejected == 0 ? "available" : "partial", null, null, null,
+                    null, count == 0 ? null : "reference-file-1", count, rejected));
+                continue;
+            }
             values.Add(status is null
                 ? new(sourceId, "not_initialized", null, null, null, null, null, 0, 0)
                 : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
@@ -104,6 +131,86 @@ public sealed class PlatformStatusService
             .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
             .ToArray();
     }
+
+    public async Task<IReadOnlyList<SourceCoverageDto>> GetSourceCoverageAsync(
+        string sourceId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
+            throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
+        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc" };
+        if (!allowed.Contains(sourceId, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
+        return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
+            .ToArray();
+    }
+
+    public async Task<PublicExportSearchResponse> SearchPublicExportAsync(
+        string? text = null, string? category = null, int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit is < 1 or > 200)
+            throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 200.");
+        if (text?.Length > 200 || category?.Length > 100)
+            throw new ArgumentException("Search filters exceed their length limit.");
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var normalizedText = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        var normalizedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
+        var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        var items = records
+            .Where(record => normalizedCategory is null || string.Equals(record.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(record => normalizedText is null || Contains(record.UniqueName, normalizedText) ||
+                Contains(record.Name, normalizedText) || Contains(record.Category, normalizedText) ||
+                record.Aliases.Values.Any(value => Contains(value, normalizedText)))
+            .OrderBy(record => record.Name ?? record.UniqueName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(record => record.UniqueName, StringComparer.Ordinal)
+            .Take(limit)
+            .Select(record => new PublicExportItemDto(record.UniqueName, record.Name, record.Category,
+                record.Description, record.Aliases))
+            .ToArray();
+        var status = await database.GetStatusAsync("public-export", cancellationToken);
+        var coverage = await database.GetSourceCoverageAsync("public-export", cancellationToken);
+        return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" : status.LastRunState ?? "unknown",
+            status?.ActiveRevisionId, status?.ParserVersion,
+            coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal), items);
+    }
+
+    public Task<ReferenceSearchResponse> SearchReferencesAsync(
+        string query, int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("query is required.", nameof(query));
+        if (query.Length > 200) throw new ArgumentException("query is limited to 200 characters.", nameof(query));
+        if (limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(limit));
+        cancellationToken.ThrowIfCancellationRequested();
+        var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+        if (!Directory.Exists(directory))
+            return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, "not_initialized", 0, 0, []));
+
+        var documents = new List<ReferenceDocument>();
+        var rejected = 0;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { documents.Add(ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path))); }
+            catch (InvalidDataException) { rejected++; }
+            catch (JsonException) { rejected++; }
+        }
+        var hits = ReferenceSearch.Search(documents, query.Trim(), limit);
+        var result = hits.Select(hit =>
+        {
+            var document = documents.First(value => value.Url == hit.SourceUrl && value.Revision == hit.Revision);
+            return new ReferenceSearchHitDto(document.Kind.ToString(), document.Title, hit.SectionId,
+                hit.Title, hit.Snippet, hit.Score, hit.SourceUrl.ToString(), hit.Revision,
+                document.License, document.Author, document.IsTrustedForFacts);
+        }).ToArray();
+        var state = documents.Count == 0 ? "empty" : rejected == 0 ? "available" : "partial";
+        return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, state, documents.Count, rejected, result));
+    }
+
+    private static bool Contains(string? value, string text) =>
+        value?.Contains(text, StringComparison.OrdinalIgnoreCase) == true;
 
     public async Task<IReadOnlyList<InventoryEquipmentDto>> GetInventoryEquipmentAsync(
         string? typeId = null, int limit = 100, CancellationToken cancellationToken = default)
