@@ -5,9 +5,10 @@ using MyFrame.Core.Sync;
 var publicExport = args.Any(argument => string.Equals(argument, "--public-export", StringComparison.Ordinal));
 var worldState = args.Any(argument => string.Equals(argument, "--world-state", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (worldState ? 1 : 0) + (statusOnly ? 1 : 0) != 1)
+var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
+if ((publicExport ? 1 : 0) + (worldState ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --world-state | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --world-state | --all | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -46,6 +47,25 @@ if (worldState)
         source = "worldstate-pc"
     }));
     return result.State == "published" ? 0 : 1;
+}
+
+if (allSources)
+{
+    using var worldStateClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+    using var publicExportClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+    var world = await new WorldStateSyncRunner().RunAsync(database, host, worldStateClient);
+    var catalog = await new PublicExportSyncRunner().RunAsync(database, host, publicExportClient);
+    var success = world.State == "published" && catalog.State == "published";
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = success ? "published" : "partial-failure",
+        sources = new object[]
+        {
+            new { source = world.Source, state = world.State, records = world.Records, revisionId = world.RevisionId, parserVersion = world.ParserVersion, errorCode = world.ErrorCode },
+            new { source = "public-export", state = catalog.State, records = catalog.Records, revisionId = catalog.RevisionId, parserVersion = catalog.ParserVersion, errorCode = catalog.ErrorCode, path = catalog.RelativePath, revisionTag = catalog.RevisionTag }
+        }
+    }));
+    return success ? 0 : 1;
 }
 
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
