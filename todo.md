@@ -188,6 +188,7 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F150: usar heartbeat como evidência primária de runtime no gate Overwolf ([evidências](docs/validacoes/2026-09-13-f150.md)).
 - [x] F151: permitir sincronização Public Export por JSON local, sem depender do transporte HTTP ([evidências](docs/validacoes/2026-09-13-f151.md)).
 - [x] F152: permitir sincronização World State por JSON local, preservando bounties e recompensas ([evidências](docs/validacoes/2026-09-13-f152.md)).
+- [x] F153: agregar múltiplos documentos Public Export locais em uma revisão de catálogo ([evidências](docs/validacoes/2026-09-13-f153.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
