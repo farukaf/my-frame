@@ -9,9 +9,10 @@ var worldState = args.Any(argument => string.Equals(argument, "--world-state", S
 var worldStateFile = args.Any(argument => string.Equals(argument, "--world-state-file", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + (publicExportDirectory ? 1 : 0) + (worldState ? 1 : 0) + (worldStateFile ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) != 1)
+var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
+if ((publicExport ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --all | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -73,7 +74,7 @@ if (publicExportFile)
     return result.State == "published" ? 0 : 1;
 }
 
-if (publicExportDirectory)
+if (publicExportDirectory && !allLocal)
 {
     var directoryIndex = Array.FindIndex(args, argument => string.Equals(argument, "--public-export-directory", StringComparison.Ordinal));
     if (directoryIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(args[directoryIndex + 1]))
@@ -94,7 +95,7 @@ if (publicExportDirectory)
     return result.State == "published" ? 0 : 1;
 }
 
-if (worldStateFile)
+if (worldStateFile && !allLocal)
 {
     var fileIndex = Array.FindIndex(args, argument => string.Equals(argument, "--world-state-file", StringComparison.Ordinal));
     if (fileIndex + 1 >= args.Length || string.IsNullOrWhiteSpace(args[fileIndex + 1]))
@@ -129,6 +130,31 @@ if (allSources)
         {
             new { source = world.Source, state = world.State, records = world.Records, revisionId = world.RevisionId, parserVersion = world.ParserVersion, errorCode = world.ErrorCode },
             new { source = "public-export", state = catalog.State, records = catalog.Records, revisionId = catalog.RevisionId, parserVersion = catalog.ParserVersion, errorCode = catalog.ErrorCode, path = catalog.RelativePath, revisionTag = catalog.RevisionTag }
+        }
+    }));
+    return success ? 0 : 1;
+}
+
+if (allLocal)
+{
+    var directoryIndex = Array.FindIndex(args, argument => string.Equals(argument, "--public-export-directory", StringComparison.Ordinal));
+    var fileIndex = Array.FindIndex(args, argument => string.Equals(argument, "--world-state-file", StringComparison.Ordinal));
+    if (directoryIndex + 1 >= args.Length || fileIndex + 1 >= args.Length ||
+        string.IsNullOrWhiteSpace(args[directoryIndex + 1]) || string.IsNullOrWhiteSpace(args[fileIndex + 1]))
+    {
+        Console.Error.WriteLine("--all-local requires --public-export-directory <dir> and --world-state-file <path>.");
+        return 2;
+    }
+    var catalog = await new PublicExportSyncRunner().RunDirectoryAsync(database, host, args[directoryIndex + 1]);
+    var world = await new WorldStateSyncRunner().RunFileAsync(database, host, args[fileIndex + 1]);
+    var success = catalog.State == "published" && world.State == "published";
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        state = success ? "published" : "partial-failure",
+        sources = new object[]
+        {
+            new { source = "public-export", state = catalog.State, records = catalog.Records, revisionId = catalog.RevisionId, parserVersion = catalog.ParserVersion, errorCode = catalog.ErrorCode },
+            new { source = "worldstate-pc", state = world.State, records = world.Records, revisionId = world.RevisionId, parserVersion = world.ParserVersion, errorCode = world.ErrorCode }
         }
     }));
     return success ? 0 : 1;
