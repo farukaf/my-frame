@@ -147,6 +147,24 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task SharedWorldStateRunnerPublishesLocalFileWithExplicitParserVersion()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-file-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var source = Path.Combine(root, "worldState.json");
+        await File.WriteAllTextAsync(source, "{\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[]}]}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new WorldStateSyncRunner().RunFileAsync(database, host, source);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal("worldstate-file-1", result.ParserVersion);
+        Assert.Equal(1, result.Records);
+        Assert.Equal("Entrati", Assert.Single(await database.GetCurrentWorldStateBountiesAsync(DateTimeOffset.UtcNow.AddMinutes(1))).Syndicate);
+    }
+
+    [Fact]
     public async Task OfficialWorldStateFlowsThroughHostAndPersistsProvenance()
     {
         const string json = """
