@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MyFrame.Core;
 using MyFrame.Core.Sync;
 
@@ -21,6 +22,11 @@ public sealed record PublicExportItemDto(string UniqueName, string? Name, string
 public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string State,
     string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
     IReadOnlyList<PublicExportItemDto> Items);
+public sealed record ReferenceSearchHitDto(string Kind, string Title, string SectionId,
+    string? SectionTitle, string Snippet, double Score, string Url, string Revision,
+    string? License, string? Author, bool TrustedForFacts);
+public sealed record ReferenceSearchResponse(DateTimeOffset ServedAt, string State,
+    int Documents, int RejectedDocuments, IReadOnlyList<ReferenceSearchHitDto> Hits);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
@@ -154,6 +160,38 @@ public sealed class PlatformStatusService
         return new(DateTimeOffset.UtcNow, status is null ? "not_initialized" : status.LastRunState ?? "unknown",
             status?.ActiveRevisionId, status?.ParserVersion,
             coverage.ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.Ordinal), items);
+    }
+
+    public Task<ReferenceSearchResponse> SearchReferencesAsync(
+        string query, int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("query is required.", nameof(query));
+        if (query.Length > 200) throw new ArgumentException("query is limited to 200 characters.", nameof(query));
+        if (limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(limit));
+        cancellationToken.ThrowIfCancellationRequested();
+        var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
+        if (!Directory.Exists(directory))
+            return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, "not_initialized", 0, 0, []));
+
+        var documents = new List<ReferenceDocument>();
+        var rejected = 0;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { documents.Add(ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path))); }
+            catch (InvalidDataException) { rejected++; }
+            catch (JsonException) { rejected++; }
+        }
+        var hits = ReferenceSearch.Search(documents, query.Trim(), limit);
+        var result = hits.Select(hit =>
+        {
+            var document = documents.First(value => value.Url == hit.SourceUrl && value.Revision == hit.Revision);
+            return new ReferenceSearchHitDto(document.Kind.ToString(), document.Title, hit.SectionId,
+                hit.Title, hit.Snippet, hit.Score, hit.SourceUrl.ToString(), hit.Revision,
+                document.License, document.Author, document.IsTrustedForFacts);
+        }).ToArray();
+        var state = documents.Count == 0 ? "empty" : rejected == 0 ? "available" : "partial";
+        return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, state, documents.Count, rejected, result));
     }
 
     private static bool Contains(string? value, string text) =>

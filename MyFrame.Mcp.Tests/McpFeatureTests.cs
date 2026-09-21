@@ -14,12 +14,38 @@ namespace MyFrame.Mcp.Tests;
 public sealed class McpFeatureTests(ITestOutputHelper output)
 {
     [Fact]
+    public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-references-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            Directory.CreateDirectory(Path.Combine(root, "references"));
+            File.WriteAllText(Path.Combine(root, "references", "build.json"), "{\"kind\":\"overframe\",\"url\":\"https://overframe.gg/build/123\",\"title\":\"Test build\",\"revision\":\"r1\",\"license\":\"community\",\"author\":\"tester\",\"sections\":[{\"id\":\"mods\",\"title\":\"Mods\",\"content\":\"Use Serration for fire rate.\"}]}");
+            File.WriteAllText(Path.Combine(root, "references", "rejected.json"), "{\"kind\":\"wiki\",\"url\":\"https://example.com/not-allowed\",\"title\":\"bad\",\"revision\":\"r1\",\"sections\":[]}");
+
+            var response = await new PlatformStatusService().SearchReferencesAsync("fire rate");
+
+            Assert.Equal("partial", response.State);
+            Assert.Equal(1, response.Documents);
+            Assert.Equal(1, response.RejectedDocuments);
+            var hit = Assert.Single(response.Hits);
+            Assert.Equal("Overframe", hit.Kind);
+            Assert.Equal("community", hit.License);
+            Assert.Equal("tester", hit.Author);
+            Assert.False(hit.TrustedForFacts);
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+    }
+
+    [Fact]
     public void EveryToolIsExplicitlyReadOnlyAndHasThePlannedName()
     {
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export" };
+        var expected = new[] { "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_coverage", "get_item", "get_loadout", "get_mods", "get_overview", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -363,7 +389,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(21, tools.Count);
+        Assert.Equal(22, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);
