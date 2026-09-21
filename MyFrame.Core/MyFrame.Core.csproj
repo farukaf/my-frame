@@ -10,6 +10,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.11" />
     <!-- Keep SQLite native bits on the latest 2.1.x release while Microsoft.Data.Sqlite updates its floor. -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
     <PackageReference Include="SQLitePCLRaw.core" Version="2.1.13" />

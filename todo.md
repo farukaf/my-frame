@@ -40,8 +40,9 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
 - [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
-- [ ] F6: migrar settings/caches com rollback e resolver autenticação WFM independente.
-- [ ] F6: comprovar instalação limpa sem AlecaFrame nem caches legados.
+- [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
+- [ ] F6: resolver autenticação WFM independente.
+- [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
 - [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
 - [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
@@ -150,8 +151,23 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F110: validar expiração por limite de memória dos snapshots retidos ([evidências](docs/validacoes/2026-09-13-f110.md)).
 - [x] F111: exercitar erro MCP com root limpo, sem rede, escrita ou vazamento ([evidências](docs/validacoes/2026-09-13-f111.md)).
 - [x] F112: reconciliar a matriz com evidências e pendências externas explícitas ([evidências](docs/validacoes/2026-09-13-f112.md)).
+- [x] F113: migrar caches/estado de mercado para SQLite com importação legada não destrutiva ([evidências](docs/validacoes/2026-09-13-f113.md)).
+- [x] F114: migrar settings para SQLite com rollback pelo arquivo legado ([evidências](docs/validacoes/2026-09-13-f114.md)).
+- [x] F115: comprovar instalação limpa sem AlecaFrame/caches legados no MCP ([evidências](docs/validacoes/2026-09-13-f115.md)).
+- [x] F116: proteger credencial WFM com DPAPI independente do AlecaFrame ([evidências](docs/validacoes/2026-09-13-f116.md)).
+- [x] F117: criar serviço de status, validação, gravação e revogação local da credencial WFM ([evidências](docs/validacoes/2026-09-13-f117.md)).
+- [x] F118: adicionar UX de salvar/status/revogar credencial WFM sem expor segredo ([evidências](docs/validacoes/2026-09-13-f118.md)).
+- [x] F119: validar App e MCP ativos lendo a mesma raiz SQLite ([evidências](docs/validacoes/2026-09-13-f119.md)).
+- [x] F120: medir latência, memória e bytes com fixture grande, dois servidores e App ativo ([evidências](docs/validacoes/2026-09-13-f120.md)).
+- [x] F121: executar a matriz mínima de regressão do contrato MCP, incluindo troca de contexto ([evidências](docs/validacoes/2026-09-13-f121.md)).
+- [x] F122: validar atualização com MCP antigo e novo ativos sobre a mesma raiz ([evidências](docs/validacoes/2026-09-13-f122.md)).
+- [x] F123: criar probe não-mutante de readiness Codex/Claude, registrando configuração ausente ([evidências](docs/validacoes/2026-09-13-f123.md)).
+- [x] F125: executar regressão determinística Core/MCP após o hardening ([evidências](docs/validacoes/2026-09-13-f125.md)).
+- [x] F126: criar runner sequencial da regressão da solução sem explosão de workers ([evidências](docs/validacoes/2026-09-13-f126.md)).
+- [x] F127: publicar distribuição 0.0.8 e validar pacote/stdio/Inspector distribuídos ([evidências](docs/validacoes/2026-09-13-f127.md)).
+- [x] F128: repetir tentativa F1 com Warframe real e registrar estado do Overwolf sem declarar captura ([evidências](docs/validacoes/2026-09-13-f128.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
-- [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
+- [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
 
 ## Baseline e pendências do MCP atual
@@ -171,7 +187,7 @@ para a nova matriz e continuam abertas até validação.
 - [x] Centralizar pasta do AlecaFrame e preferências de recomendação em configuração comum.
 - [x] Migrar Preferences e caches pelo app, de forma idempotente e recuperável, preservando origens.
 - [x] Versionar settings/regras/contrato e publicar cada arquivo por substituição atômica.
-- [ ] Garantir gerações consistentes de mercado: proposta de manifesto JSON substituída por SQLite em F2 (DB02–DB06); objetivo ainda pendente.
+- [x] Garantir geração consistente de settings/caches: JSON legado importado e novas escritas em SQLite ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
 - [x] Separar interfaces leitoras/escritoras e remover dependência de rede/token da composição MCP.
 - [x] Ler todas as cotações locais relevantes em lote, separando o orçamento online de 100 slugs.
 - [x] Definir DTOs MCP versionados, sem propriedades de apresentação nem caminhos locais.
@@ -200,7 +216,7 @@ para a nova matriz e continuam abertas até validação.
 
 - [x] Distribuir `MyFrame.Mcp.exe` junto com o aplicativo.
 - [x] Criar fluxo de publicação com caminho estável e upgrade de app/MCP juntos.
-- [ ] Validar migração, formato incompatível, rollback e atualização com servidor ativo.
+- [x] Validar migração, formato incompatível, rollback e atualização com servidor ativo ([F22, F38, F40, F104, F122](docs/validacoes/2026-09-13-f122.md)).
 - [x] Adicionar à tela de configurações uma seção MCP com comandos para Codex e Claude.
 - [x] Oferecer botão para copiar cada comando e mostrar o caminho do executável.
 - [x] Documentar cadastro, verificação, atualização e remoção do servidor.
@@ -211,13 +227,13 @@ para a nova matriz e continuam abertas até validação.
 - [x] Testar projeções, paginação, cursores e limites com fixtures sintéticas.
 - [x] Testar paridade entre o snapshot usado pela interface e as respostas MCP ([F109](docs/validacoes/2026-09-13-f109.md)).
 - [x] Testar resultados esperados independentes: preço parcial, reservas, farm e quantidade desconhecida.
-- [ ] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto.
+- [x] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto ([F121](docs/validacoes/2026-09-13-f121.md)).
 - [x] Testar paginação durante atualização e assinatura/vínculo de cursores.
 - [x] Testar expiração temporal e descarte por limite de memória ([F110](docs/validacoes/2026-09-13-f110.md)).
-- [ ] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo.
+- [x] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo ([F120](docs/validacoes/2026-09-13-f120.md)).
 - [x] Testar que logs `stdio` não contêm autorização e que DTOs omitem token/caminhos.
 - [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
-- [ ] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo.
+- [x] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo ([F119](docs/validacoes/2026-09-13-f119.md)).
 - [x] Validar o protocolo com MCP Inspector ([F106–F108](docs/validacoes/2026-09-13-f108.md)).
 - [ ] Executar smoke tests reais em Codex e Claude no Windows.
 - [x] Executar restore, build, publicação e suíte completa antes da entrega.
