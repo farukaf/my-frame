@@ -53,7 +53,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IMarketStateStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IMarketItemIndexStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
         builder.Services.AddSingleton<IWarframeMarketClient>(p => new WarframeMarketClient(
-            new HttpClient(), new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
+            new HttpClient(), new ProtectedFileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath),
             p.GetRequiredService<ILogger<WarframeMarketClient>>()));
         builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
         builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
