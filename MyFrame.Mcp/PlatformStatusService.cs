@@ -15,6 +15,7 @@ public sealed record SyncRunDto(string RunId, string SourceId, string State,
     DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long RecordsReceived,
     long RecordsAccepted, long RecordsRejected, string? ErrorCode);
 public sealed record InventoryCoverageDto(string FieldPath, string State);
+public sealed record SourceCoverageDto(string SourceId, string FieldPath, string State);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryUpgradeDto(string? OwnerInstanceId, string SourceField,
@@ -102,6 +103,21 @@ public sealed class PlatformStatusService
         var coverage = await database.GetInventoryCoverageAsync(cancellationToken);
         return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new InventoryCoverageDto(pair.Key, pair.Value.ToString()))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<SourceCoverageDto>> GetSourceCoverageAsync(
+        string sourceId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
+            throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
+        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc" };
+        if (!allowed.Contains(sourceId, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
+        await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
+        var coverage = await database.GetSourceCoverageAsync(sourceId, cancellationToken);
+        return coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new SourceCoverageDto(sourceId, pair.Key, pair.Value.ToString()))
             .ToArray();
     }
 
