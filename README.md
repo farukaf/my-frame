@@ -191,6 +191,18 @@ e falhas, sem gravar JWT, cabeçalho `Authorization` ou o inventário completo.
 - [Validação F98 — interoperabilidade local do coletor e probe](docs/validacoes/2026-09-13-f98.md)
 - [Validação F99 — desempenho de consulta MCP em fixture grande](docs/validacoes/2026-09-13-f99.md)
 - [Validação F100 — gate operacional de processo MCP somente leitura](docs/validacoes/2026-09-13-f100.md)
+- [Validação F101 — schema mínimo de resultados da avaliação F10](docs/validacoes/2026-09-13-f101.md)
+- [Validação F102 — dois servidores MCP em paralelo](docs/validacoes/2026-09-13-f102.md)
+- [Validação F103 — memória de dois processos MCP](docs/validacoes/2026-09-13-f103.md)
+- [Validação F104 — upgrade lado a lado da distribuição](docs/validacoes/2026-09-13-f104.md)
+- [Validação F105 — configuração dos clientes MCP](docs/validacoes/2026-09-13-f105.md)
+- [Validação F106 — MCP Inspector CLI](docs/validacoes/2026-09-13-f106.md)
+- [Validação F107 — schemas MCP nullable portáveis](docs/validacoes/2026-09-13-f107.md)
+- [Validação F108 — chamadas MCP pelo Inspector](docs/validacoes/2026-09-13-f108.md)
+- [Validação F109 — paridade do snapshot entre UI e MCP](docs/validacoes/2026-09-13-f109.md)
+- [Validação F110 — limite de retenção dos snapshots](docs/validacoes/2026-09-13-f110.md)
+- [Validação F111 — falha MCP sem escrita ou vazamento](docs/validacoes/2026-09-13-f111.md)
+- [Validação F112 — reconciliação da matriz](docs/validacoes/2026-09-13-f112.md)
 
 As skills versionadas para análise de builds, farm/progressão e economia ficam em
 [`skills/`](skills/README.md). Elas orientam o cliente LLM a respeitar snapshots,

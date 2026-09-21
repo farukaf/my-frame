@@ -138,6 +138,18 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F98: validar interoperabilidade local do coletor com o probe .NET ([evidências](docs/validacoes/2026-09-13-f98.md)).
 - [x] F99: medir consulta aquecida com 20 mil entradas e orçamento de resposta ([evidências](docs/validacoes/2026-09-13-f99.md)).
 - [x] F100: demonstrar ausência de sockets TCP e escrita no processo MCP ([evidências](docs/validacoes/2026-09-13-f100.md)).
+- [x] F101: endurecer o schema de resultados da avaliação F10 ([evidências](docs/validacoes/2026-09-13-f101.md)).
+- [x] F102: validar dois servidores MCP e chamadas concorrentes em roots isolados ([evidências](docs/validacoes/2026-09-13-f102.md)).
+- [x] F103: medir WorkingSet de dois processos MCP em paralelo ([evidências](docs/validacoes/2026-09-13-f103.md)).
+- [x] F104: validar upgrade lado a lado com App/MCP versionados ([evidências](docs/validacoes/2026-09-13-f104.md)).
+- [x] F105: validar configuração local do Codex e comandos de onboarding do Claude ([evidências](docs/validacoes/2026-09-13-f105.md)).
+- [x] F106: executar MCP Inspector CLI contra `tools/list` e registrar avisos de portabilidade ([evidências](docs/validacoes/2026-09-13-f106.md)).
+- [x] F107: corrigir schemas nullable para a forma portátil e zerar avisos do Inspector ([evidências](docs/validacoes/2026-09-13-f107.md)).
+- [x] F108: validar chamadas estruturadas reais via MCP Inspector CLI ([evidências](docs/validacoes/2026-09-13-f108.md)).
+- [x] F109: provar paridade de projeção entre Dashboard/UI e MCP no mesmo snapshot ([evidências](docs/validacoes/2026-09-13-f109.md)).
+- [x] F110: validar expiração por limite de memória dos snapshots retidos ([evidências](docs/validacoes/2026-09-13-f110.md)).
+- [x] F111: exercitar erro MCP com root limpo, sem rede, escrita ou vazamento ([evidências](docs/validacoes/2026-09-13-f111.md)).
+- [x] F112: reconciliar a matriz com evidências e pendências externas explícitas ([evidências](docs/validacoes/2026-09-13-f112.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [ ] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore.
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -197,16 +209,16 @@ para a nova matriz e continuam abertas até validação.
 ## Validação
 
 - [x] Testar projeções, paginação, cursores e limites com fixtures sintéticas.
-- [ ] Testar paridade entre o snapshot usado pela interface e as respostas MCP.
+- [x] Testar paridade entre o snapshot usado pela interface e as respostas MCP ([F109](docs/validacoes/2026-09-13-f109.md)).
 - [x] Testar resultados esperados independentes: preço parcial, reservas, farm e quantidade desconhecida.
 - [ ] Executar toda a matriz mínima de regressão de docs/MCP.md, incluindo troca de contexto.
 - [x] Testar paginação durante atualização e assinatura/vínculo de cursores.
-- [ ] Testar expiração temporal e descarte por limite de memória.
+- [x] Testar expiração temporal e descarte por limite de memória ([F110](docs/validacoes/2026-09-13-f110.md)).
 - [ ] Medir latência, memória e bytes com fixture grande, dois servidores e app ativo.
 - [x] Testar que logs `stdio` não contêm autorização e que DTOs omitem token/caminhos.
-- [ ] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas.
+- [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
 - [ ] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo.
-- [ ] Validar o protocolo com MCP Inspector.
+- [x] Validar o protocolo com MCP Inspector ([F106–F108](docs/validacoes/2026-09-13-f108.md)).
 - [ ] Executar smoke tests reais em Codex e Claude no Windows.
 - [x] Executar restore, build, publicação e suíte completa antes da entrega.
 - [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
