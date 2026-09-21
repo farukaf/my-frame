@@ -128,6 +128,25 @@ public sealed class PublicExportTests
         Assert.Equal(InventoryFieldState.NotObserved, coverage["category"]);
     }
 
+    [Fact]
+    public async Task SharedRunnerPublishesLocalPublicExportFileWithItsParserVersion()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-file-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var source = Path.Combine(root, "ExportWeapons_en.json");
+        await File.WriteAllTextAsync(source, "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Blade\",\"pt\":\"Lâmina\"},\"category\":\"Weapon\"}]");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+
+        var result = await new PublicExportSyncRunner().RunFileAsync(database, host, source);
+
+        Assert.Equal("published", result.State);
+        Assert.Equal(1, result.Records);
+        Assert.Equal("ExportWeapons_en.json", result.RelativePath);
+        Assert.Equal("public-export-file-1", result.ParserVersion);
+        Assert.Equal("Lâmina", Assert.Single(await database.GetPublicExportItemsAsync("public-export")).Aliases["pt"]);
+    }
+
     private sealed class FixtureHandler(byte[] payload) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
