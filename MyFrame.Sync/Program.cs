@@ -3,9 +3,10 @@ using MyFrame.Core;
 using MyFrame.Core.Sync;
 
 var publicExport = args.Any(argument => string.Equals(argument, "--public-export", StringComparison.Ordinal));
-if (!publicExport)
+var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
+if (!publicExport && !statusOnly)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync --public-export [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -22,6 +23,14 @@ if (dataRootIndex >= 0)
 
 await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
 await using var host = new SyncHost(database);
+if (statusOnly)
+{
+    var statuses = await Task.WhenAll(new[] { "public-export", "worldstate-pc", "overwolf-inventory" }
+        .Select(async source => new { source, status = await database.GetStatusAsync(source) }));
+    Console.WriteLine(JsonSerializer.Serialize(new { dataRoot = MyFrameStoragePaths.RootDirectory, statuses }));
+    return 0;
+}
+
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
 try
 {
