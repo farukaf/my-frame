@@ -11,7 +11,7 @@ $new = (Resolve-Path -LiteralPath $NewDistributionPath).Path
 if ([string]::IsNullOrWhiteSpace($SeedServerPath)) { $SeedServerPath = Join-Path $PSScriptRoot '..\MyFrame.Mcp\bin\Debug\net10.0\win-x64\MyFrame.Mcp.exe' }
 $seedServer = (Resolve-Path -LiteralPath $SeedServerPath).Path
 foreach ($directory in @($old,$new)) {
-    if (-not (Test-Path -LiteralPath (Join-Path $directory 'MyFrame.Mcp.exe') -PathType Leaf)) { throw "MyFrame.Mcp.exe ausente: $directory" }
+    if (-not (Test-Path -LiteralPath (Join-Path $directory 'MyFrame.Mcp.exe') -PathType Leaf)) { throw "MyFrame.Mcp.exe is missing: $directory" }
 }
 $npxCommand = Get-Command npx.cmd -ErrorAction SilentlyContinue
 if (-not $npxCommand) { $npxCommand = Get-Command npx -ErrorAction Stop }
@@ -32,8 +32,8 @@ try {
     $seedExit = $seed.ExitCode
     if ($null -ne $seedExit -and [int]$seedExit -ne 0) { throw "Seed MCP falhou: $($seedErr | Get-Content -Raw)" }
     $seedPayload = Get-Content -Raw $seedOut | ConvertFrom-Json
-    if ($seedPayload.result.isError -or $null -eq $seedPayload.result.structuredContent) { throw 'Seed MCP não retornou structuredContent.' }
-    if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'Seed não criou data.db.' }
+    if ($seedPayload.result.isError -or $null -eq $seedPayload.result.structuredContent) { throw 'MCP seed did not return structuredContent.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'Seed did not create data.db.' }
 
     foreach ($directory in @($old,$new)) {
         $start = [Diagnostics.ProcessStartInfo]::new()
@@ -42,19 +42,19 @@ try {
         $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
         $start.Environment['MYFRAME_DATA_ROOT'] = $root
         $p = [Diagnostics.Process]::new(); $p.StartInfo = $start
-        if (-not $p.Start()) { throw "Não iniciou MCP: $directory" }
+        if (-not $p.Start()) { throw "MCP did not start: $directory" }
         $processes += $p
     }
     Start-Sleep -Milliseconds 750
-    if (@($processes | Where-Object HasExited).Count -gt 0) { throw 'Uma versão encerrou enquanto a atualização ativa estava aberta.' }
+    if (@($processes | Where-Object HasExited).Count -gt 0) { throw 'A version exited while the active upgrade was open.' }
     foreach ($p in $processes) { $p.StandardInput.Close() }
     foreach ($p in $processes) {
         $out = $p.StandardOutput.ReadToEndAsync().GetAwaiter().GetResult()
-        if (-not $p.WaitForExit(15000)) { $p.Kill(); throw 'MCP não encerrou por EOF.' }
-        if ($p.ExitCode -ne 0) { throw "MCP encerrou com exit code $($p.ExitCode)." }
+        if (-not $p.WaitForExit(15000)) { $p.Kill(); throw 'MCP did not exit after EOF.' }
+        if ($p.ExitCode -ne 0) { throw "MCP exited with exit code $($p.ExitCode)." }
         if ($out.Length -ne 0) { throw 'MCP escreveu stdout sem request.' }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'data.db desapareceu após upgrade ativo.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'data.db disappeared after the active upgrade.' }
     Write-Output 'MCP_ACTIVE_UPGRADE_OK=1'
     Write-Output 'MCP_ACTIVE_UPGRADE_MODE=old-and-new-same-root'
     Write-Output 'MCP_ACTIVE_UPGRADE_SEED_STRUCTURED=1'

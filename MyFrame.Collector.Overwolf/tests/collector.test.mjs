@@ -133,7 +133,7 @@ test("queue is bounded and provider errors do not disclose raw error text", asyn
   collector.stop();
 });
 test("ready marker hashes exact UTF8 bytes and never claims completeness", async () => {
-  const capture = await createCapture({ Suits: [{ Name: "ação" }] }, crypto.randomUUID(), 1, new Date().toISOString());
+  const capture = await createCapture({ Suits: [{ Name: "private-synthetic-value" }] }, crypto.randomUUID(), 1, new Date().toISOString());
   const marker = JSON.parse(capture.marker);
   assert.equal(marker.sha256, await sha256(capture.body));
   assert.equal(marker.bytes, new TextEncoder().encode(capture.body).length);

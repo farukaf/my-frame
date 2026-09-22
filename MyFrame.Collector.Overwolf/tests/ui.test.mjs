@@ -26,7 +26,7 @@ test("UI initializes without reading collector before its constructor returns", 
     } };
     globalThis.addEventListener = () => {};
     await import(`../ui.mjs?test=${crypto.randomUUID()}`);
-    assert.match(node("availability").textContent, /Pronto/);
+    assert.match(node("availability").textContent, /Ready/);
     assert.equal(JSON.parse(node("status").textContent).state, "stopped");
     assert.equal(node("folder").value, "C:\\Users\\test\\AppData\\Local\\MyFrame\\captures");
     assert.equal(typeof node("start").onclick, "function");

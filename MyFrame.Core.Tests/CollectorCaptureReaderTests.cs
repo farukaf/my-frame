@@ -98,7 +98,7 @@ public sealed class CollectorCaptureReaderTests
             ["kind"] = "inventory", ["sessionId"] = Guid.NewGuid().ToString("D"),
             ["eventId"] = id.ToString("D"), ["sequence"] = 1,
             ["receivedAt"] = "2026-09-12T12:00:00Z", ["completeness"] = "unverified",
-            ["encoding"] = "json-object", ["payload"] = "{\"Suits\":[{\"Name\":\"private-synthetic-ação\"}]}"
+            ["encoding"] = "json-object", ["payload"] = "{\"Suits\":[{\"Name\":\"private-synthetic-value\"}]}"
         };
         envelopeChange?.Invoke(envelope);
         var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(envelope));

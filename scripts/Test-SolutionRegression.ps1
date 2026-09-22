@@ -14,10 +14,10 @@ $common = @('test', '--no-restore', '-c', $Configuration, '-m:1', '-p:TestTfmsIn
 if ($NoBuild) { $common += '--no-build' }
 $passed = 0
 foreach ($project in $projects) {
-    if (-not (Test-Path -LiteralPath $project -PathType Leaf)) { throw "Projeto de teste ausente: $project" }
+    if (-not (Test-Path -LiteralPath $project -PathType Leaf)) { throw "Test project is missing: $project" }
     Write-Output "REGRESSION_PROJECT=$([IO.Path]::GetFileNameWithoutExtension($project))"
     & dotnet @common $project
-    if ($LASTEXITCODE -ne 0) { throw "Falha em $project (exit $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "Failure in $project (exit $LASTEXITCODE)." }
     $passed++
 }
 Write-Output 'SOLUTION_REGRESSION_OK=1'

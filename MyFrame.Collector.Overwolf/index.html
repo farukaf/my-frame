@@ -1,29 +1,29 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
-  <title>My Frame — coletor F1</title>
+  <title>My Frame — F1 collector</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Coletor Warframe · F1</h1>
-  <p>Spike local via Overwolf. Receber um evento não comprova inventário completo.</p>
-  <p id="availability" role="status">Carregando…</p>
-  <button id="start">Iniciar captura em memória</button>
-  <button id="stop">Parar e limpar memória</button>
-  <h2>Diagnóstico sem valores pessoais</h2>
+  <h1>Warframe collector · F1</h1>
+  <p>Local Overwolf spike. Receiving an event does not prove a complete inventory.</p>
+  <p id="availability" role="status">Loading…</p>
+  <button id="start">Start in-memory capture</button>
+  <button id="stop">Stop and clear memory</button>
+  <h2>Diagnostics without personal values</h2>
   <pre id="status" aria-live="polite"></pre>
-  <h2>Exportação local explícita</h2>
-  <label for="folder">Pasta absoluta de saída (a inbox My Frame é sugerida quando disponível)</label>
-  <input id="folder" placeholder="C:\caminho\my-frame\artifacts\collector-f1" autocomplete="off">
-  <p id="folder-hint" role="status">Informe uma pasta absoluta; a exportação nunca ocorre automaticamente.</p>
-  <button id="report">Salvar relatório de estrutura</button>
-  <label class="consent"><input type="checkbox" id="consent"> Autorizar uma cópia do inventário bruto nesta pasta. Pode conter dados pessoais. Não enviar ao GitHub nem à LLM. Excluir após a homologação.</label>
-  <button id="capture">Exportar captura privada + marcador</button>
+  <h2>Explicit local export</h2>
+  <label for="folder">Absolute output folder (the My Frame inbox is suggested when available)</label>
+  <input id="folder" placeholder="C:\path\my-frame\artifacts\collector-f1" autocomplete="off">
+  <p id="folder-hint" role="status">Enter an absolute folder; export never occurs automatically.</p>
+  <button id="report">Save structure report</button>
+  <label class="consent"><input type="checkbox" id="consent"> Allow a copy of raw inventory in this folder. It may contain personal data. Do not send it to GitHub or an LLM. Delete it after validation.</label>
+  <button id="capture">Export private capture + marker</button>
   <p id="export-status" role="status"></p>
-  <p>Não assina chat, não lê pastas AlecaFrame e não publica inventário no My Frame.
-    Fecha-se com a janela; não há autostart neste spike. Sem armazenamento automático.</p>
+  <p>It does not subscribe to chat, read AlecaFrame folders, or publish inventory to My Frame.
+    It closes with the window; this spike has no autostart or automatic storage.</p>
   <script type="module" src="ui.mjs"></script>
 </body>
 </html>
