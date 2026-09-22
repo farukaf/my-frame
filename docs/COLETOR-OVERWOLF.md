@@ -29,7 +29,6 @@ supports that claim. A `captureMode=delta` records a change; it neither replaces
 compares as a complete snapshot. MCP returns `context_mismatch` when both compared
 revisions have different known contexts.
 
-
 ## Real-capture runbook
 
 1. Confirm that Overwolf is signed in and the account is permitted to load unpacked
