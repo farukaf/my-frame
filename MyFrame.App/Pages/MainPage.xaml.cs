@@ -2,8 +2,8 @@ namespace MyFrame.App;
 
 public partial class MainPage : ContentPage
 {
-    private readonly DashboardViewModel _viewModel;
-    public MainPage(DashboardViewModel viewModel)
+    private readonly MainViewModel _viewModel;
+    public MainPage(MainViewModel viewModel)
     {
         StartupDiagnostics.Track("MainPage.Begin");
         try
