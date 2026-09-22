@@ -357,6 +357,39 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task OverframeToolReadsExactTypedSqliteKeyWithoutRefreshingNetwork()
+    {
+        var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-overframe-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
+            var now = DateTimeOffset.UtcNow;
+            var store = new OverframeCacheStore(Path.Combine(root, "data.db"));
+            await store.UpsertAsync(new("item:haalvu", OverframeEntityType.Item, "haalvu", "Haalvu",
+                new Uri("https://overframe.gg/items/arsenal/8015/haalvu/"),
+                "{\"type\":\"Item\",\"name\":\"Haalvu\",\"trustedForFacts\":false}", "hash",
+                OverframePageParser.ParserVersion, now, now.AddHours(8)));
+
+            var response = await new PlatformStatusService().GetOverframeReferenceAsync("Item", "Haalvu");
+            var missing = await new PlatformStatusService().GetOverframeReferenceAsync("Mod", "Haalvu");
+
+            Assert.Equal("available", response.State);
+            Assert.Equal("item:haalvu", response.CacheKey);
+            Assert.Equal("Haalvu", response.Reference!.Name);
+            Assert.False(response.Reference.TrustedForFacts);
+            Assert.Equal("not_cached", missing.State);
+            Assert.Null(missing.Reference);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous);
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public async Task MarketCredentialStatusNeverReturnsCredentialValue()
     {
         var response = await new PlatformStatusService(new EmptyTokenStore()).GetMarketCredentialStatusAsync();
@@ -372,7 +405,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_changes", "get_inventory_coverage", "get_inventory_history", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_public_export_item", "get_reference_section", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
+        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_changes", "get_inventory_coverage", "get_inventory_history", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overframe_reference", "get_overview", "get_public_export_item", "get_reference_section", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>

@@ -99,6 +99,15 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("Optional exact revision to disambiguate the source; maximum 200 characters.")] string? revision = null,
         CancellationToken cancellationToken = default) => platform.GetReferenceSectionAsync(url, sectionId, revision, cancellationToken);
 
+    [McpServerTool(Name = "get_overframe_reference", Title = "Get cached Overframe reference", UseStructuredContent = true,
+        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Gets one deterministic, attributed Overframe item from the local SQLite cache. Supply a specific Warframe, weapon/item, or mod name and its exact type. This tool never accesses the network or refreshes the cache.")]
+    public Task<OverframeReferenceResponse> GetOverframeReference(
+        [Description("Exact route type: Item, Mod, or Warframe.")] string type,
+        [Description("Specific item name, such as Haalvu, Serration, or Mesa; 1 to 200 characters.")] string term,
+        CancellationToken cancellationToken = default) =>
+        platform.GetOverframeReferenceAsync(type, term, cancellationToken);
+
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns observed equipment instances from the synchronized SQLite projection, including opaque instance identity, observed rank/configuration and explicit coverage states. Raw capture payloads are never returned.")]
