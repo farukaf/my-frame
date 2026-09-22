@@ -14,3 +14,7 @@
 A blocked external gate is not a pass. Use synthetic fixtures for destructive and
 failure testing; never use a user's live data for corruption, disk-full, or privacy
 tests. Current unresolved gates are listed in [the delivery checklist](../todo.md).
+
+Run `./scripts/Test-NonCollectorReleaseGates.ps1` to execute the local, non-collector
+checks together. Its success does not approve community sources, supply F10 results,
+or replace distribution, clean-install, upgrade, and restore validation.

@@ -292,7 +292,7 @@ public sealed class SyncDatabaseTests
         var stored = await db.GetPublicExportItemsAsync("public-export");
         Assert.False(result.AlreadyPublished);
         Assert.Single(stored);
-        Assert.Equal("lamina", PublicExportIdentity.Canonicalize(stored[0].Name!));
+        Assert.Equal("blade", PublicExportIdentity.Canonicalize(stored[0].Name!));
     }
 
     [Fact]
