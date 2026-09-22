@@ -3,6 +3,8 @@ name: CI/CD
 on:
   pull_request:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   release:
@@ -106,9 +108,10 @@ jobs:
             $version = "0.0.$env:RUN_NUMBER"
             $artifactName = "MyFrame-pr-$env:PR_NUMBER-win-x64"
           }
-          elseif ($env:EVENT_NAME -eq 'workflow_dispatch') {
+          elseif ($env:EVENT_NAME -eq 'workflow_dispatch' -or $env:REF_NAME -eq 'main') {
             $version = "0.0.$env:RUN_NUMBER"
-            $artifactName = "MyFrame-manual-$env:RUN_NUMBER-win-x64"
+            $artifactPrefix = if ($env:EVENT_NAME -eq 'workflow_dispatch') { 'manual' } else { 'main' }
+            $artifactName = "MyFrame-$artifactPrefix-$env:RUN_NUMBER-win-x64"
           }
           else {
             $tag = if ($env:RELEASE_TAG) { $env:RELEASE_TAG } else { $env:REF_NAME }
@@ -151,7 +154,7 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    if: github.event_name == 'push' || github.event_name == 'release'
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
     needs: package
     runs-on: ubuntu-latest
     permissions:
