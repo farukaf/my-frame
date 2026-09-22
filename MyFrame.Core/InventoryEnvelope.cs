@@ -17,7 +17,9 @@ public sealed record InventoryEnvelope(
     string? ProviderVersion,
     string Completeness,
     string PayloadJson,
-    string ContentHash);
+    string ContentHash,
+    string CaptureMode = "snapshot",
+    string? ContextId = null);
 
 public sealed record InventoryEquipmentRecord(
     string InstanceId,
@@ -78,9 +80,14 @@ public static class InventoryEnvelopeParser
             if (payloadDocument.RootElement.ValueKind != JsonValueKind.Object) throw Invalid("INVENTORY_PAYLOAD_ROOT_INVALID");
             var completeness = root.TryGetProperty("completeness", out var complete) && complete.ValueKind == JsonValueKind.String ? complete.GetString()! : "unverified";
             if (completeness is not ("verified" or "unverified")) throw Invalid("INVENTORY_COMPLETENESS_INVALID");
+            var captureMode = root.TryGetProperty("captureMode", out var mode) && mode.ValueKind == JsonValueKind.String ? mode.GetString()! : "snapshot";
+            if (captureMode is not ("snapshot" or "delta")) throw Invalid("INVENTORY_CAPTURE_MODE_INVALID");
             var received = root.TryGetProperty("receivedAt", out var timestamp) && timestamp.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(timestamp.GetString(), out var parsed) ? parsed : throw Invalid("INVENTORY_TIMESTAMP_INVALID");
             var provider = root.TryGetProperty("providerVersion", out var version) && version.ValueKind == JsonValueKind.String ? version.GetString() : null;
-            return new(schema, game, "overwolf-native", session, eventId, sequence, received, provider, completeness, payload, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant());
+            var context = root.TryGetProperty("contextId", out var contextValue) && contextValue.ValueKind == JsonValueKind.String
+                ? contextValue.GetString() : null;
+            if (context?.Length > 200) throw Invalid("INVENTORY_CONTEXT_INVALID");
+            return new(schema, game, "overwolf-native", session, eventId, sequence, received, provider, completeness, payload, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant(), captureMode, context);
         }
         catch (InvalidDataException) { throw; }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or FormatException or OverflowException or InvalidOperationException)

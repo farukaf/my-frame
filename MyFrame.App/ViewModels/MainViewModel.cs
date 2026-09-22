@@ -55,6 +55,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _initialized = true;
         SyncStatus.StartWatcher();
         _logger.LogInformation("Dashboard view initialized");
+        await SyncStatus.RefreshCollectorCaptureStatusAsync();
         await SyncStatus.RefreshSyncStatusAsync();
         var directoryError = AlecaFrameDirectorySettings.ValidationError(_alecaPath.DirectoryPath);
         var hasSynchronizedData = false;

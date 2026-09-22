@@ -33,13 +33,18 @@ builder.Services.AddSingleton(_ => new SqliteMarketStore(MyFrameStoragePaths.Dat
 builder.Services.AddSingleton<IReadOnlyPriceCache>(provider => provider.GetRequiredService<SqliteMarketStore>());
 builder.Services.AddSingleton<IMarketStateStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
 builder.Services.AddSingleton<IMarketItemIndexStore>(provider => provider.GetRequiredService<SqliteMarketStore>());
+builder.Services.AddSingleton<IMarketTokenStore>(_ =>
+    OperatingSystem.IsWindows()
+        ? new ProtectedFileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath)
+        : new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath));
 builder.Services.AddSingleton<IMyFrameSnapshotProvider, MyFrameSnapshotProvider>();
 builder.Services.AddSingleton<ISynchronizedDataReader>(_ =>
     new SqliteSynchronizedDataReader(MyFrameStoragePaths.DataDatabasePath));
 builder.Services.AddSingleton<CursorCodec>();
 builder.Services.AddSingleton<MyFrameQueryService>();
 builder.Services.AddSingleton<QueryExecutionGate>();
-builder.Services.AddSingleton<PlatformStatusService>();
+builder.Services.AddSingleton<PlatformStatusService>(provider =>
+    new PlatformStatusService(provider.GetRequiredService<IMarketTokenStore>()));
 builder.Services.AddTransient<MyFrameTools>();
 
 var strictTools = StrictToolRegistration.Create(json);

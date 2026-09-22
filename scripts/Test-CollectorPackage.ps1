@@ -1,8 +1,9 @@
 param(
-    [string]$PackagePath = (Join-Path $PSScriptRoot '..\MyFrame.Collector.Overwolf')
+    [string]$PackagePath
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($PackagePath)) { $PackagePath = Join-Path $PSScriptRoot '..\MyFrame.Collector.Overwolf' }
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $manifestPath = Join-Path $package 'manifest.json'
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {

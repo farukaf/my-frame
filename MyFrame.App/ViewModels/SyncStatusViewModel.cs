@@ -2,6 +2,9 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SyncDiagnosticAttempt = MyFrame.Core.Sync.SyncDiagnosticAttempt;
+using SyncDiagnosticSource = MyFrame.Core.Sync.SyncDiagnosticSource;
+using SyncDiagnosticsSerializer = MyFrame.Core.Sync.SyncDiagnosticsSerializer;
 
 namespace MyFrame.App;
 
@@ -13,6 +16,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     [ObservableProperty] public partial bool AllowCollectorRawPayload { get; set; }
     [ObservableProperty] public partial bool IsImportingCollectorCaptures { get; set; }
     [ObservableProperty] public partial string CollectorCaptureMessage { get; set; } = "No capture import has been requested.";
+    [ObservableProperty] public partial string CollectorCaptureStatusText { get; set; } = "Collector status not loaded.";
     [ObservableProperty] public partial string CollectorCaptureNotice { get; set; } = "";
     [ObservableProperty] public partial bool CollectorCaptureNoticeVisible { get; set; }
     [ObservableProperty] public partial bool IsSyncingWorldState { get; set; }
@@ -48,6 +52,54 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
     }
 
     [RelayCommand]
+    private async Task CopySyncDiagnosticsAsync()
+    {
+        if (IsLoadingSyncStatus) return;
+        try
+        {
+            var rows = await reader.ReadAsync();
+            var attempts = await reader.ReadRecentRunsAsync();
+            var sources = rows.Select(row => new SyncDiagnosticSource(row.SourceId, row.State, row.Detail,
+                row.Revision, row.LastRun, row.ParserVersion, row.Coverage)).ToArray();
+            var diagnosticAttempts = attempts.Select(attempt => new SyncDiagnosticAttempt(attempt.SourceId,
+                attempt.State, attempt.StartedAt, attempt.Detail)).ToArray();
+            await Clipboard.Default.SetTextAsync(SyncDiagnosticsSerializer.Serialize(sources, diagnosticAttempts,
+                DateTimeOffset.UtcNow));
+            SyncStatusMessage = "Sanitized diagnostics copied. Payloads, tokens, and local paths were omitted.";
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "Sync diagnostics export failed");
+            SyncStatusMessage = "Unable to copy sanitized diagnostics.";
+        }
+    }
+
+    [RelayCommand]
+    public async Task RefreshCollectorCaptureStatusAsync()
+    {
+        try
+        {
+            var status = await collectorCaptureInbox.ReadStatusAsync();
+            var eventSummary = status.EventCounts is { Count: > 0 }
+                ? string.Join(", ", status.EventCounts.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                    .Select(pair => $"{pair.Key}={pair.Value:N0}"))
+                : "none";
+            var featureSummary = status.SupportedFeatures is { Count: > 0 }
+                ? string.Join(", ", status.SupportedFeatures)
+                : "none";
+            CollectorCaptureStatusText = $"Collector: {status.State}; Overwolf {status.OverwolfRunning}; Warframe {status.WarframeRunning}; " +
+                $"heartbeat {status.HeartbeatState ?? "missing"} (fresh {status.HeartbeatFresh}); markers {status.ReadyMarkers:N0} " +
+                $"({status.ValidMarkers:N0} valid, {status.InvalidMarkers:N0} invalid); collector {status.CollectorState ?? "unknown"}; " +
+                $"features {featureSummary}; events {eventSummary}; last {status.LastEventFeature ?? "none"} @ {status.LastEventAt?.ToLocalTime():HH:mm:ss}.";
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            logger.LogWarning(error, "Collector capture status read failed");
+            CollectorCaptureStatusText = "Collector status unavailable.";
+        }
+    }
+
+    [RelayCommand]
     private async Task ImportCollectorCapturesAsync()
     {
         if (IsImportingCollectorCaptures) return;
@@ -64,6 +116,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
             CollectorCaptureNotice = "";
             CollectorCaptureNoticeVisible = false;
             CollectorCaptureMessage = $"Found {result.Discovered:N0}; new {result.Imported:N0}; already published {result.AlreadyPublished:N0}; rejected {result.Rejected:N0}.";
+            await RefreshCollectorCaptureStatusAsync();
             await RefreshSyncStatusAsync();
         }
         catch (Exception error)
@@ -87,6 +140,7 @@ public partial class SyncStatusViewModel(SyncStatusReader reader, CollectorCaptu
         {
             CollectorCaptureNotice = "New capture detected. Review it and import with explicit consent.";
             CollectorCaptureNoticeVisible = true;
+            await RefreshCollectorCaptureStatusAsync();
             await RefreshSyncStatusAsync();
         });
     }

@@ -3,9 +3,32 @@ using System.Text.Json;
 
 namespace MyFrame.Core.Sync;
 
+public sealed record PublicExportComponentRow(
+    string RevisionId,
+    string ParentUniqueName,
+    int Ordinal,
+    string UniqueName,
+    string Name,
+    int RequiredCount,
+    int Ducats,
+    bool Tradable,
+    string? ImageName,
+    string RawJson);
+
+public sealed record PublicExportRelicRow(
+    string RevisionId,
+    string RewardUniqueName,
+    int Ordinal,
+    string RelicName,
+    string Rarity,
+    double Chance,
+    bool Vaulted,
+    string RewardName,
+    string RawJson);
+
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 4;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -31,7 +54,11 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS staging_records(run_id TEXT NOT NULL REFERENCES sync_runs(run_id), ordinal INTEGER NOT NULL, payload_hash TEXT NOT NULL, payload_json TEXT NOT NULL, PRIMARY KEY(run_id, ordinal));
             CREATE TABLE IF NOT EXISTS public_export_items(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), unique_name TEXT NOT NULL, name TEXT, category TEXT, description TEXT, canonical_name TEXT NOT NULL, aliases_json TEXT NOT NULL DEFAULT '{}', PRIMARY KEY(revision_id, unique_name));
             CREATE INDEX IF NOT EXISTS ix_public_export_items_name ON public_export_items(canonical_name);
-            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS public_export_components(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), parent_unique_name TEXT NOT NULL, ordinal INTEGER NOT NULL, unique_name TEXT NOT NULL, name TEXT NOT NULL, required_count INTEGER NOT NULL, ducats INTEGER NOT NULL, tradable INTEGER NOT NULL, image_name TEXT, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, parent_unique_name, ordinal));
+            CREATE INDEX IF NOT EXISTS ix_public_export_components_unique_name ON public_export_components(unique_name);
+            CREATE TABLE IF NOT EXISTS public_export_relics(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), reward_unique_name TEXT NOT NULL, ordinal INTEGER NOT NULL, relic_name TEXT NOT NULL, rarity TEXT NOT NULL, chance REAL NOT NULL, vaulted INTEGER NOT NULL, reward_name TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, reward_unique_name, ordinal));
+            CREATE INDEX IF NOT EXISTS ix_public_export_relics_relic_name ON public_export_relics(relic_name);
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot', context_id TEXT);
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -45,6 +72,8 @@ public sealed class SyncDatabase : IAsyncDisposable
         await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "public_export_items", "aliases_json", "TEXT NOT NULL DEFAULT '{}'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "capture_mode", "TEXT NOT NULL DEFAULT 'snapshot'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "context_id", "TEXT");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -125,7 +154,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             foreach (var candidate in candidates)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                foreach (var table in new[] { "public_export_items", "inventory_equipment", "inventory_stackables", "inventory_unknown", "inventory_upgrades", "inventory_revisions", "worldstate_rewards", "worldstate_jobs", "worldstate_bounties", "worldstate_cycles", "worldstate_revisions" })
+                foreach (var table in new[] { "public_export_relics", "public_export_components", "public_export_items", "inventory_equipment", "inventory_stackables", "inventory_unknown", "inventory_upgrades", "inventory_revisions", "worldstate_rewards", "worldstate_jobs", "worldstate_bounties", "worldstate_cycles", "worldstate_revisions" })
                     await CommandAsync(connection, transaction, $"DELETE FROM {table} WHERE revision_id=$revision;", cancellationToken, ("$revision", candidate.RevisionId));
                 await CommandAsync(connection, transaction, "DELETE FROM source_revisions WHERE revision_id=$revision AND state='retained';", cancellationToken, ("$revision", candidate.RevisionId));
             }
@@ -178,6 +207,53 @@ public sealed class SyncDatabase : IAsyncDisposable
             records.Add(new PublicExportRecord(uniqueName, name, reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), aliases, hasRawJson && !reader.IsDBNull(5) ? reader.GetString(5) : null));
         }
         return records;
+    }
+
+    public async Task<IReadOnlyList<PublicExportComponentRow>> GetPublicExportComponentsAsync(
+        string sourceId = "public-export", CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT c.revision_id, c.parent_unique_name, c.ordinal, c.unique_name, c.name,
+                   c.required_count, c.ducats, c.tradable, c.image_name, c.raw_json
+            FROM public_export_components c
+            JOIN source_revisions r ON r.revision_id=c.revision_id
+            WHERE r.source_id=$source AND r.state='active'
+            ORDER BY c.parent_unique_name, c.ordinal;
+            """;
+        command.Parameters.AddWithValue("$source", sourceId);
+        var result = new List<PublicExportComponentRow>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3),
+                reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6), reader.GetInt64(7) != 0,
+                reader.IsDBNull(8) ? null : reader.GetString(8), reader.GetString(9)));
+        return result;
+    }
+
+    public async Task<IReadOnlyList<PublicExportRelicRow>> GetPublicExportRelicsAsync(
+        string sourceId = "public-export", CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT x.revision_id, x.reward_unique_name, x.ordinal, x.relic_name, x.rarity,
+                   x.chance, x.vaulted, x.reward_name, x.raw_json
+            FROM public_export_relics x
+            JOIN source_revisions r ON r.revision_id=x.revision_id
+            WHERE r.source_id=$source AND r.state='active'
+            ORDER BY x.reward_unique_name, x.ordinal;
+            """;
+        command.Parameters.AddWithValue("$source", sourceId);
+        var result = new List<PublicExportRelicRow>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt32(2), reader.GetString(3),
+                reader.GetString(4), reader.GetDouble(5), reader.GetInt64(6) != 0, reader.GetString(7), reader.GetString(8)));
+        return result;
     }
 
     public async Task<IReadOnlyList<InventoryEquipmentRecord>> GetInventoryEquipmentAsync(CancellationToken cancellationToken = default)
@@ -356,23 +432,45 @@ public sealed class SyncDatabase : IAsyncDisposable
             if (records is not null)
             {
                 foreach (var record in records)
+                {
                     await CommandAsync(connection, transaction, "INSERT INTO public_export_items(revision_id, unique_name, name, category, description, canonical_name, aliases_json, raw_json) VALUES ($revision, $unique, $name, $category, $description, $canonical, $aliases, $raw);", cancellationToken, ("$revision", revisionId), ("$unique", record.UniqueName), ("$name", (object?)record.Name ?? DBNull.Value), ("$category", (object?)record.Category ?? DBNull.Value), ("$description", (object?)record.Description ?? DBNull.Value), ("$canonical", PublicExportIdentity.Canonicalize(record.Name ?? record.UniqueName)), ("$aliases", JsonSerializer.Serialize(record.Aliases)), ("$raw", (object?)record.RawJson ?? "{}"));
+                    foreach (var component in ParseComponents(record.RawJson))
+                        await CommandAsync(connection, transaction, "INSERT INTO public_export_components(revision_id, parent_unique_name, ordinal, unique_name, name, required_count, ducats, tradable, image_name, raw_json) VALUES ($revision, $parent, $ordinal, $unique, $name, $required, $ducats, $tradable, $image, $raw);", cancellationToken,
+                            ("$revision", revisionId), ("$parent", record.UniqueName), ("$ordinal", component.Ordinal), ("$unique", component.UniqueName),
+                            ("$name", component.Name), ("$required", component.RequiredCount), ("$ducats", component.Ducats),
+                            ("$tradable", component.Tradable ? 1 : 0), ("$image", (object?)component.ImageName ?? DBNull.Value), ("$raw", component.RawJson));
+                    foreach (var relic in ParseRelics(record.RawJson))
+                        await CommandAsync(connection, transaction, "INSERT INTO public_export_relics(revision_id, reward_unique_name, ordinal, relic_name, rarity, chance, vaulted, reward_name, raw_json) VALUES ($revision, $reward, $ordinal, $relic, $rarity, $chance, $vaulted, $name, $raw);", cancellationToken,
+                            ("$revision", revisionId), ("$reward", record.UniqueName), ("$ordinal", relic.Ordinal), ("$relic", relic.RelicName),
+                            ("$rarity", relic.Rarity), ("$chance", relic.Chance), ("$vaulted", relic.Vaulted ? 1 : 0),
+                            ("$name", relic.RewardName), ("$raw", relic.RawJson));
+                }
                 await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='public-export';", cancellationToken);
-                foreach (var field in new[]
+                var catalogFields = new[]
                 {
                     (Path: "uniqueName", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.UniqueName))),
                     (Path: "name", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Name))),
                     (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
+                    (Path: "localizedNames", Observed: records.Any(record => record.Aliases.Keys.Any(key => !string.Equals(key, "en", StringComparison.OrdinalIgnoreCase)))),
                     (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
                     (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
-                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson)))
-                })
+                    (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson))),
+                    (Path: "components", Observed: records.Any(record => HasJsonArray(record.RawJson, "components"))),
+                    (Path: "relics", Observed: records.Any(record => HasJsonArray(record.RawJson, "relics"))),
+                    (Path: "marketIdentity", Observed: records.Any(record => HasJsonProperties(record.RawJson, "marketId", "marketSlug"))),
+                    (Path: "imageName", Observed: records.Any(record => HasJsonString(record.RawJson, "imageName", "image_name"))),
+                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category"))),
+                    (Path: "technicalMetadata", Observed: records.Any(record => HasAnyJsonProperty(record.RawJson,
+                        "masterable", "masterableType", "prime", "tradable", "vaulted", "itemType")))
+                };
+                foreach (var field in catalogFields)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
-                        ("$field", field.Path), ("$state", (field.Observed ? InventoryFieldState.Known : InventoryFieldState.NotObserved).ToString()), ("$at", now), ("$detail", $"records={records.Count}"));
+                        ("$field", field.Path), ("$state", (field.Observed ? InventoryFieldState.Known : InventoryFieldState.NotObserved).ToString()),
+                        ("$at", now), ("$detail", $"records={records.Count}"));
             }
             if (inventory is { } data)
             {
-                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness) VALUES ($revision, $session, $event, $sequence, $completeness);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness));
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode, context_id) VALUES ($revision, $session, $event, $sequence, $completeness, $mode, $context);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode), ("$context", (object?)data.Envelope.ContextId ?? DBNull.Value));
                 foreach (var equipment in data.Projection.Equipment)
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
                 for (var index = 0; index < data.Projection.Stackables.Count; index++)
@@ -390,6 +488,7 @@ public sealed class SyncDatabase : IAsyncDisposable
                     var upgrade = data.Projection.Upgrades![index];
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_upgrades(revision_id, ordinal, owner_instance_id, source_field, upgrade_id, rank, raw_json) VALUES ($revision, $ordinal, $owner, $source, $id, $rank, $raw);", cancellationToken, ("$revision", revisionId), ("$ordinal", index), ("$owner", (object?)upgrade.OwnerInstanceId ?? DBNull.Value), ("$source", upgrade.SourceField), ("$id", (object?)upgrade.UpgradeId ?? DBNull.Value), ("$rank", (object?)upgrade.Rank ?? DBNull.Value), ("$raw", upgrade.RawJson));
                 }
+                await CommandAsync(connection, transaction, "DELETE FROM coverage WHERE source_id='overwolf-inventory';", cancellationToken);
                 foreach (var field in data.Projection.Coverage)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('overwolf-inventory', $field, $state, $at, NULL) ON CONFLICT(source_id, field_path) DO UPDATE SET state=excluded.state, observed_at=excluded.observed_at, detail=excluded.detail;", cancellationToken, ("$field", field.Key), ("$state", field.Value.ToString()), ("$at", now));
             }
@@ -439,6 +538,155 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
         return new SyncStatus(sourceId, reader.IsDBNull(0) ? null : reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : DateTimeOffset.Parse(reader.GetString(4)), reader.IsDBNull(5) ? 0 : reader.GetInt64(5), reader.IsDBNull(6) ? 0 : reader.GetInt64(6), reader.IsDBNull(7) ? null : reader.GetString(7));
+    }
+
+    private static bool HasJsonArray(string? rawJson, string property)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            return document.RootElement.TryGetProperty(property, out var value) &&
+                value.ValueKind == JsonValueKind.Array;
+        }
+        catch (JsonException) { return false; }
+    }
+
+    private static bool HasJsonString(string? rawJson, params string[] properties)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            return properties.Any(property => document.RootElement.TryGetProperty(property, out var value) &&
+                value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
+        }
+        catch (JsonException) { return false; }
+    }
+
+    private static bool HasJsonProperties(string? rawJson, params string[] properties) =>
+        !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
+        properties.All(property => root.TryGetProperty(property, out var value) &&
+            value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
+
+    private static bool HasAnyJsonProperty(string? rawJson, params string[] properties) =>
+        !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
+        properties.Any(property => root.TryGetProperty(property, out var value) &&
+            value.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined);
+
+    private static bool TryParseJson(string rawJson, out JsonElement root)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            root = document.RootElement.Clone();
+            return true;
+        }
+        catch (JsonException)
+        {
+            root = default;
+            return false;
+        }
+    }
+
+    public async Task<InventoryRevisionStatus?> GetActiveInventoryRevisionStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT ir.capture_mode, ir.completeness, ir.sequence, ir.context_id
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state='active'
+            LIMIT 1;
+            """;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetString(3));
+    }
+
+    public async Task<IReadOnlyList<InventoryRevisionSummary>> GetInventoryRevisionSummariesAsync(
+        int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        limit = Math.Clamp(limit, 1, 100);
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
+                   ir.capture_mode, r.retrieved_at, ir.context_id
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
+            ORDER BY r.retrieved_at DESC, ir.sequence DESC, r.revision_id DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit", limit);
+        var result = new List<InventoryRevisionSummary>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+                reader.GetString(3), reader.GetString(4), DateTimeOffset.Parse(reader.GetString(5)),
+                reader.IsDBNull(6) ? null : reader.GetString(6)));
+        return result;
+    }
+
+    public async Task<InventoryRevisionData?> GetInventoryRevisionDataAsync(
+        string revisionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revisionId) || !File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var summaryCommand = connection.CreateCommand();
+        summaryCommand.CommandText = """
+            SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
+                   ir.capture_mode, r.retrieved_at, ir.context_id
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
+              AND r.revision_id=$revision LIMIT 1;
+            """;
+        summaryCommand.Parameters.AddWithValue("$revision", revisionId);
+        await using var summaryReader = await summaryCommand.ExecuteReaderAsync(cancellationToken);
+        if (!await summaryReader.ReadAsync(cancellationToken)) return null;
+        var summary = new InventoryRevisionSummary(summaryReader.GetString(0), summaryReader.GetString(1),
+            summaryReader.GetInt64(2), summaryReader.GetString(3), summaryReader.GetString(4),
+            DateTimeOffset.Parse(summaryReader.GetString(5)), summaryReader.IsDBNull(6) ? null : summaryReader.GetString(6));
+        var equipment = new List<InventoryEquipmentRecord>();
+        await using (var equipmentCommand = connection.CreateCommand())
+        {
+            equipmentCommand.CommandText = "SELECT instance_id, type_id, rank, config_json, rank_state, config_state, raw_json FROM inventory_equipment WHERE revision_id=$revision ORDER BY instance_id;";
+            equipmentCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await equipmentCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                equipment.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetInt32(2), reader.IsDBNull(3) ? null : reader.GetString(3),
+                    (InventoryFieldState)reader.GetInt32(4), (InventoryFieldState)reader.GetInt32(5), reader.GetString(6)));
+        }
+        var stackables = new List<InventoryStackableRecord>();
+        await using (var stackableCommand = connection.CreateCommand())
+        {
+            stackableCommand.CommandText = "SELECT type_id, quantity, quantity_state, raw_json FROM inventory_stackables WHERE revision_id=$revision ORDER BY ordinal;";
+            stackableCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await stackableCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                stackables.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetInt32(1), (InventoryFieldState)reader.GetInt32(2), reader.GetString(3)));
+        }
+        var upgrades = new List<InventoryUpgradeRecord>();
+        await using (var upgradeCommand = connection.CreateCommand())
+        {
+            upgradeCommand.CommandText = "SELECT owner_instance_id, source_field, upgrade_id, rank, raw_json FROM inventory_upgrades WHERE revision_id=$revision ORDER BY ordinal;";
+            upgradeCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await upgradeCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                upgrades.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0), reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                    reader.GetString(4)));
+        }
+        return new(summary, equipment, stackables, upgrades);
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(
@@ -517,7 +765,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             }.ToString()))
             await using (var backupTarget = new SqliteConnection(new SqliteConnectionStringBuilder
             {
-                DataSource = _path, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false
+                DataSource = temporary, Mode = SqliteOpenMode.ReadWriteCreate, Cache = SqliteCacheMode.Shared, Pooling = false
             }.ToString()))
             {
                 await backupSource.OpenAsync(cancellationToken);
@@ -525,7 +773,22 @@ public sealed class SyncDatabase : IAsyncDisposable
                 backupSource.BackupDatabase(backupTarget);
             }
             SqliteConnection.ClearAllPools();
-            SqliteConnection.ClearAllPools();
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    File.Move(temporary, _path, true);
+                    break;
+                }
+                catch (IOException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 20)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * (attempt + 1)), cancellationToken);
+                }
+            }
             foreach (var sidecar in new[] { _path + "-wal", _path + "-shm" })
                 if (File.Exists(sidecar)) File.Delete(sidecar);
         }
@@ -569,6 +832,55 @@ public sealed class SyncDatabase : IAsyncDisposable
         return false;
     }
     private static DateTimeOffset? ParseDate(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : DateTimeOffset.Parse(reader.GetString(ordinal));
+    private sealed record ParsedComponent(int Ordinal, string UniqueName, string Name, int RequiredCount, int Ducats, bool Tradable, string? ImageName, string RawJson);
+    private sealed record ParsedRelic(int Ordinal, string RelicName, string Rarity, double Chance, bool Vaulted, string RewardName, string RawJson);
+    private static IReadOnlyList<ParsedComponent> ParseComponents(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return [];
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            if (!document.RootElement.TryGetProperty("components", out var values) || values.ValueKind != JsonValueKind.Array) return [];
+            var result = new List<ParsedComponent>();
+            var ordinal = 0;
+            foreach (var value in values.EnumerateArray())
+            {
+                var unique = String(value, "uniqueName") ?? String(value, "unique_name");
+                var name = String(value, "name");
+                if (string.IsNullOrWhiteSpace(unique) || string.IsNullOrWhiteSpace(name)) { ordinal++; continue; }
+                result.Add(new(ordinal++, unique, name,
+                    Math.Max(1, Int(value, "itemCount") ?? Int(value, "count") ?? 1),
+                    Math.Max(0, Int(value, "ducats") ?? 0), Bool(value, "tradable") ?? false,
+                    String(value, "imageName") ?? String(value, "image_name"), value.GetRawText()));
+            }
+            return result;
+        }
+        catch (JsonException) { return []; }
+    }
+    private static IReadOnlyList<ParsedRelic> ParseRelics(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return [];
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            if (!document.RootElement.TryGetProperty("relics", out var values) || values.ValueKind != JsonValueKind.Array) return [];
+            var result = new List<ParsedRelic>();
+            var ordinal = 0;
+            foreach (var value in values.EnumerateArray())
+            {
+                var relic = String(value, "relicName") ?? String(value, "relic");
+                var reward = String(value, "rewardName") ?? String(value, "item");
+                if (string.IsNullOrWhiteSpace(relic) || string.IsNullOrWhiteSpace(reward)) { ordinal++; continue; }
+                result.Add(new(ordinal++, relic, String(value, "rarity") ?? "Unknown",
+                    Double(value, "chance") ?? 0, Bool(value, "vaulted") ?? false, reward, value.GetRawText()));
+            }
+            return result;
+        }
+        catch (JsonException) { return []; }
+    }
+    private static string? String(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String ? property.GetString() : null;
+    private static int? Int(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var result) ? result : null;
+    private static bool? Bool(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind is JsonValueKind.True or JsonValueKind.False ? property.GetBoolean() : null;
+    private static double? Double(JsonElement value, string name) => value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var result) ? result : null;
     private static void Validate(SyncBatch batch) { if (string.IsNullOrWhiteSpace(batch.SourceId) || string.IsNullOrWhiteSpace(batch.ContentHash) || string.IsNullOrWhiteSpace(batch.PayloadJson) || batch.RecordCount < 0) throw new ArgumentException("Sync batch is incomplete."); }
 }
-

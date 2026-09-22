@@ -22,9 +22,17 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
         // Ensure the complete schema exists so a clean installation reports setup-required data
         // instead of leaking a "no such table" SQLite exception through MCP.
         await database.InitializeAsync(cancellationToken);
+        var inventoryRevision = await database.GetActiveInventoryRevisionStatusAsync(cancellationToken);
+        // A delta is evidence of change, not a complete inventory. Until a
+        // reconciler applies it to a verified snapshot, refuse to project it
+        // as authoritative MCP inventory rather than turning omissions into
+        // zero/absent ownership.
+        if (inventoryRevision is { CaptureMode: "delta" }) return null;
         var equipment = await database.GetInventoryEquipmentAsync(cancellationToken);
         var stackables = await database.GetInventoryStackablesAsync(cancellationToken);
         var records = await database.GetPublicExportItemsAsync("public-export", cancellationToken);
+        var componentRows = await database.GetPublicExportComponentsAsync("public-export", cancellationToken);
+        var relicRows = await database.GetPublicExportRelicsAsync("public-export", cancellationToken);
         if (equipment.Count == 0 && stackables.Count == 0 || records.Count == 0) return null;
 
         var stackableValues = stackables
@@ -38,17 +46,25 @@ public sealed class SqliteSynchronizedDataReader(string databasePath) : ISynchro
             File.GetLastWriteTimeUtc(databasePath), stackableValues, owned,
             new Dictionary<string, long>(StringComparer.Ordinal), 0, 0, "my-frame-sqlite");
 
-        var items = records.Select(PublicExportCatalogMapper.Map).ToArray();
+        var componentsByParent = componentRows.GroupBy(row => row.ParentUniqueName, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<PublicExportComponentRow>)group.ToArray(), StringComparer.Ordinal);
+        var relicsByReward = relicRows.GroupBy(row => row.RewardUniqueName, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<PublicExportRelicRow>)group.ToArray(), StringComparer.Ordinal);
+        var items = records.Select(record => PublicExportCatalogMapper.Map(record,
+            componentsByParent.GetValueOrDefault(record.UniqueName), relicsByReward.GetValueOrDefault(record.UniqueName))).ToArray();
+        var market = PublicExportCatalogMapper.MarketMappings(records, items);
         var catalog = new CatalogSnapshot(items,
             items.ToDictionary(x => x.UniqueName, StringComparer.Ordinal),
-            new Dictionary<string, MarketIdentity>(StringComparer.Ordinal));
+            market);
         return new(inventory, catalog, File.GetLastWriteTimeUtc(databasePath));
     }
 }
 
-internal static class PublicExportCatalogMapper
+public static class PublicExportCatalogMapper
 {
-    public static CatalogItem Map(PublicExportRecord record)
+    public static CatalogItem Map(PublicExportRecord record,
+        IReadOnlyList<PublicExportComponentRow>? normalizedComponents = null,
+        IReadOnlyList<PublicExportRelicRow>? normalizedRelics = null)
     {
         if (string.IsNullOrWhiteSpace(record.RawJson))
             return Minimal(record);
@@ -56,8 +72,14 @@ internal static class PublicExportCatalogMapper
         {
             using var document = JsonDocument.Parse(record.RawJson);
             var root = document.RootElement;
-            var components = ReadComponents(root);
-            var relics = ReadRelics(root);
+            var components = normalizedComponents is { Count: > 0 }
+                ? normalizedComponents.Select(row => new CatalogComponent(row.UniqueName, row.Name, row.RequiredCount,
+                    row.Ducats, row.Tradable, row.ImageName ?? "")).ToArray()
+                : ReadComponents(root);
+            var relics = normalizedRelics is { Count: > 0 }
+                ? normalizedRelics.Select(row => new RelicSource(row.RelicName, row.Rarity, row.Chance,
+                    row.Vaulted, row.RewardName)).ToArray()
+                : ReadRelics(root);
             return new(
                 record.UniqueName,
                 String(root, "name") ?? record.Name ?? record.UniqueName,
@@ -73,9 +95,45 @@ internal static class PublicExportCatalogMapper
                 String(root, "marketSlug"),
                 components,
                 relics,
-                String(root, "itemType") ?? "");
+                String(root, "itemType") ?? "",
+                record.Description ?? String(root, "description"));
         }
         catch (JsonException) { return Minimal(record); }
+    }
+
+    public static IReadOnlyDictionary<string, MarketIdentity> MarketMappings(
+        IReadOnlyList<PublicExportRecord> records, IReadOnlyList<CatalogItem> items)
+    {
+        var result = new Dictionary<string, MarketIdentity>(StringComparer.Ordinal);
+        foreach (var pair in records.Zip(items))
+        {
+            if (string.IsNullOrWhiteSpace(pair.First.RawJson)) continue;
+            try
+            {
+                using var document = JsonDocument.Parse(pair.First.RawJson);
+                var root = document.RootElement;
+                Add(root, pair.Second.Name, result);
+                if (!root.TryGetProperty("components", out var components) || components.ValueKind != JsonValueKind.Array)
+                    continue;
+                foreach (var component in components.EnumerateArray())
+                {
+                    var componentName = String(component, "name");
+                    if (string.IsNullOrWhiteSpace(componentName)) continue;
+                    Add(component, $"{pair.Second.Name} {componentName}", result);
+                }
+            }
+            catch (JsonException) { }
+        }
+        return result;
+    }
+
+    private static void Add(JsonElement element, string displayName,
+        IDictionary<string, MarketIdentity> result)
+    {
+        var id = String(element, "marketId");
+        var slug = String(element, "marketSlug");
+        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(slug))
+            result[ItemNameNormalizer.Normalize(displayName)] = new(id, slug);
     }
 
     private static CatalogItem Minimal(PublicExportRecord record) => new(record.UniqueName,

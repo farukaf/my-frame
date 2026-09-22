@@ -1,0 +1,15 @@
+[
+  {
+    "uniqueName": "/Lotus/Weapons/TestWeapon",
+    "name": { "en": "Test Weapon", "pt": "Arma de Teste" },
+    "category": "Weapon",
+    "description": "Offline Public Export fixture.",
+    "productCategory": "LongGuns",
+    "masterable": true,
+    "prime": false,
+    "tradable": true,
+    "components": [
+      { "uniqueName": "/Lotus/Weapons/TestWeaponPart", "name": "Test Weapon Part", "itemCount": 2, "ducats": 15, "tradable": true }
+    ]
+  }
+]
