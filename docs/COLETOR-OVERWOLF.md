@@ -29,14 +29,6 @@ supports that claim. A `captureMode=delta` records a change; it neither replaces
 compares as a complete snapshot. MCP returns `context_mismatch` when both compared
 revisions have different known contexts.
 
-## Runtime boundary
-
-Overwolf hosts a WebApp, so the extension retains a small JavaScript adapter for its
-native game-event API, DOM, and extension file API. Portable transport construction is
-also implemented in C# as `CollectorCaptureWriter` in `MyFrame.Core`; native tools and
-future non-WebApp collectors must use that implementation. Both producers emit the
-same bounded, hash-verified capture/marker contract, which `CollectorCaptureReader`
-validates before anything reaches the local inbox.
 
 ## Real-capture runbook
 
