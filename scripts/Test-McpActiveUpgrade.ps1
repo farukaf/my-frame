@@ -30,7 +30,7 @@ try {
         '-e',"MYFRAME_DATA_ROOT=$root",'--method','tools/call','--tool-name','get_overview','--format','json')
     $seed = Start-Process -FilePath $npxCommand.Source -ArgumentList $seedArgs -WorkingDirectory $old -NoNewWindow -Wait -PassThru -RedirectStandardOutput $seedOut -RedirectStandardError $seedErr
     $seedExit = $seed.ExitCode
-    if ($null -ne $seedExit -and [int]$seedExit -ne 0) { throw "Seed MCP falhou: $($seedErr | Get-Content -Raw)" }
+    if ($null -ne $seedExit -and [int]$seedExit -ne 0) { throw "Seed MCP failed: $($seedErr | Get-Content -Raw)" }
     $seedPayload = Get-Content -Raw $seedOut | ConvertFrom-Json
     if ($seedPayload.result.isError -or $null -eq $seedPayload.result.structuredContent) { throw 'MCP seed did not return structuredContent.' }
     if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'Seed did not create data.db.' }
@@ -52,7 +52,7 @@ try {
         $out = $p.StandardOutput.ReadToEndAsync().GetAwaiter().GetResult()
         if (-not $p.WaitForExit(15000)) { $p.Kill(); throw 'MCP did not exit after EOF.' }
         if ($p.ExitCode -ne 0) { throw "MCP exited with exit code $($p.ExitCode)." }
-        if ($out.Length -ne 0) { throw 'MCP escreveu stdout sem request.' }
+        if ($out.Length -ne 0) { throw 'MCP wrote to stdout without a request.' }
     }
     if (-not (Test-Path -LiteralPath (Join-Path $root 'data.db'))) { throw 'data.db disappeared after the active upgrade.' }
     Write-Output 'MCP_ACTIVE_UPGRADE_OK=1'
