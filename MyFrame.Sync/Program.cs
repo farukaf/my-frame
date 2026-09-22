@@ -13,12 +13,13 @@ var overwolfInventoryDirectory = args.Any(argument => string.Equals(argument, "-
 var allowRaw = args.Any(argument => string.Equals(argument, "--allow-raw", StringComparison.Ordinal));
 var referenceFile = args.Any(argument => string.Equals(argument, "--reference-file", StringComparison.Ordinal));
 var referenceUrl = args.Any(argument => string.Equals(argument, "--reference-url", StringComparison.Ordinal));
+var overframeReference = args.Any(argument => string.Equals(argument, "--overframe-reference", StringComparison.Ordinal));
 var statusOnly = args.Any(argument => string.Equals(argument, "--status", StringComparison.Ordinal));
 var allSources = args.Any(argument => string.Equals(argument, "--all", StringComparison.Ordinal));
 var allLocal = args.Any(argument => string.Equals(argument, "--all-local", StringComparison.Ordinal));
-if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (overwolfInventoryProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (referenceUrl ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
+if ((publicExport ? 1 : 0) + (publicExportProbe ? 1 : 0) + (overwolfInventoryProbe ? 1 : 0) + (publicExportFile ? 1 : 0) + ((!allLocal && publicExportDirectory) ? 1 : 0) + (worldState ? 1 : 0) + ((!allLocal && worldStateFile) ? 1 : 0) + (overwolfInventoryDirectory ? 1 : 0) + (referenceFile ? 1 : 0) + (referenceUrl ? 1 : 0) + (overframeReference ? 1 : 0) + (statusOnly ? 1 : 0) + (allSources ? 1 : 0) + (allLocal ? 1 : 0) != 1)
 {
-    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --overwolf-inventory-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --reference-url <https-url> | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
+    Console.Error.WriteLine("Usage: MyFrame.Sync (--public-export | --public-export-probe | --overwolf-inventory-probe | --public-export-file <path> | --public-export-directory <path> | --world-state | --world-state-file <path> | --overwolf-inventory-directory <dir> --allow-raw | --reference-file <path> | --reference-url <https-url> | --overframe-reference --type <Item|Mod|Warframe> --term <name> [--workers 2] [--delay-ms 800] [--ttl-hours 8] | --all | --all-local --public-export-directory <dir> --world-state-file <path> | --status) [--data-root <path>]");
     return 2;
 }
 
@@ -155,6 +156,44 @@ if (referenceUrl)
         {
             state = "failed",
             errorCode = ReferenceFetchErrorCode(error)
+        }));
+        return 1;
+    }
+}
+
+if (overframeReference)
+{
+    var typeText = RequiredOption(args, "--type");
+    var term = RequiredOption(args, "--term");
+    var workers = IntegerOption(args, "--workers", 2, 1, 16);
+    var delayMs = IntegerOption(args, "--delay-ms", 800, 0, 60_000);
+    var ttlHours = IntegerOption(args, "--ttl-hours", 8, 1, 24 * 30);
+    var type = OverframeCacheKey.ParseType(typeText);
+    using var overframeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+    var cache = new OverframeCacheStore(MyFrameStoragePaths.DataDatabasePath);
+    try
+    {
+        var result = await new OverframeReferenceSynchronizer(overframeClient, cache).SyncAsync(type, term,
+            new(workers, TimeSpan.FromMilliseconds(delayMs), TimeSpan.FromHours(ttlHours)));
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            state = result.State,
+            cacheKey = result.CacheKey,
+            sitemapMatches = result.SitemapMatches,
+            pagesFetched = result.PagesFetched,
+            sourceUrl = result.Entry?.SourceUrl,
+            expiresAt = result.Entry?.ExpiresAt,
+            parserVersion = result.Entry?.ParserVersion
+        }));
+        return result.State == "not_found" ? 1 : 0;
+    }
+    catch (Exception error) when (error is HttpRequestException or InvalidDataException or
+                                       TaskCanceledException or System.Xml.XmlException)
+    {
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            state = "failed",
+            errorCode = error is TaskCanceledException ? "OVERFRAME_TIMEOUT" : error.Message.Split(' ', 2)[0]
         }));
         return 1;
     }
@@ -326,6 +365,24 @@ static string ReferenceFetchErrorCode(Exception error) => error switch
     InvalidDataException => "REFERENCE_INVALID_DATA",
     _ => "REFERENCE_FETCH_FAILED"
 };
+
+static string RequiredOption(string[] arguments, string name)
+{
+    var index = Array.FindIndex(arguments, value => string.Equals(value, name, StringComparison.Ordinal));
+    if (index < 0 || index + 1 >= arguments.Length || string.IsNullOrWhiteSpace(arguments[index + 1]))
+        throw new ArgumentException($"{name} requires a value.");
+    return arguments[index + 1];
+}
+
+static int IntegerOption(string[] arguments, string name, int fallback, int minimum, int maximum)
+{
+    var index = Array.FindIndex(arguments, value => string.Equals(value, name, StringComparison.Ordinal));
+    if (index < 0) return fallback;
+    if (index + 1 >= arguments.Length || !int.TryParse(arguments[index + 1], out var value) ||
+        value < minimum || value > maximum)
+        throw new ArgumentException($"{name} must be between {minimum} and {maximum}.");
+    return value;
+}
 
 using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
 try
