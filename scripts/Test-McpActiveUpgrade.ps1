@@ -11,7 +11,7 @@ $new = (Resolve-Path -LiteralPath $NewDistributionPath).Path
 if ([string]::IsNullOrWhiteSpace($SeedServerPath)) { $SeedServerPath = Join-Path $PSScriptRoot '..\MyFrame.Mcp\bin\Debug\net10.0\win-x64\MyFrame.Mcp.exe' }
 $seedServer = (Resolve-Path -LiteralPath $SeedServerPath).Path
 foreach ($directory in @($old,$new)) {
-    if (-not (Test-Path -LiteralPath (Join-Path $directory 'MyFrame.Mcp.exe') -PathType Leaf)) { throw "MyFrame.Mcp.exe ausente: $directory" }
+    if (-not (Test-Path -LiteralPath (Join-Path $directory 'MyFrame.Mcp.exe') -PathType Leaf)) { throw "MyFrame.Mcp.exe is missing: $directory" }
 }
 $npxCommand = Get-Command npx.cmd -ErrorAction SilentlyContinue
 if (-not $npxCommand) { $npxCommand = Get-Command npx -ErrorAction Stop }

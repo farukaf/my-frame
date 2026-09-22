@@ -12,7 +12,7 @@ $("availability").textContent = api ? "Ready. Start capture, then launch Warfram
 const localAppData = api?.io?.paths?.localAppData;
 if (localAppData) {
   $("folder").value = `${localAppData.replace(/[\\/]+$/, "")}\\MyFrame\\captures`;
-  $("folder-hint").textContent = "Inbox My Frame sugerida automaticamente; confirme antes de exportar.";
+  $("folder-hint").textContent = "The My Frame inbox is suggested automatically; confirm it before exporting.";
 }
 if (!api) for (const button of document.querySelectorAll("button")) button.disabled = true;
 $("start").onclick = async () => {
@@ -77,7 +77,7 @@ async function exporting(action) {
 }
 $("report").onclick = () => exporting(() => write(`${crypto.randomUUID()}.schema-report.json`, JSON.stringify(collector.report(), null, 2)));
 $("capture").onclick = () => {
-  if (!$("consent").checked) { $("export-status").textContent = "Autorize explicitamente a captura privada antes de exportar."; return; }
+  if (!$("consent").checked) { $("export-status").textContent = "Explicitly authorize private capture before exporting."; return; }
   $("consent").checked = false;
   return exporting(async () => {
     const capture = await collector.capture();
