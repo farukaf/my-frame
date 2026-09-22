@@ -60,6 +60,11 @@ public sealed record ReferenceSectionResponse(DateTimeOffset ServedAt, string St
     int Documents, int RejectedDocuments, string? Kind, string? Title, string? Url,
     string? Revision, string? License, string? Author, bool TrustedForFacts,
     string? SectionId, string? SectionTitle, string? Content, bool ContentTruncated);
+public sealed record OverframeReferenceDto(string Type, string Term, string Name, string Url,
+    JsonElement Content, DateTimeOffset FetchedAt, DateTimeOffset ExpiresAt, string ContentHash,
+    string ParserVersion, bool TrustedForFacts = false);
+public sealed record OverframeReferenceResponse(DateTimeOffset ServedAt, string State,
+    string CacheKey, OverframeReferenceDto? Reference);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryEquipmentResponse(IReadOnlyList<InventoryEquipmentDto> Items);
@@ -96,7 +101,7 @@ public sealed class PlatformStatusService
         new("worldstate", "available", "World State adapter supports bounties, cycles, validity and attributed rewards."),
         new("market.public", "available", "Public market queries do not require a credential."),
         new("market.private", "optional", "Account/orders require an independent market credential."),
-        new("references.wiki_overframe", "import_only", "References require an explicitly permitted, attributed import and remain untrusted for facts."),
+        new("references.wiki_overframe", "optional", "Wiki imports and cached public Overframe item pages remain attributed and untrusted for facts; MCP never refreshes them."),
         new("mcp.domain", "partial", "Current MCP tools remain available; rich inventory/catalog/activity tools are being added incrementally.")
     ]);
 
@@ -487,6 +492,24 @@ public sealed class PlatformStatusService
         return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "available", documents.Count, rejected,
             document.Kind.ToString(), document.Title, document.Url.ToString(), document.Revision,
             document.License, document.Author, document.IsTrustedForFacts, section.Id, section.Title, content, truncated));
+    }
+
+    public async Task<OverframeReferenceResponse> GetOverframeReferenceAsync(
+        string type, string term, CancellationToken cancellationToken = default)
+    {
+        var entityType = OverframeCacheKey.ParseType(type);
+        var cacheKey = OverframeCacheKey.Create(entityType, term);
+        var store = new OverframeCacheStore(MyFrameStoragePaths.DataDatabasePath);
+        var entry = await store.GetAsync(entityType, term, readOnly: true, cancellationToken);
+        if (entry is null)
+            return new(DateTimeOffset.UtcNow, File.Exists(MyFrameStoragePaths.DataDatabasePath)
+                ? "not_cached" : "not_initialized", cacheKey, null);
+        using var payload = JsonDocument.Parse(entry.PayloadJson);
+        var now = DateTimeOffset.UtcNow;
+        return new(now, entry.IsFresh(now) ? "available" : "stale", cacheKey,
+            new(entry.EntityType.ToString(), entry.CanonicalTerm, entry.DisplayName,
+                entry.SourceUrl.AbsoluteUri, payload.RootElement.Clone(), entry.FetchedAt,
+                entry.ExpiresAt, entry.ContentHash, entry.ParserVersion));
     }
 
     private static bool Contains(string? value, string text) =>

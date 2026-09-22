@@ -54,7 +54,11 @@ diagnostics go to standard error.
 - `list_surplus`
 - `search_references`
 - `get_reference_section`
+- `get_overframe_reference`
 
 Inventory change comparison returns `context_mismatch` and no items when both revisions
-have different known contexts. Community references are attributed, untrusted content.
+have different known contexts. `get_overframe_reference` requires one specific name and
+an exact `Item`, `Mod`, or `Warframe` type. It reads only the SQLite cache; refreshes run
+through `MyFrame.Sync --overframe-reference`, never through MCP. Community references
+are attributed, untrusted content.
 The server never returns raw payloads, credentials, or arbitrary local files.
