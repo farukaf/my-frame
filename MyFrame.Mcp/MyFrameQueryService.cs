@@ -170,7 +170,7 @@ public sealed class MyFrameQueryService
             item is not null && item.IsMasteredWith(snapshot.Inventory!.Experience.GetValueOrDefault(item.UniqueName)),
             item?.Prime ?? false, item?.Vaulted ?? false, item?.MarketSlug,
             Price(snapshot, selectedComponent is null ? item?.MarketSlug : MarketIdentity(item!, selectedComponent, catalog)?.Slug),
-            returnedComponents, returnedRelics, returnedEvidence);
+            returnedComponents, returnedRelics, returnedEvidence, item?.Description);
         if (JsonSerializer.SerializeToUtf8Bytes(dto, _json).Length > MaximumSerializedItemsBytes)
             throw new QueryProblemException("RESULT_TOO_LARGE",
                 "The item detail exceeds the response budget. Request summary or one paginated section.");

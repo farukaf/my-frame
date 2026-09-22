@@ -35,6 +35,37 @@ public sealed class SnapshotProviderTests
         Assert.Contains("get_overview", error.Message);
     }
 
+    [Fact]
+    public async Task RetainedSnapshotsAreBoundedByTheMemoryCap()
+    {
+        using var folder = new TemporaryFolder();
+        var clock = new ManualTimeProvider();
+        var settings = new MyFrameSettingsDocument(1, 1, folder.Path, 10, 0, clock.GetUtcNow());
+        var paths = new MyFrameLocalDataOptions(Path.Combine(folder.Path, "settings.json"),
+            Path.Combine(folder.Path, "prices.json"), Path.Combine(folder.Path, "state.json"),
+            Path.Combine(folder.Path, "items.json"));
+        var inventory = new InventorySnapshot(clock.GetUtcNow(), new Dictionary<string, int>(),
+            new HashSet<string>(), new Dictionary<string, long>(), 0, 0, "synthetic");
+        using var provider = new MyFrameSnapshotProvider(new ToggleInventoryReader(inventory),
+            new CatalogReader(new CatalogSnapshot([], new Dictionary<string, CatalogItem>(),
+                new Dictionary<string, MarketIdentity>())), new RecommendationEngine(),
+            new SettingsStore(settings), new PriceReader(), new StateStore(), new ItemIndexStore(),
+            paths, clock);
+
+        var ids = new List<string>();
+        for (var index = 0; index < MyFrameSnapshotProvider.MaximumRetainedSnapshots + 2; index++)
+        {
+            provider.Invalidate();
+            ids.Add((await provider.GetAsync()).SnapshotId);
+            clock.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        await Assert.ThrowsAsync<MyFrameSnapshotException>(() => provider.GetAsync(ids[0]));
+        await Assert.ThrowsAsync<MyFrameSnapshotException>(() => provider.GetAsync(ids[1]));
+        Assert.Equal(ids[2], (await provider.GetAsync(ids[2])).SnapshotId);
+        Assert.Equal(ids[^1], (await provider.GetAsync(ids[^1])).SnapshotId);
+    }
+
     private sealed class ManualTimeProvider : TimeProvider
     {
         private DateTimeOffset _now = new(2026, 9, 12, 12, 0, 0, TimeSpan.Zero);
@@ -80,6 +111,10 @@ public sealed class SnapshotProviderTests
     public async Task UsesSynchronizedDataWhenAlecaSettingsAreMissing()
     {
         using var folder = new TemporaryFolder();
+        var previousRoot = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
+        Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", folder.Path);
+        try
+        {
         var item = new CatalogItem("/synced/item", "Synced Item", "Weapon", "", "", false, false,
             false, false, null, null, null, [], []);
         var synced = new SynchronizedDataSnapshot(
@@ -102,6 +137,9 @@ public sealed class SnapshotProviderTests
         Assert.Equal("SYNC_DATABASE", snapshot.Sources["inventory"].DetailCode);
         Assert.Equal("partial", snapshot.Sources["catalog"].State);
         Assert.Equal(3, snapshot.Inventory!.Stackables["/synced/resource"]);
+        Assert.Contains(snapshot.Warnings, warning => warning.Code == "INVENTORY_CAPTURE_UNVERIFIED");
+        }
+        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previousRoot); }
     }
 
     [Fact]

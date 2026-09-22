@@ -6,7 +6,7 @@ namespace MyFrame.Core;
 /// <summary>F1 transport probe only. No publication, player normalization or raw output.</summary>
 public sealed record CollectorCaptureProbe(int SchemaVersion, int GameId, string Source,
     Guid SessionId, Guid EventId, long Sequence, DateTimeOffset ReceivedAt, int Bytes,
-    string Completeness, bool Publishable, bool PayloadRootObject);
+    string Completeness, bool Publishable, bool PayloadRootObject, string CaptureMode = "snapshot");
 
 public static class CollectorCaptureReader
 {
@@ -46,6 +46,8 @@ public static class CollectorCaptureReader
                 !Guid.TryParseExact(e.GetProperty("sessionId").GetString(), "D", out var sessionId) ||
                 !Guid.TryParseExact(e.GetProperty("eventId").GetString(), "D", out var bodyEventId) ||
                 eventId != bodyEventId || e.GetProperty("sequence").GetInt64() <= 0) throw Invalid();
+            var captureMode = e.TryGetProperty("captureMode", out var mode) && mode.ValueKind == JsonValueKind.String ? mode.GetString() : "snapshot";
+            if (captureMode is not ("snapshot" or "delta")) throw Invalid();
             var encoding = e.GetProperty("encoding").GetString();
             if (encoding is not ("json-object" or "json-string" or "opaque-string")) throw Invalid();
             var payload = e.GetProperty("payload").GetString() ?? throw Invalid();
@@ -59,7 +61,7 @@ public static class CollectorCaptureReader
             if (!DateTimeOffset.TryParse(e.GetProperty("receivedAt").GetString(), out var receivedAt)) throw Invalid();
             return new(1, 8954, "overwolf-native", sessionId, eventId,
                 e.GetProperty("sequence").GetInt64(), receivedAt,
-                body.Length, "unverified", false, rootObject);
+                body.Length, "unverified", false, rootObject, captureMode!);
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or
                                        InvalidOperationException or FormatException or OverflowException)

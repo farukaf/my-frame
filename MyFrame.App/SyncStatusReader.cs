@@ -10,7 +10,8 @@ public sealed record SyncSourceStatusRow(
     string Detail,
     string Revision,
     string LastRun,
-    string ParserVersion);
+    string ParserVersion,
+    string Coverage);
 public sealed record SyncAttemptStatusRow(
     string SourceId,
     string State,
@@ -38,7 +39,8 @@ public sealed class SyncStatusReader
         {
             cancellationToken.ThrowIfCancellationRequested();
             var status = await database.GetStatusAsync(source.Id, cancellationToken);
-            rows.Add(status is null ? NotInitialized(source) : Map(source, status));
+            var coverage = await database.GetSourceCoverageAsync(source.Id, cancellationToken);
+            rows.Add(status is null ? NotInitialized(source) : Map(source, status, coverage));
         }
         return rows;
     }
@@ -68,17 +70,22 @@ public sealed class SyncStatusReader
     }
 
     private static SyncSourceStatusRow NotInitialized((string Id, string Name) source) =>
-        new(source.Id, source.Name, "not_initialized", "No published revision", "—", "—", "—");
+        new(source.Id, source.Name, "not_initialized", "No published revision", "—", "—", "—", "Coverage: —");
 
-    private static SyncSourceStatusRow Map((string Id, string Name) source, MyFrame.Core.Sync.SyncStatus status)
+    private static SyncSourceStatusRow Map((string Id, string Name) source, MyFrame.Core.Sync.SyncStatus status,
+        IReadOnlyDictionary<string, InventoryFieldState> coverage)
     {
         var state = status.ErrorCode is null ? status.LastRunState ?? "unknown" : "failed";
         var detail = status.ErrorCode is null
             ? $"Accepted {status.AcceptedRecords:N0}; rejected {status.RejectedRecords:N0}"
             : $"Error: {status.ErrorCode}";
+        var coverageText = coverage.Count == 0
+            ? "Coverage: —"
+            : $"Coverage: {string.Join(", ", coverage.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => $"{pair.Key}={pair.Value}"))}";
         return new(source.Id, source.Name, state, detail,
             status.ActiveRevisionId ?? "—",
             status.LastRunAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—",
-            status.ParserVersion ?? "—");
+            status.ParserVersion ?? "—", coverageText);
     }
 }

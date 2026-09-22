@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="MyFrame.App.Components.Surplus"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:MyFrame.App.Components">
+    <Grid IsVisible="{Binding IsVisible}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <VerticalStackLayout>
+                <Label Text="Surplus" Style="{DynamicResource Title}" />
+                <Label Text="Parts with nothing left to build: the item is already yours, its mastery is already banked, or only one can ever be used." TextColor="#8995A8" />
+            </VerticalStackLayout>
+            <Entry Grid.Column="1" Style="{DynamicResource SearchField}" Placeholder="Search surplus…" Text="{Binding SearchText}" WidthRequest="220" />
+        </Grid>
+        <Border Grid.Row="1" BackgroundColor="#151A23" Stroke="#252D3A" StrokeThickness="1"
+                StrokeShape="RoundRectangle 10" Padding="14,10">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="14">
+                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                    <Label Text="REASON" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                    <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                           ToolTipProperties.Text="The mastery is already banked, so building it again adds nothing">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="Mastered" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <CheckBox IsChecked="{Binding ShowMastered}" Color="#7DE2D1" VerticalOptions="Center" />
+                        <Label Text="Have mastered" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                           ToolTipProperties.Text="The built item is already in your inventory">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="Crafted" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <CheckBox IsChecked="{Binding ShowCrafted}" Color="#7DE2D1" VerticalOptions="Center" />
+                        <Label Text="Have crafted" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="2" VerticalOptions="Center"
+                                           ToolTipProperties.Text="Ship segments and landing craft install once per account, so every copy past the first is spare">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="OnlyOneNeeded" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <CheckBox IsChecked="{Binding ShowOnlyOneNeeded}" Color="#7DE2D1" VerticalOptions="Center" />
+                        <Label Text="Only one needed" TextColor="#D6DCE6" FontSize="13" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </HorizontalStackLayout>
+                <BoxView Grid.Column="1" WidthRequest="1" Color="#252D3A" VerticalOptions="Fill" Margin="0,2" />
+                <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                    <Label Text="PLATINUM" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" Margin="0,0,4,0" />
+                    <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                            ToolTipProperties.Text="No constraint on platinum value">
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SetPlatinumCommand}" CommandParameter="Any" /></Border.GestureRecognizers>
+                        <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding Platinum}" Value="Any"><Setter Property="BackgroundColor" Value="#173F35" /></DataTrigger></Border.Triggers>
+                        <Label Text="Any" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                            <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding Platinum}" Value="Any"><Setter Property="TextColor" Value="#7DE2D1" /></DataTrigger></Label.Triggers>
+                        </Label>
+                    </Border>
+                    <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                            ToolTipProperties.Text="Tradable and currently priced on Warframe.Market">
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SetPlatinumCommand}" CommandParameter="Has value" /></Border.GestureRecognizers>
+                        <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding Platinum}" Value="Has value"><Setter Property="BackgroundColor" Value="#173F35" /></DataTrigger></Border.Triggers>
+                        <Label Text="Has value" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                            <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding Platinum}" Value="Has value"><Setter Property="TextColor" Value="#7DE2D1" /></DataTrigger></Label.Triggers>
+                        </Label>
+                    </Border>
+                    <Border Padding="9,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" VerticalOptions="Center"
+                            ToolTipProperties.Text="Untradable, or tradable with no market price — sells in game for credits">
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SetPlatinumCommand}" CommandParameter="No value" /></Border.GestureRecognizers>
+                        <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding Platinum}" Value="No value"><Setter Property="BackgroundColor" Value="#173F35" /></DataTrigger></Border.Triggers>
+                        <Label Text="No value" FontSize="13" VerticalOptions="Center" TextColor="#8995A8">
+                            <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding Platinum}" Value="No value"><Setter Property="TextColor" Value="#7DE2D1" /></DataTrigger></Label.Triggers>
+                        </Label>
+                    </Border>
+                </HorizontalStackLayout>
+                <Button Grid.Column="4" Text="Reset" Command="{Binding ResetFiltersCommand}"
+                        BackgroundColor="#20283A" TextColor="#AEB8C8" FontSize="12"
+                        Padding="10,0" HeightRequest="30" VerticalOptions="Center"
+                        ToolTipProperties.Text="Tick every filter again" />
+            </Grid>
+        </Border>
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Items}" SelectionMode="None">
+            <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10" /></CollectionView.ItemsLayout>
+            <CollectionView.EmptyView><Label Text="{Binding EmptyMessage}" TextColor="#8995A8" Margin="10,30" /></CollectionView.EmptyView>
+            <CollectionView.ItemTemplate><DataTemplate>
+                <components:RecommendationCard ImageUrl="{Binding ImageUrl}" Title="{Binding ItemName}"
+                    Badge="{Binding ReasonBadge}" OwnedBadge="{Binding CardOwned}" Metadata="{Binding CardMetadata}" Action="{Binding ActionLabel}"
+                    Description="{Binding Explanation}" Details="{Binding ItemDetails}" MarketSlug="{Binding MarketSlug}" ShowDetailsButton="True" />
+            </DataTemplate></CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentView>

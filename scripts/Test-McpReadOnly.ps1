@@ -23,6 +23,15 @@ try {
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $start
     if (-not $process.Start()) { throw 'Unable to start MCP server.' }
+    $connections = @()
+    if (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue) {
+        Start-Sleep -Milliseconds 200
+        $connections = @(Get-NetTCPConnection -OwningProcess $process.Id -ErrorAction SilentlyContinue |
+            Where-Object State -in @('Listen', 'SynSent', 'SynReceived', 'Established', 'FinWait1', 'FinWait2', 'CloseWait'))
+        if ($connections.Count -gt 0) {
+            throw "MCP opened network sockets during read-only startup: $($connections.Count)."
+        }
+    }
     $process.StandardInput.Close()
     $outTask = $process.StandardOutput.ReadToEndAsync()
     $errTask = $process.StandardError.ReadToEndAsync()
@@ -36,6 +45,7 @@ try {
     if ($stdoutText.Length -ne 0) { throw 'MCP emitted bytes to stdout before a protocol request.' }
     if (@(Get-ChildItem -LiteralPath $root -Force).Count -ne 0) { throw 'MCP created files in a clean data root.' }
     Write-Output "MCP_READONLY_OK=1"
+    Write-Output "MCP_NETWORK_CONNECTIONS=$($connections.Count)"
     Write-Output "MCP_EXIT=$($process.ExitCode)"
 }
 finally {

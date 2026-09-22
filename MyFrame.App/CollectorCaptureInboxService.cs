@@ -15,4 +15,7 @@ public sealed class CollectorCaptureInboxService
         await using var database = new SyncDatabase(MyFrameStoragePaths.DataDatabasePath);
         return await CollectorCaptureInbox.ImportAsync(DirectoryPath, database, allowRawPayload, cancellationToken);
     }
+
+    public Task<CollectorCaptureStatus> ReadStatusAsync(CancellationToken cancellationToken = default) =>
+        CollectorCaptureStatusProbe.ReadAsync(DirectoryPath, cancellationToken);
 }
