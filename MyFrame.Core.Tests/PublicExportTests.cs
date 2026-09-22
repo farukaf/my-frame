@@ -10,7 +10,7 @@ public sealed class PublicExportTests
     public void PublicExportUsesSeparateOfficialIndexAndDocumentHosts()
     {
         Assert.Equal("https://origin.warframe.com/PublicExport/index_en.txt.lzma", PublicExportIndexClient.DefaultIndexUrl);
-        Assert.Equal("https://content.warframe.com/PublicExport/", PublicExportDocumentClient.DefaultBaseUrl);
+        Assert.Equal("https://content.warframe.com/PublicExport/Manifest/", PublicExportDocumentClient.DefaultBaseUrl);
     }
 
     [Fact]
@@ -87,6 +87,54 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task DocumentClientPreservesRevisionTagInOfficialPath()
+    {
+        using var client = new HttpClient(new RecordingPathHandler());
+        await new PublicExportDocumentClient(client).FetchBatchAsync(
+            new PublicExportIndexEntry("ExportWeapons_en.json", "00_fixture"),
+            baseUri: new Uri("https://fixture.invalid/PublicExport/"));
+
+        Assert.Equal("/PublicExport/ExportWeapons_en.json!00_fixture", RecordingPathHandler.LastPath);
+    }
+
+    [Fact]
+    public async Task PublicExportRetriesTransientHttpFailures()
+    {
+        using var handler = new RetryHandler();
+        using var client = new HttpClient(handler);
+        var entries = await new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+            .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma"));
+
+        Assert.Single(entries);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
+    public async Task PublicExportDoesNotRetryNotFound()
+    {
+        using var handler = new NotFoundHandler();
+        using var client = new HttpClient(handler);
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() =>
+            new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+                .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma")));
+
+        Assert.Equal("PUBLIC_EXPORT_HTTP_404", error.Message);
+        Assert.Equal(1, handler.Attempts);
+    }
+
+    [Fact]
+    public async Task PublicExportRetriesTransportTimeouts()
+    {
+        using var handler = new TimeoutHandler();
+        using var client = new HttpClient(handler);
+        var entries = await new PublicExportIndexClient(client, _ => "ExportWeapons_en.json!00_fixture")
+            .FetchIndexAsync(new Uri("https://fixture.invalid/index_en.txt.lzma"));
+
+        Assert.Single(entries);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedPublicExportRecordsAtomically()
     {
         const string json = "[{\"uniqueName\":\"/Lotus/Test\",\"name\":{\"en\":\"Test\",\"pt\":\"Teste\"},\"category\":\"Melee\"}]";
@@ -149,6 +197,50 @@ public sealed class PublicExportTests
     }
 
     [Fact]
+    public async Task FetchCatalogAggregatesMultipleDocumentsAndDeduplicatesIdenticalRecords()
+    {
+        using var client = new HttpClient(new DocumentMapHandler(new Dictionary<string, string>
+        {
+            ["ExportWarframes_en.json!tag-a"] = "[{\"uniqueName\":\"/Lotus/Warframe\",\"name\":\"Frame\"}]",
+            ["ExportWeapons_en.json!tag-b"] = "[{\"uniqueName\":\"/Lotus/Warframe\",\"name\":\"Frame\"},{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Weapon\"}]"
+        }));
+        var fetch = await new PublicExportSyncRunner().FetchCatalogAsync(new PublicExportDocumentClient(client),
+        [new("ExportWarframes_en.json", "tag-a"), new("ExportWeapons_en.json", "tag-b")]);
+
+        Assert.Equal(2, fetch.DocumentCount);
+        Assert.Equal("public-export-aggregate-1", fetch.Batch.ParserVersion);
+        Assert.Equal(2, fetch.Records.Count);
+    }
+
+    [Fact]
+    public async Task FetchCatalogRejectsConflictingDuplicateRecords()
+    {
+        using var client = new HttpClient(new DocumentMapHandler(new Dictionary<string, string>
+        {
+            ["ExportWarframes_en.json!tag-a"] = "[{\"uniqueName\":\"/Lotus/Same\",\"name\":\"First\"}]",
+            ["ExportWeapons_en.json!tag-b"] = "[{\"uniqueName\":\"/Lotus/Same\",\"name\":\"Second\"}]"
+        }));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => new PublicExportSyncRunner().FetchCatalogAsync(
+            new PublicExportDocumentClient(client),
+            [new("ExportWarframes_en.json", "tag-a"), new("ExportWeapons_en.json", "tag-b")]));
+    }
+
+    [Fact]
+    public async Task SharedRunnerClassifiesTransportFailureWithoutLeakingNetworkDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-public-network-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        using var client = new HttpClient(new ThrowingHandler());
+
+        var result = await new PublicExportSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("failed", result.State);
+        Assert.Equal("PUBLIC_EXPORT_NETWORK_UNAVAILABLE", result.ErrorCode);
+    }
+
+    [Fact]
     public async Task SharedRunnerPublishesLocalPublicExportFileWithItsParserVersion()
     {
         var root = Path.Combine(Path.GetTempPath(), $"myframe-public-file-{Guid.NewGuid():N}");
@@ -191,6 +283,58 @@ public sealed class PublicExportTests
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
     }
 
+    private sealed class RecordingPathHandler : HttpMessageHandler
+    {
+        public static string? LastPath { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            LastPath = request.RequestUri?.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent("[{\"uniqueName\":\"/Lotus/Test\",\"name\":\"Test\"}]", System.Text.Encoding.UTF8, "application/json") });
+        }
+    }
+
+    private sealed class RetryHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            if (Attempts < 3)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.Zero);
+                return Task.FromResult(response);
+            }
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
+        }
+    }
+
+    private sealed class NotFoundHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+    }
+
+    private sealed class TimeoutHandler : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Attempts++;
+            if (Attempts < 3) throw new TaskCanceledException("fixture timeout");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
+        }
+    }
+
     private sealed class RoutedFixtureHandler(string index, string document) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -209,9 +353,26 @@ public sealed class PublicExportTests
             if (request.RequestUri?.AbsolutePath.EndsWith("index_en.txt.lzma", StringComparison.Ordinal) == true)
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(compressedIndex) });
             var index = "ExportWeapons_en.json!00_fixture";
-            if (request.RequestUri?.AbsolutePath.EndsWith(".json", StringComparison.Ordinal) == true)
+            if (request.RequestUri?.AbsolutePath.Contains(".json", StringComparison.Ordinal) == true)
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) });
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(index) });
+        }
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("proxy details must not escape");
+    }
+
+    private sealed class DocumentMapHandler(IReadOnlyDictionary<string, string> documents) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var key = request.RequestUri?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).Last() ?? "";
+            return Task.FromResult(documents.TryGetValue(key, out var document)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(document) }
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
         }
     }
 }

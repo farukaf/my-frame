@@ -92,7 +92,8 @@ public sealed record ItemDto(
     PriceDto? Price,
     IReadOnlyList<ComponentDto> Components,
     IReadOnlyList<string> Relics,
-    IReadOnlyList<EvidenceDto> Recommendations);
+    IReadOnlyList<EvidenceDto> Recommendations,
+    string? Description = null);
 
 public sealed record EvidenceDto(string ReasonCode, string Explanation,
     IReadOnlyDictionary<string, string> Evidence);
@@ -121,3 +122,13 @@ public sealed record SurplusDto(string ItemId, string Name, string ParentName, s
     int Owned, int StillNeededForCollection, int SurplusForCollection, int Reserved,
     int AllocatedToSets, int AvailableToSell, int? PlatinumEach, int? TotalPlatinum, int DucatsEach, int TotalDucats,
     bool Tradable, string Reason, string ReasonCode, string Explanation);
+
+public sealed record AcquisitionComponentDto(string UniqueName, string Name, int RequiredCount,
+    int Ducats, bool Tradable, string? ImageName);
+public sealed record AcquisitionRelicDto(string RelicName, string Rarity, double Chance,
+    bool Vaulted, string RewardName);
+public sealed record AcquisitionResponse(DateTimeOffset ServedAt, string State, string? ErrorCode,
+    string? CatalogRevisionId, string? WorldStateRevisionId, string? ItemId, string? ItemName,
+    IReadOnlyList<AcquisitionComponentDto> Components, IReadOnlyList<AcquisitionRelicDto> Relics,
+    IReadOnlyList<WorldStateBountyDto> Bounties,
+    IReadOnlyDictionary<string, string> Coverage, string? WorldStateParserVersion = null);

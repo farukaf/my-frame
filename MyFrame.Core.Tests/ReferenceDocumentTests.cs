@@ -41,4 +41,98 @@ public sealed class ReferenceDocumentTests
         Assert.True(File.Exists(first.StoredFile));
         Assert.False(first.Document.IsTrustedForFacts);
     }
+
+    [Fact]
+    public async Task SyncRunnerFetchesOnlyAllowedAttributedReferenceAndIsIdempotent()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-sync-{Guid.NewGuid():N}");
+        var payload = "{\"kind\":\"overframe\",\"url\":\"https://overframe.gg/build/123\",\"title\":\"Example build\",\"revision\":\"rev-2\",\"license\":\"community\",\"sections\":[{\"id\":\"mods\",\"content\":\"Use Serration.\"}]}";
+        using var client = new HttpClient(new StubHandler(payload));
+        var runner = new ReferenceSyncRunner();
+
+        var first = await runner.FetchAsync(client, new Uri("https://overframe.gg/build/123"), root);
+        var second = await runner.FetchAsync(client, new Uri("https://overframe.gg/build/123"), root);
+
+        Assert.False(first.AlreadyImported);
+        Assert.True(second.AlreadyImported);
+        Assert.Equal("rev-2", first.Document.Revision);
+        await Assert.ThrowsAsync<InvalidDataException>(() => runner.FetchAsync(client, new Uri("https://example.com/x"), root));
+    }
+
+    [Fact]
+    public async Task SyncRunnerRejectsRedirectToUnapprovedHost()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-redirect-{Guid.NewGuid():N}");
+        using var client = new HttpClient(new RedirectHandler());
+        var runner = new ReferenceSyncRunner();
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            runner.FetchAsync(client, new Uri("https://wiki.warframe.com/w/Mother_Token"), root));
+
+        Assert.Equal("REFERENCE_REDIRECT_UNSUPPORTED", error.Message);
+    }
+
+    [Fact]
+    public async Task SyncRunnerRejectsExplicitlyNonJsonResponse()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-content-type-{Guid.NewGuid():N}");
+        using var client = new HttpClient(new NonJsonHandler());
+        var runner = new ReferenceSyncRunner();
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            runner.FetchAsync(client, new Uri("https://wiki.warframe.com/w/Mother_Token"), root));
+
+        Assert.Equal("REFERENCE_CONTENT_TYPE_UNSUPPORTED", error.Message);
+    }
+
+    [Fact]
+    public async Task SyncRunnerAcceptsStructuredJsonMediaType()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-reference-structured-json-{Guid.NewGuid():N}");
+        using var client = new HttpClient(new StructuredJsonHandler());
+        var runner = new ReferenceSyncRunner();
+
+        var result = await runner.FetchAsync(client, new Uri("https://wiki.warframe.com/w/Mother_Token"), root);
+
+        Assert.Equal("r-structured", result.Document.Revision);
+    }
+
+    private sealed class StubHandler(string payload) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+            });
+    }
+
+    private sealed class RedirectHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://example.com/redirected"),
+                Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
+            });
+    }
+
+    private sealed class NonJsonHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent("not json", System.Text.Encoding.UTF8, "text/html")
+            });
+    }
+
+    private sealed class StructuredJsonHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent("{\"kind\":\"wiki\",\"url\":\"https://wiki.warframe.com/w/Mother_Token\",\"title\":\"Mother Token\",\"revision\":\"r-structured\",\"sections\":[]}", System.Text.Encoding.UTF8, "application/ld+json")
+            });
+    }
 }

@@ -2,7 +2,7 @@
 name: warframe-research
 description: Pesquisar referências importadas de Wiki e Overframe com atribuição, revisão e separação explícita de fatos e conteúdo comunitário.
 metadata:
-  version: "1"
+  version: "2"
 ---
 
 # Pesquisa atribuída
@@ -15,7 +15,9 @@ os dados sincronizados do jogo.
 
 1. Execute o contrato comum e fixe o `snapshotId` quando houver dados do jogador.
 2. Chame `search_references` com uma consulta curta e específica.
-3. Verifique `state`, `Documents`, `RejectedDocuments` e cada hit. Preserve URL,
+3. Verifique `state`, `Documents`, `RejectedDocuments` e cada hit. Para cada
+   trecho usado, chame `get_reference_section` com a URL, `sectionId` e revisão
+   retornados; não trate o snippet como conteúdo completo. Preserve URL,
    revisão, tipo, autoria e licença na resposta.
 4. Trate o conteúdo como `trustedForFacts=false`: use-o como referência ou
    hipótese, nunca como confirmação de inventário, recompensa, chance ou regra

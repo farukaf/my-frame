@@ -104,12 +104,37 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientRetriesTransientOfficialFailures()
+    {
+        const string json = "{\"syndicateMissions\":[]}";
+        using var handler = new TransientHandler(System.Text.Encoding.UTF8.GetBytes(json));
+        using var client = new HttpClient(handler);
+
+        var result = await new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.DefaultUrl));
+
+        Assert.Equal("worldstate-official-1", result.Batch.ParserVersion);
+        Assert.Equal(3, handler.Attempts);
+    }
+
+    [Fact]
     public async Task ClientDoesNotFallbackWhenOfficialPayloadIsInvalid()
     {
         using var client = new HttpClient(new InvalidOfficialHandler());
 
         await Assert.ThrowsAnyAsync<JsonException>(() =>
             new WorldStateClient(client, allowCommunityFallback: true).FetchAsync());
+    }
+
+    [Fact]
+    public async Task ClientRejectsRedirectToDifferentWorldStateHost()
+    {
+        const string json = "{\"syndicateMissions\":[]}";
+        using var client = new HttpClient(new RedirectedWorldStateHandler(json));
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.DefaultUrl)));
+
+        Assert.Equal("WORLDSTATE_REDIRECT_UNSUPPORTED", error.Message);
     }
 
     [Fact]
@@ -144,6 +169,20 @@ public sealed class WorldStateTests
         Assert.Equal("published", result.State);
         Assert.Equal("worldstate-official-1", result.ParserVersion);
         Assert.Equal(0, result.Records);
+    }
+
+    [Fact]
+    public async Task SharedWorldStateRunnerClassifiesTransportFailureWithoutLeakingDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-worldstate-network-{Guid.NewGuid():N}");
+        await using var database = new SyncDatabase(Path.Combine(root, "data.db"));
+        await using var host = new SyncHost(database);
+        using var client = new HttpClient(new ThrowingHandler());
+
+        var result = await new WorldStateSyncRunner().RunAsync(database, host, client);
+
+        Assert.Equal("failed", result.State);
+        Assert.Equal("WORLDSTATE_NETWORK_UNAVAILABLE", result.ErrorCode);
     }
 
     [Fact]
@@ -216,12 +255,27 @@ public sealed class WorldStateTests
 
     private sealed class FailingOfficialThenCommunityHandler(byte[] payload) : HttpMessageHandler
     {
-        private int _calls;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsoluteUri == WorldStateClient.DefaultUrl)
+                throw new HttpRequestException("fixture transport failure");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
+        }
+    }
+
+    private sealed class TransientHandler(byte[] payload) : HttpMessageHandler
+    {
+        public int Attempts { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (Interlocked.Increment(ref _calls) == 1)
-                throw new HttpRequestException("fixture transport failure");
+            Attempts++;
+            if (Attempts < 3)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.Zero);
+                return Task.FromResult(response);
+            }
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) });
         }
     }
@@ -238,5 +292,21 @@ public sealed class WorldStateTests
                 Content = new StringContent("{")
             });
         }
+    }
+
+    private sealed class RedirectedWorldStateHandler(string payload) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://example.com/worldState.php"),
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+            });
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("proxy details must not escape");
     }
 }

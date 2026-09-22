@@ -74,6 +74,9 @@ test("inventory events are deduplicated and reports never include raw data", asy
   await collector.receive(inventory(value)); await collector.receive(inventory(value));
   assert.equal(collector.status.duplicates, 1);
   assert.equal(collector.status.state, "inventoryObservedUnverified");
+  assert.equal(collector.status.eventCounts.match_info, 2);
+  assert.equal(collector.status.lastEventFeature, "match_info");
+  assert.ok(collector.status.lastEventAt);
   assert.equal(JSON.stringify(collector.report()).includes("private-test"), false);
   assert.equal(collector.report().rawIncluded, false);
   collector.stop();

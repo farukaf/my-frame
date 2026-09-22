@@ -105,7 +105,7 @@ public sealed class SyncHost : IAsyncDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
         {
-            await _database.RecordFailureAsync("worldstate-pc", ErrorCode(error), cancellationToken);
+            await _database.RecordFailureAsync("worldstate-pc", WorldStateErrorCode(error), cancellationToken);
             _lastRunAt = DateTimeOffset.UtcNow;
             return null;
         }
@@ -126,7 +126,7 @@ public sealed class SyncHost : IAsyncDisposable
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception error)
         {
-            await _database.RecordFailureAsync("worldstate-pc", ErrorCode(error), cancellationToken);
+            await _database.RecordFailureAsync("worldstate-pc", WorldStateErrorCode(error), cancellationToken);
             _lastRunAt = DateTimeOffset.UtcNow;
             return null;
         }
@@ -154,6 +154,14 @@ public sealed class SyncHost : IAsyncDisposable
     {
         InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
         HttpRequestException request when request.Message.StartsWith("PUBLIC_EXPORT_HTTP_", StringComparison.Ordinal) => request.Message,
+        _ => "SYNC_FAILED"
+    };
+
+    private static string WorldStateErrorCode(Exception error) => error switch
+    {
+        InvalidDataException data when !string.IsNullOrWhiteSpace(data.Message) => data.Message,
+        HttpRequestException request when request.Message.StartsWith("WORLDSTATE_HTTP_", StringComparison.Ordinal) => request.Message,
+        HttpRequestException => "WORLDSTATE_NETWORK_UNAVAILABLE",
         _ => "SYNC_FAILED"
     };
 }

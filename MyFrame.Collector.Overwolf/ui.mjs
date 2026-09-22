@@ -1,8 +1,11 @@
 import { Collector } from "./collector.mjs";
 const $ = id => document.getElementById(id);
 const api = globalThis.overwolf;
+let heartbeatTimer = null;
+let heartbeatWriteTimer = null;
 const collector = api ? new Collector(api, status => {
   $("status").textContent = JSON.stringify(status, null, 2);
+  if (heartbeatTimer !== null) scheduleHeartbeatWrite();
 }) : null;
 $("availability").textContent = api ? "Pronto. Clique em iniciar; depois abra o Warframe." :
   "Abra este pacote como extensão local no Overwolf. O navegador comum não oferece GEP.";
@@ -12,12 +15,23 @@ if (localAppData) {
   $("folder-hint").textContent = "Inbox My Frame sugerida automaticamente; confirme antes de exportar.";
 }
 if (!api) for (const button of document.querySelectorAll("button")) button.disabled = true;
-$("start").onclick = () => {
+$("start").onclick = async () => {
   collector.start();
-  return writeHeartbeat();
+  await writeHeartbeat();
+  if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
+  heartbeatTimer = setInterval(() => { void writeHeartbeat(true); }, 15 * 60 * 1000);
 };
-$("stop").onclick = () => { collector.stop(); $("consent").checked = false; };
-addEventListener("unload", () => collector?.stop());
+$("stop").onclick = () => {
+  if (heartbeatTimer !== null) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  if (heartbeatWriteTimer !== null) { clearTimeout(heartbeatWriteTimer); heartbeatWriteTimer = null; }
+  collector.stop(); $("consent").checked = false;
+  void writeHeartbeat(true, "stopped");
+};
+addEventListener("unload", () => {
+  if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
+  if (heartbeatWriteTimer !== null) clearTimeout(heartbeatWriteTimer);
+  collector?.stop();
+});
 
 function write(name, text) {
   const folder = $("folder").value.trim().replace(/[\\/]+$/, "");
@@ -28,18 +42,32 @@ function write(name, text) {
       result => result?.success ? resolve() : reject(new Error("WRITE_FAILED")));
   });
 }
-async function writeHeartbeat() {
+async function writeHeartbeat(quiet = false, heartbeatState = "started") {
   try {
+    const report = collector?.report();
     await write("collector-status.json", JSON.stringify({
       schemaVersion: 1,
       kind: "my-frame-collector",
-      state: "started",
-      timestampUtc: new Date().toISOString()
+      state: heartbeatState,
+      timestampUtc: new Date().toISOString(),
+      collectorState: report?.state ?? "notStarted",
+      supportedFeatures: report?.supportedFeatures ?? [],
+      eventCounts: report?.eventCounts ?? {},
+      lastEventFeature: report?.lastEventFeature ?? null,
+      lastEventAt: report?.lastEventAt ?? null,
+      inventoryState: report?.inventory?.rootObject === true ? "observedUnverified" : "notObserved"
     }));
-    $("export-status").textContent = "Sessão registrada na inbox; agora abra o Warframe.";
+    if (!quiet) $("export-status").textContent = "Sessão registrada na inbox; agora abra o Warframe.";
   } catch {
-    $("export-status").textContent = "Captura iniciada, mas não foi possível registrar o heartbeat. Confirme a pasta.";
+    if (!quiet) $("export-status").textContent = "Captura iniciada, mas não foi possível registrar o heartbeat. Confirme a pasta.";
   }
+}
+function scheduleHeartbeatWrite() {
+  if (heartbeatWriteTimer !== null) return;
+  heartbeatWriteTimer = setTimeout(() => {
+    heartbeatWriteTimer = null;
+    void writeHeartbeat(true);
+  }, 250);
 }
 async function exporting(action) {
   $("report").disabled = $("capture").disabled = true;

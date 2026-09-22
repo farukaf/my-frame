@@ -215,22 +215,28 @@ permitir filtros e paginação previsível.
 | Ferramenta | Finalidade e filtros principais |
 | --- | --- |
 | `get_capabilities` | Capacidades disponíveis, parciais e pendentes de validação externa. |
+| `get_market_credential_status` | Estado/expiração da credencial independente do Warframe Market; nunca retorna o token. |
 | `get_sync_status` | Estado somente leitura das fontes, última tentativa, revisão ativa, versão do parser, contagens aceitas/rejeitadas e erro sanitizado. |
-| `get_capture_inbox_status` | Metadados dos marcadores Overwolf pendentes; não importa nem retorna payload. |
+| `get_capture_inbox_status` | Status read-only da inbox Overwolf: estado, processos, heartbeat/frescor e marcadores válidos/inválidos; não retorna caminho nem payload. |
 | `get_sync_history` | Tentativas recentes por fonte, com limite e estado sanitizado. |
 | `get_inventory_coverage` | Cobertura por campo do inventário (`Known`, `NotObserved`, `Invalid` etc.). |
-| `get_source_coverage` | Cobertura por campo de `public-export`, `worldstate-pc` ou `overwolf-inventory`, sem payload bruto. |
-| `search_public_export` | Busca local no catálogo oficial por uniqueName, nome, alias ou categoria, retornando revisão/parser/cobertura, sem rede e sem raw JSON. |
+| `get_inventory_history` | Revisões recentes do inventário, com sequência, completude, modo de captura, contexto opcional e retenção. |
+| `get_inventory_changes` | Compara duas revisões completas e retorna somente alterações de equipamento, configuração, mods e quantidade, sem payload bruto; retorna `context_mismatch` quando os contextos conhecidos diferem. |
+| `get_source_coverage` | Estado, revisão/parser ativos e cobertura por campo de `public-export`, `worldstate-pc`, `overwolf-inventory`, `warframe-market` ou `references`, sem payload bruto. A cobertura do Market inclui `observedAt` por campo quando disponível. No Public Export inclui `components`, `relics`, `marketIdentity`, `imageName`, `productCategory`, `localizedNames` e `technicalMetadata`. |
+| `search_public_export` | Busca local no catálogo oficial por uniqueName, nome, alias ou categoria, retornando revisão/parser/cobertura e metadados técnicos, componentes de receita, identidade de mercado e fontes de relíquia observadas, sem rede e sem raw JSON. |
+| `get_public_export_item` | Consulta um item Public Export por uniqueName, nome ou alias sem exigir inventário, retornando metadados normalizados e estado/revisão da fonte. |
 | `search_references` | Busca referências Wiki/Overframe importadas localmente, com URL, revisão, autoria/licença e marcação de conteúdo não confiável para fatos. |
+| `get_reference_section` | Recupera uma seção atribuída de uma referência importada, sem rede e sem aceitar URL fora das fontes permitidas. |
 | `get_equipment` | Instâncias observadas, tipo, rank/configuração e estados de cobertura; filtro por tipo e limite. |
 | `get_mods` | Upgrades/mods observados, filtráveis por `ownerInstanceId` e campo de origem; sem inferir capacidade. |
 | `get_loadout` | Equipamento agrupado por instância com configuração e upgrades atribuídos; filtro por tipo e limite. |
-| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas e estado/última tentativa da fonte; aceita filtros opcionais por sindicato e texto da recompensa. |
-| `get_world_state` | Estado da fonte, revisão ativa, bounties, ciclos planetários e cobertura observada; limite de 1–200 bounties e filtros opcionais por sindicato e texto da recompensa. |
-| `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, validade e cobertura do World State; pode filtrar texto da recompensa. |
+| `get_acquisition` | Consolida componentes, fontes de relíquia e bounties ativas para um itemId, preservando revisões, `worldStateParserVersion` e estados de disponibilidade. |
+| `get_bounties` | Bounties World State ativas, jobs, estágios, recompensas, revisão ativa e `parserVersion` da fonte; aceita filtros opcionais por sindicato e texto da recompensa. |
+| `get_world_state` | Estado da fonte, revisão ativa, `parserVersion`, bounties, ciclos planetários e cobertura observada; limite de 1–200 bounties e filtros opcionais por sindicato e texto da recompensa. |
+| `get_activity` | Atividades atuais (bounties e ciclos) com a mesma revisão, `parserVersion`, validade e cobertura do World State; pode filtrar texto da recompensa. |
 | `get_overview` | Totais, nível, trades, maestria, cobertura, estimativas, fontes e configurações ativas; conta somente com inclusão explícita. |
 | `search_inventory` | Busca inventário agregado suportado por texto, tipo, categoria, quantidade conhecida e estado built/stackable. |
-| `get_item` | Detalhe por `itemId`, com posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
+| `get_item` | Detalhe por `itemId`, com descrição atribuída do catálogo, posse, componentes, maestria, preços, relíquias e evidências; coleções aninhadas paginadas. |
 | `list_collection` | Lista coleção por estado, Prime, vaulted, categoria e progresso. |
 | `list_farm` | Lista metas por texto, `targetItemId`, vaulted e unidades/tipos de peças faltantes; custos com cobertura. |
 | `list_sales` | Lista decisões de manter, vender ou trocar, incluindo reservas e justificativa. |

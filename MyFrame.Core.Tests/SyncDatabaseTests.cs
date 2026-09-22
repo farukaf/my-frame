@@ -346,7 +346,7 @@ public sealed class SyncDatabaseTests
         var path = Path.Combine(Path.GetTempPath(), $"myframe-upgrades-{Guid.NewGuid():N}.db");
         await using var db = new SyncDatabase(path);
         var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
-            DateTimeOffset.UtcNow, "test", "verified", "{\"mods\":[]}", "upgrades-hash");
+            DateTimeOffset.UtcNow, "test", "verified", "{\"mods\":[]}", "upgrades-hash", "snapshot", "relay-alpha");
         var projection = new InventoryProjection([], [], [],
             new Dictionary<string, InventoryFieldState> { ["upgrades.mods"] = InventoryFieldState.Known },
             [new InventoryUpgradeRecord("instance-1", "mods", "/Lotus/Mod", 5, "{\"id\":\"/Lotus/Mod\",\"rank\":5}")]);
@@ -358,6 +358,14 @@ public sealed class SyncDatabaseTests
         Assert.Equal("instance-1", upgrade.OwnerInstanceId);
         Assert.Equal("/Lotus/Mod", upgrade.UpgradeId);
         Assert.Equal(5, upgrade.Rank);
+
+        var revisions = await db.GetInventoryRevisionSummariesAsync();
+        var revision = Assert.Single(revisions);
+        var revisionData = await db.GetInventoryRevisionDataAsync(revision.RevisionId);
+        var attributed = Assert.Single(revisionData!.Upgrades!);
+        Assert.Equal("mods", attributed.SourceField);
+        Assert.Equal("instance-1", attributed.OwnerInstanceId);
+        Assert.Equal("relay-alpha", revision.ContextId);
     }
 
     [Fact]
@@ -387,7 +395,7 @@ public sealed class SyncDatabaseTests
             await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-hash", "[]", 1),
                 [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
                     new Dictionary<string, string>(),
-                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}]}" )]);
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"description\":\"Observed description\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":2,\"ducats\":15,\"tradable\":true}],\"relics\":[{\"relicName\":\"Lith A1\",\"rarity\":\"Rare\",\"chance\":0.1,\"rewardName\":\"Test Weapon\"}]}" )]);
             var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
                 DateTimeOffset.UtcNow, "native", "unverified", "{}", "inventory-hash");
             var projection = new InventoryProjection(
@@ -404,8 +412,86 @@ public sealed class SyncDatabaseTests
         Assert.Equal(7, snapshot.Inventory.Stackables["/Lotus/Resource"]);
         Assert.Single(snapshot.Catalog.Items);
         Assert.Equal("Test Weapon", snapshot.Catalog.Items[0].Name);
+        Assert.Equal("Observed description", snapshot.Catalog.Items[0].Description);
         Assert.Single(snapshot.Catalog.Items[0].Components);
         Assert.Equal(2, snapshot.Catalog.Items[0].Components[0].Required);
+        await using var componentDb = new SyncDatabase(path);
+        var components = await componentDb.GetPublicExportComponentsAsync();
+        var component = Assert.Single(components);
+        Assert.Equal("/Lotus/Weapon", component.ParentUniqueName);
+        Assert.Equal("/Lotus/Part", component.UniqueName);
+        Assert.Equal(2, component.RequiredCount);
+        Assert.Equal(15, component.Ducats);
+        Assert.True(component.Tradable);
+        var relics = await componentDb.GetPublicExportRelicsAsync();
+        var relic = Assert.Single(relics);
+        Assert.Equal("/Lotus/Weapon", relic.RewardUniqueName);
+        Assert.Equal("Lith A1", relic.RelicName);
+        Assert.Equal(0.1, relic.Chance);
+        Assert.Equal("Test Weapon", relic.RewardName);
+    }
+
+    [Fact]
+    public async Task SynchronizedReaderPreservesMarketIdentityForItemsAndComponents()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-market-map-{Guid.NewGuid():N}.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishCatalogAsync(new SyncBatch("public-export", "market-map", "[]", 1),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                    new Dictionary<string, string>(),
+                    "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"components\":[{\"uniqueName\":\"/Lotus/Part\",\"name\":\"Test Part\",\"itemCount\":1,\"tradable\":true,\"marketId\":\"part-id\",\"marketSlug\":\"test_part\"}]}" )]);
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, "native", "unverified", "{}", "market-map-inventory");
+            await db.PublishInventoryAsync(envelope, new InventoryProjection(
+                [new InventoryEquipmentRecord("instance", "/Lotus/Weapon", 30, null, InventoryFieldState.Known, InventoryFieldState.NotObserved, "{}")],
+                [new InventoryStackableRecord("/Lotus/Part", 1, InventoryFieldState.Known, "{}")], [],
+                new Dictionary<string, InventoryFieldState>()));
+        }
+
+        var snapshot = await new SqliteSynchronizedDataReader(path).ReadAsync();
+        Assert.NotNull(snapshot);
+        Assert.Equal("set-id", snapshot!.Catalog.MarketByNormalizedName["testweapon"].Id);
+        Assert.Equal("test_part", snapshot.Catalog.MarketByNormalizedName["testweapontestpart"].Slug);
+    }
+
+    [Fact]
+    public async Task CatalogCoverageReportsRichFieldsWithoutInferringMissingData()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-catalog-coverage-{Guid.NewGuid():N}.db");
+        await using var db = new SyncDatabase(path);
+        await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-rich-coverage", "[]", 1),
+            [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                new Dictionary<string, string> { ["en"] = "Test Weapon", ["pt"] = "Arma de Teste" },
+                "{\"uniqueName\":\"/Lotus/Weapon\",\"name\":\"Test Weapon\",\"category\":\"Weapon\",\"marketId\":\"set-id\",\"marketSlug\":\"test-weapon\",\"masterable\":true,\"components\":[]}")]);
+
+        var coverage = await db.GetSourceCoverageAsync("public-export");
+
+        Assert.Equal(InventoryFieldState.Known, coverage["components"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["marketIdentity"]);
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["relics"]);
+        Assert.Equal(InventoryFieldState.NotObserved, coverage["imageName"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["localizedNames"]);
+        Assert.Equal(InventoryFieldState.Known, coverage["technicalMetadata"]);
+    }
+
+    [Fact]
+    public async Task SynchronizedReaderDoesNotProjectDeltaAsCompleteInventory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myframe-delta-reader-{Guid.NewGuid():N}.db");
+        await using (var db = new SyncDatabase(path))
+        {
+            await db.PublishCatalogAsync(new SyncBatch("public-export", "catalog-delta-reader", "[]", 1),
+                [new PublicExportRecord("/Lotus/Weapon", "Test Weapon", "Weapon", null,
+                    new Dictionary<string, string>())]);
+            var envelope = new InventoryEnvelope(1, 8954, "overwolf-native", Guid.NewGuid(), Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, "native", "unverified", "{\"equipment\":[]}", "inventory-delta-reader", "delta");
+            await db.PublishInventoryAsync(envelope, new InventoryProjection([], [], [],
+                new Dictionary<string, InventoryFieldState> { ["equipment"] = InventoryFieldState.Known }));
+        }
+
+        var snapshot = await new SqliteSynchronizedDataReader(path).ReadAsync();
+        Assert.Null(snapshot);
     }
 
     [Fact]
