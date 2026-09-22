@@ -53,6 +53,33 @@ public sealed class OverframeReferenceTests
         Assert.Equal(TimeSpan.FromHours(8), new OverframeSyncOptions().EffectiveTimeToLive);
     }
 
+    [Fact]
+    public async Task WarframeTypeRoutesNovaToArsenalAndUsesItsOwnCacheKey()
+    {
+        using var directory = new TemporaryDirectory();
+        var handler = new StubHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/robots.txt" => Text("User-agent: *\nAllow: /\nDisallow: /api/"),
+            "/sitemap.xml" => Text("<?xml version=\"1.0\"?><urlset><url><loc>https://overframe.gg/items/arsenal/1/nova/</loc></url></urlset>", "application/xml"),
+            "/items/arsenal/1/nova/" => Text("<html><head><meta name=\"description\" content=\"Nova manipulates antimatter.\"></head><body><h1>Nova</h1><a href=\"/build/456/nova/speed-nova/\">Speed Nova</a></body></html>", "text/html"),
+            _ => new(HttpStatusCode.NotFound)
+        });
+        using var client = new HttpClient(handler);
+        var store = new OverframeCacheStore(Path.Combine(directory.Path, "data.db"));
+
+        var result = await new OverframeReferenceSynchronizer(client, store).SyncAsync(
+            OverframeEntityType.Warframe, "Nova", new(2, TimeSpan.Zero, TimeSpan.FromHours(8)));
+        var cached = await store.GetAsync(OverframeEntityType.Warframe, "Nova", readOnly: true);
+
+        Assert.Equal("refreshed", result.State);
+        Assert.Equal("warframe:nova", result.CacheKey);
+        Assert.NotNull(cached);
+        using var payload = JsonDocument.Parse(cached.PayloadJson);
+        Assert.Equal("Warframe", payload.RootElement.GetProperty("type").GetString());
+        Assert.Equal("Nova", payload.RootElement.GetProperty("name").GetString());
+        Assert.Equal("Speed Nova", payload.RootElement.GetProperty("popularBuilds")[0].GetProperty("name").GetString());
+    }
+
     private static HttpResponseMessage Text(string value, string mediaType = "text/plain") =>
         new(HttpStatusCode.OK) { Content = new StringContent(value, System.Text.Encoding.UTF8, mediaType) };
 
