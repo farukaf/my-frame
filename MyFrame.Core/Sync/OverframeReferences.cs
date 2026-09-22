@@ -61,6 +61,7 @@ public static class OverframeCacheKey
 public sealed class OverframeCacheStore(string databasePath)
 {
     private readonly string _databasePath = Path.GetFullPath(databasePath);
+    private readonly SemaphoreSlim _writer = new(1, 1);
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -96,10 +97,13 @@ public sealed class OverframeCacheStore(string databasePath)
 
     public async Task UpsertAsync(OverframeCacheEntry entry, CancellationToken cancellationToken = default)
     {
-        await InitializeAsync(cancellationToken);
-        await using var connection = await OpenAsync(SqliteOpenMode.ReadWrite, cancellationToken);
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
+        await _writer.WaitAsync(cancellationToken);
+        try
+        {
+            await InitializeAsync(cancellationToken);
+            await using var connection = await OpenAsync(SqliteOpenMode.ReadWrite, cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
             INSERT INTO overframe_cache(cache_key, entity_type, canonical_term, display_name, source_url,
               payload_json, content_hash, parser_version, fetched_at, expires_at, etag, last_modified)
             VALUES($key,$type,$term,$name,$url,$payload,$hash,$parser,$fetched,$expires,$etag,$modified)
@@ -109,19 +113,21 @@ public sealed class OverframeCacheStore(string databasePath)
               fetched_at=excluded.fetched_at, expires_at=excluded.expires_at,
               etag=excluded.etag, last_modified=excluded.last_modified;
             """;
-        command.Parameters.AddWithValue("$key", entry.CacheKey);
-        command.Parameters.AddWithValue("$type", entry.EntityType.ToString().ToLowerInvariant());
-        command.Parameters.AddWithValue("$term", entry.CanonicalTerm);
-        command.Parameters.AddWithValue("$name", entry.DisplayName);
-        command.Parameters.AddWithValue("$url", entry.SourceUrl.AbsoluteUri);
-        command.Parameters.AddWithValue("$payload", entry.PayloadJson);
-        command.Parameters.AddWithValue("$hash", entry.ContentHash);
-        command.Parameters.AddWithValue("$parser", entry.ParserVersion);
-        command.Parameters.AddWithValue("$fetched", entry.FetchedAt.ToString("O"));
-        command.Parameters.AddWithValue("$expires", entry.ExpiresAt.ToString("O"));
-        command.Parameters.AddWithValue("$etag", (object?)entry.ETag ?? DBNull.Value);
-        command.Parameters.AddWithValue("$modified", (object?)entry.LastModified ?? DBNull.Value);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+            command.Parameters.AddWithValue("$key", entry.CacheKey);
+            command.Parameters.AddWithValue("$type", entry.EntityType.ToString().ToLowerInvariant());
+            command.Parameters.AddWithValue("$term", entry.CanonicalTerm);
+            command.Parameters.AddWithValue("$name", entry.DisplayName);
+            command.Parameters.AddWithValue("$url", entry.SourceUrl.AbsoluteUri);
+            command.Parameters.AddWithValue("$payload", entry.PayloadJson);
+            command.Parameters.AddWithValue("$hash", entry.ContentHash);
+            command.Parameters.AddWithValue("$parser", entry.ParserVersion);
+            command.Parameters.AddWithValue("$fetched", entry.FetchedAt.ToString("O"));
+            command.Parameters.AddWithValue("$expires", entry.ExpiresAt.ToString("O"));
+            command.Parameters.AddWithValue("$etag", (object?)entry.ETag ?? DBNull.Value);
+            command.Parameters.AddWithValue("$modified", (object?)entry.LastModified ?? DBNull.Value);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        finally { _writer.Release(); }
     }
 
     private async Task<SqliteConnection> OpenAsync(SqliteOpenMode mode, CancellationToken token)
@@ -131,6 +137,9 @@ public sealed class OverframeCacheStore(string databasePath)
             DataSource = _databasePath, Mode = mode, Cache = SqliteCacheMode.Shared, Pooling = false
         }.ToString());
         await connection.OpenAsync(token);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA busy_timeout=5000;";
+        await command.ExecuteNonQueryAsync(token);
         return connection;
     }
 
