@@ -1,56 +1,32 @@
 ---
 name: warframe-farm
-description: Montar planos de farm e progressão rastreáveis por aquisição, atividade e inventário.
+description: Produce traceable farming and progression plans from acquisition, activity, and inventory data.
 metadata:
   version: "5"
 ---
 
 # Farm and progression
 
-## Pré-condições
+## Preconditions
 
-- Execute o contrato comum.
-- Fixe `snapshotId`, horário e plataforma.
-- Consulte `get_capabilities` e `get_sync_status` antes dos dados; registre `activeRevisionId` e `parserVersion` da fonte World State.
-- Se o plano usar posse ou peças faltantes, consulte `get_capture_inbox_status`;
-  sem `state=ready`, `heartbeatFresh=true` e `validMarkers>0`, trate o
-  inventário como `unverified` e não calcule déficit pessoal.
-- Para atividades, use apenas bounties cuja ativação/expiração cubra o horário da consulta.
+- Follow the shared contract and fix the `snapshotId`, time, and platform.
+- Record World State revision and parser version before recommending activity.
+- Require ready capture before calculating a personal deficit.
+- Use bounties only when their activation and expiry include the query time.
 
-## Procedimento
+## Procedure
 
-1. Normalize o objetivo para um `itemId` técnico e consulte posse/quantidade.
-2. Se a pergunta não depender de posse, consulte `get_public_export_item` pelo
-   `itemId`, nome ou alias para obter receita e relíquias sem exigir captura
-   Overwolf. Consulte `get_source_coverage("public-export")` antes de listar pré-requisitos;
-   só use componentes e relíquias quando esses campos estiverem `Known`.
-   Diferencie tipo desconhecido de quantidade desconhecida.
-3. Para um item com `itemId` estável, prefira `get_acquisition` para consolidar componentes, relíquias e bounties na mesma resposta; registre `worldStateRevisionId` e `worldStateParserVersion` antes de atribuir as bounties. Quando precisar explorar atividades, consulte `get_world_state` ou `get_activity` (preferencialmente com `syndicate`, `reward` e `limit` quando procurar uma recompensa específica)
-   e verifique `state`, `activeRevisionId` e `coverage` antes de usar a lista.
-   Só use bounties quando `state=available` e a ativação/expiração cobrir o
-   horário; `not_initialized`/`failed` exige sincronização ou confirmação
-   externa. `get_bounties` continua como compatibilidade para somente bounties.
-   Se `parserVersion=worldstate-community-1`, identifique a resposta como
-   fallback comunitário; se `parserVersion=worldstate-1`, identifique-a como
-   fixture/adaptador genérico; nenhuma das duas deve ser apresentada como
-   confirmação oficial da DE. `worldstate-official-1` identifica o parser do
-   endpoint oficial, mas ainda cite `activeRevisionId` e o horário servido.
-4. Relacione cada recompensa a sua fonte, tier, chance, quantidade e condição.
-   `chance` não é garantia nem taxa de tokens por hora.
-5. Compare alternativas por restrições do usuário (solo, tempo, MR, equipamento,
-   rotação), sem converter chance em tokens/hora.
-6. Para Mother Tokens, consulte `coverage.motherTokens`: `Known` permite usar
-   somente a recompensa explicitamente atribuída na revisão `activeRevisionId`;
-   `NotObserved` exige dizer que quantidade e taxa precisam ser confirmadas no
-   jogo ou em tabela permitida. Nunca derive tokens/hora de `chance`.
-7. Se o objetivo envolver progresso desde a última captura, consulte
-   `get_inventory_history` e `get_inventory_changes`; só trate adições,
-   remoções ou alterações como completas quando as duas revisões forem
-   `complete`, nunca quando a resposta estiver `partial`. Se houver `contextId`,
-   use-o para confirmar que as revisões pertencem ao mesmo contexto; contexto
-   ausente não deve ser inventado. Se a ferramenta retornar `context_mismatch`,
-   não compare progresso nem some alterações entre as revisões.
+1. Normalize the target to a stable `itemId`.
+2. Use `get_public_export_item` for catalog-only recipes and relics; verify Public
+   Export coverage before treating components or relics as known.
+3. Prefer `get_acquisition` for a combined recipe, relic, and bounty answer. Use
+   `get_world_state` or `get_activity` for exploration with narrow filters.
+4. Record each reward's source, tier, chance, quantity, condition, and validity.
+   Chance is not a guarantee or tokens per hour.
+5. For Mother Tokens, use only explicitly observed rewards and never derive an hourly
+   rate from drop chance.
+6. For progress since a capture, compare only complete, compatible revisions. Do not
+   compare when MCP returns `context_mismatch`.
 
-## Saída
-
-Entregue passos ordenados, pré-requisitos, dados observados, lacunas, validade da atividade e como atualizar. Nunca trate bounty vencida como atual.
+Return ordered steps, prerequisites, observed facts, gaps, activity validity, and an
+update action. Never present an expired bounty as current.

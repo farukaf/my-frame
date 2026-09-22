@@ -1,30 +1,23 @@
 ---
 name: warframe-economy
-description: Avaliar preços, reservas, venda e custo de completar sem dupla contagem.
+description: Evaluate prices, reserves, sales, and completion cost without double-counting.
 metadata:
   version: "2"
 ---
 
 # Economy
 
-## Pré-condições
+Follow the shared contract and record each price's source and age. `market.private` is
+optional: missing account data does not mean missing orders. Missing, stale, or partial
+prices remain uncertain.
 
-- Execute o contrato comum e registre idade/fonte de cada preço.
-- Consulte `get_capabilities` e `get_sync_status`; registre estado, revisão e `parserVersion` de `warframe-market` antes de calcular.
-- `market.private` é opcional; ausência de conta não significa ausência de ordens.
-- Preço ausente, stale ou parcial permanece `null`/incerto.
+1. Query inventory and collection in the same snapshot.
+2. Separate construction reserve, collection reserve, existing orders, and future sale.
+3. Use `list_sales`, `list_surplus`, and `list_farm` as distinct projections; never add
+   their totals together.
+4. State unit, update time, coverage, unquoted components, and deterministic
+   `reasonCode`.
+5. Calculate completion cost only from known prices.
 
-## Procedimento
-
-1. Consulte inventário e coleção no mesmo snapshot.
-2. Separe reserva para construção, coleção, ordens existentes e venda futura.
-3. Use `list_sales`, `list_surplus` e `list_farm` como projeções diferentes; nunca some seus totais.
-4. Informe unidade (platinum, ducats, quantidade) e data de atualização.
-5. Calcule custo de completar somente com preços conhecidos; reporte cobertura e componentes sem cotação.
-6. Cite o motivo determinístico (`reasonCode`) e não substitua dados ausentes por zero.
-7. Se o mercado estiver `not_initialized`, `failed` ou com parser desconhecido,
-   marque o resultado como parcial e não apresente preço como atual.
-
-## Saída
-
-Mostre decisão, quantidade livre, reserva, evidências, preço/idade, incerteza e ação reversível. Não crie ordem, não autentique e não envie dados ao mercado.
+Return the decision, free quantity, reserve, evidence, price and age, uncertainty, and
+a reversible action. Do not create orders, authenticate, or send data to the market.

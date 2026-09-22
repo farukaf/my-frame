@@ -1,100 +1,50 @@
-# Agent autonomy in this repository
+# Repository agent policy
 
-The agent has broad autonomy to develop, test, run, maintain, and complete tasks
-in this repository without requesting confirmation at every step.
+Agents may autonomously develop, test, run, and maintain this repository. Work
+continuously toward the requested outcome without seeking confirmation for normal,
+local, reversible repository operations.
 
-## Mandatory language policy
+## Language
 
-**English is mandatory for all repository content and all repository-related
-communication produced by an agent. This is a hard requirement, not a
-preference.**
+Use English for all repository content and repository-related communication. This
+includes code, tests, logs, UI text, documentation, automation, branches, commits,
+pull requests, reviews, and release notes.
 
-This requirement includes, but is not limited to:
+Non-English text is allowed only when it is external data, a proper name, or an
+explicit localization requirement. When editing a small file that contains legacy
+non-English prose, translate the entire file when practical.
 
-- Source code identifiers, comments, diagnostics, logs, and user-facing text,
-  unless a task explicitly implements localization for another language.
-- Tests, test names, fixtures, scripts, configuration, and automation.
-- Documentation, READMEs, TODOs, changelogs, and architecture records.
-- GitHub Actions workflow, job, and step names, including their output messages.
-- Branch names, commit messages, pull request titles and descriptions, review
-  comments, release notes, and issue content created by the agent.
+Run `./scripts/Test-EnglishContent.ps1` after changing documentation, UI text, skills,
+or scripts. The only allowed non-English content is localized external data in fixtures
+and tests that explicitly verify localization behavior; keep that data minimal and
+clearly separated from authored prose.
 
-Do not introduce Portuguese or other non-English prose into the repository. When
-editing a small file that already contains non-English prose, translate the whole
-file when practical so the result is consistently English. Preserve non-English
-content only when it is external data, a proper name, or explicitly required by
-the product's localization behavior.
+## Working rules
 
-## Files and code
+- Preserve pre-existing user changes and unrelated work.
+- Read the relevant code and documentation before changing behavior.
+- Keep changes scoped to the task and consistent with established project patterns.
+- Prefer reversible operations and resolve deletion targets inside the repository.
+- Never expose credentials, personal data, raw inventory, or private local paths.
+- Treat unknown or partial source data explicitly; never convert it to a known zero.
+- Keep the MCP process read-only, offline, and free of file migrations unless the
+  task explicitly changes that contract.
+- Record durable product or architecture decisions in the appropriate documentation,
+  not in transient validation notes.
 
-Within this repository, the agent is authorized to:
+## Validation
 
-- Read, create, edit, move, rename, and delete files and directories.
-- Implement features, fix defects, and perform refactoring.
-- Create or modify tests, scripts, configuration, documentation, and automation.
-- Make architectural changes required to complete the requested task while
-  preserving compatibility with existing requirements and patterns.
-- Remove obsolete, generated, duplicated, or superseded files when this is part
-  of the requested work.
-- Delete files and directories recursively when necessary to develop, fix, clean,
-  rebuild, or test the project. These deletions within the repository are
-  pre-authorized and do not require additional user confirmation.
+Run the smallest relevant checks first, then the broader affected suite. Diagnose and
+fix task-related failures before reporting completion. A blocked external or manual
+gate is not a pass; document the observed state and the exact next action.
 
-The agent does not need to ask for confirmation for these operations as long as
-the targets are resolved and remain within the repository root. Pre-existing user
-changes must be preserved and must never be discarded unless directly necessary
-for the task.
+Use [todo.md](todo.md) for unresolved delivery gates only. Completed implementation
+history belongs in Git; retain only durable contracts, decisions, and runbooks in
+the documentation tree.
 
-## Execution and validation
+## Boundaries
 
-The agent is authorized to:
-
-- Install, update, and restore dependencies required by the project.
-- Run the application, local services, scripts, local migrations, and development
-  tools.
-- Run builds, unit tests, integration tests, end-to-end tests, linters,
-  formatters, type checkers, static analyzers, and security checks.
-- Start and stop local processes required to test the project.
-- Diagnose failures, fix discovered problems, and repeat the execution and
-  validation cycle until the relevant criteria are satisfied.
-- Use the network when required to download dependencies or access services that
-  are part of the normal development workflow.
-
-These actions do not require intermediate confirmation when they are local,
-reversible, and related to the current task.
-
-## Git
-
-The agent has autonomy to use Git in the repository, including:
-
-- Inspecting status, history, branches, tags, diffs, and tracked files.
-- Creating and switching work branches.
-- Adding files to the index and creating task-related commits.
-- Merging, rebasing, cherry-picking, and resolving conflicts when necessary.
-- Fetching and synchronizing remote references when this is part of the task.
-- Reverting commits or changes produced by the agent during the task.
-
-The agent must preserve pre-existing work that does not belong to the task and
-must not discard user changes. Required deletions inside the repository do not
-need confirmation; their targets must only be explicitly resolved and verified
-before execution.
-
-## Limits
-
-This authorization applies only to this repository and to the local environment
-required to run the project. It does not authorize access to or modification of
-personal files outside the repository.
-
-The agent should stop and request confirmation only when an action:
-
-- Requires a mandatory environment or platform permission that this file cannot
-  grant.
-- Could cause an irreversible impact outside this repository.
-- Involves production publication or deployment, purchasing, billing, or use of
-  credentials not supplied for the task.
-- Requires a product decision that materially changes the requested objective and
-  cannot be safely inferred from the code and context.
-
-Outside these cases, the agent should make reasonable decisions, continue working
-autonomously, and deliver the validated task with a final report of the changes
-and checks performed.
+Ask for confirmation only when an action requires a platform permission, risks an
+irreversible effect outside this repository, publishes to production, incurs cost,
+uses credentials not supplied for the task, or requires a material product decision
+that cannot be inferred safely.

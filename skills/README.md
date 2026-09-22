@@ -1,40 +1,35 @@
 # My Frame skills
 
-Estas skills são procedimentos versionados para clientes LLM que usam o MCP do
-My Frame. Elas não contêm meta fixa nem substituem raciocínio do modelo.
+These versioned procedures help LLM clients use My Frame MCP data safely. They do not
+contain a fixed meta or replace the model's reasoning.
 
-Contrato comum:
+## Shared contract
 
-1. chamar `get_capabilities`;
-2. chamar `get_sync_status`;
-3. quando a pergunta depender do inventário, chamar `get_capture_inbox_status`;
-4. chamar `get_overview` e guardar `snapshotId`;
-5. tratar `isError`, `problem`, `coverage`, `sources` e frescor antes de usar os dados;
-6. repetir `snapshotId` e seguir todos os `nextCursor` necessários;
-7. separar fatos observados, cálculos determinísticos, referência comunitária e hipótese;
-8. citar fonte/revisão e declarar o que falta confirmar. Para referências, use
-   `search_references` e então `get_reference_section`; nunca faça fetch de URL
-   ou caminho local pelo MCP.
-9. quando a pergunta pedir mudanças de inventário, chamar `get_inventory_history`
-   e depois `get_inventory_changes` usando revisões compatíveis; se o estado for
-   `partial` ou `insufficient_history`, declarar que a comparação não é completa.
+1. Call `get_capabilities` and `get_sync_status`.
+2. For personal-inventory questions, call `get_capture_inbox_status`.
+3. Call `get_overview` and retain its `snapshotId` for every related query.
+4. Handle `isError`, `problem`, coverage, source state, revision, and freshness before
+   using returned facts. Follow all required `nextCursor` pages.
+5. Separate observed facts, deterministic calculations, community references, and LLM
+   hypotheses. Cite the source and revision, and state missing evidence.
+6. Use `search_references` followed by `get_reference_section`; never fetch a URL or
+   local path through MCP.
+7. For inventory changes, use `get_inventory_history` then `get_inventory_changes`
+   with compatible revisions. Treat `partial`, `insufficient_history`, or
+   `context_mismatch` as incomplete comparison results.
 
-Se `get_capture_inbox_status.state` não for `ready`, ou se `heartbeatFresh` for
-falso/`validMarkers` for zero, o inventário não deve ser descrito como captura
-atual: use `unverified` e peça sincronização/confirmação no jogo.
+If capture state is not `ready`, `heartbeatFresh` is false, or `validMarkers` is zero,
+describe personal inventory as `unverified` and request synchronization or in-game
+confirmation. Do not treat `NotObserved` catalog coverage as a known zero.
 
-Para decisões de aquisição/build, `get_source_coverage("public-export")` é a
-verificação de cobertura do catálogo: `NotObserved` para componentes, relíquias,
-categoria ou identidade de mercado impede uma conclusão definitiva.
-Quando houver um `itemId` estável, `get_acquisition` consolida componentes,
-relíquias e bounties ativas; seu `state` e as revisões ainda precisam ser
-verificados antes de recomendar uma atividade.
+For catalog-only questions, use `get_public_export_item`. Use `get_item` only when the
+answer must combine catalog information with ownership, loadout, or recommendations.
 
-Quando a pergunta for sobre catálogo, receita, relíquias ou metadados sem posse
-do jogador, use `get_public_export_item` por uniqueName, nome ou alias; ele não
-exige inventário. Use `get_item` apenas quando a resposta precisar combinar
-catálogo com posse, loadout ou recomendações.
+Available skills: `warframe-builds`, `warframe-farm`, `warframe-economy`, and
+`warframe-research`.
 
-Skills disponíveis: `warframe-builds`, `warframe-farm` (v5, World State com
-revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
-e `warframe-research` (v2, referências importadas com atribuição e detalhe).
+## Language policy
+
+Skills, prompts, examples, and generated repository content must be English. Localized
+game names and external source fields may be retained only as data and must not become
+repository-authored prose.

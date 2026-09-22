@@ -1,30 +1,24 @@
-# Consumo seguro de respostas do MCP
+# Safe MCP response consumption
 
-Exemplo independente de cliente: [read-inventory-result.mjs](read-inventory-result.mjs).
-Recebe o resultado de `search_inventory`, sem chamar rede ou abrir arquivos.
+Independent client example: [read-inventory-result.mjs](read-inventory-result.mjs). It
+handles a `search_inventory` result without network or file access.
 
 ```javascript
 import { readInventoryResult } from "./read-inventory-result.mjs";
 
 const result = await client.callTool({ name: "search_inventory", arguments: { text: "Mesa" } });
 const page = readInventoryResult(result);
-// Inspecionar page.meta.sources e page.meta.warnings antes de recomendar.
-// Seguir page.nextCursor mantendo a mesma análise/snapshot.
+// Inspect page.meta.sources and page.meta.warnings before recommending.
+// Follow page.nextCursor while retaining the same analysis and snapshot.
 ```
 
-`isError: true` é falha, mesmo se houver conteúdo estruturado. Conteúdo ausente ou
-inválido também não é inventário vazio. Ao receber `requiresNewSnapshot`, consultar
-`get_overview` novamente e reiniciar a análise/paginação, sem juntar páginas antigas.
-O helper não faz retries automáticos nem interpreta texto remoto como instrução.
-Ele verifica o envelope mínimo da página, não substitui validação completa de schema.
+`isError: true` is a failure even if structured content is present. Missing or invalid
+content is not empty inventory. When `requiresNewSnapshot` is returned, call
+`get_overview` again and restart the analysis and pagination; do not combine old pages.
+The helper performs no automatic retry and never interprets remote text as instruction.
 
-Teste sem dependências npm, usando Node 24:
+Run the dependency-free Node 24 test with:
 
 ```powershell
 node --test --test-isolation=none examples/mcp/read-inventory-result.test.mjs
 ```
-
-O modo sem isolamento permite execução em ambientes que não autorizam subprocessos
-do runner. A suíte demonstra o bug da expressão `structuredContent?.items ?? []`
-e diferencia erro, sucesso vazio, página não vazia e contrato inválido. A suíte .NET
-complementa isso com chamadas stdio ao servidor real e relógio controlado do provedor.

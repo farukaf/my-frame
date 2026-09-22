@@ -1,5 +1,8 @@
 # My Frame MCP skills
 
+Follow the repository English-only policy in `AGENTS.md`. Use non-English text only as
+localized external data or in tests that explicitly verify localization behavior.
+
 For Warframe build, farm, economy, or research questions, use the versioned
 procedures in `skills/`. Before using personal inventory, call the MCP tool
 `get_capture_inbox_status`; a state other than `ready`, a stale heartbeat, or

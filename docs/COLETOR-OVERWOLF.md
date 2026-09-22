@@ -1,39 +1,60 @@
-# Contrato atual do coletor Overwolf
+# Overwolf collector contract
 
-Este documento descreve o contrato implementado pelo spike Native GEP. Ele não é
-uma afirmação de que o GEP real já forneceu todos os campos: a coluna “evidência”
-separa testes sintéticos de homologação com Warframe em execução.
+This document describes the implemented Native GEP collector. Synthetic tests verify
+the contract, but no field is considered observed until it has been captured through
+Overwolf while Warframe is running and compared with the in-game Arsenal.
 
-| Campo/evento | Contrato implementado | Evidência | Estado para recomendações |
-| --- | --- | --- | --- |
-| `gameId=8954` | Manifesto e envelope exigem Warframe | testes do coletor/probe | conhecido |
-| `game_info.username` | Identidade é observada em memória e nunca gravada no payload | testes sintéticos | não expor sem política de conta |
-| `match_info.inventory` | Evento é convertido em envelope snapshot/delta e hash | F98, F163–F165 | `unverified` até captura real |
-| `highlighted` | Estrutura é inspecionada sem armazenar valores | testes do probe | `notObserved` para fatos |
-| `gep_internal`/`game_info`/`match_info` | Features solicitadas sem chat | F0/F1 e testes do manifesto | aguardando callback real |
-| `chat` | Não assinado e descartado | testes de rejeição | não suportado |
-| rank/config/mods | Campos aceitos no envelope quando presentes | parser sintético | `NotObserved` até comparar Arsenal |
-| upgrades/RawUpgrades | Relação atribuída por `ownerInstanceId` quando presente | testes Core/MCP | cobertura depende da captura |
-| `contextId` | Contexto opcional do coletor é validado, persistido na revisão e nunca inferido | F325/F329 | `null` quando ausente; contextos distintos não são comparados |
+| Field or event | Implemented contract | Status for recommendations |
+| --- | --- | --- |
+| `gameId=8954` | The manifest and envelope require Warframe. | Known |
+| `game_info.username` | Observed only in memory and never persisted in the payload. | Not exposed without an account policy |
+| `match_info.inventory` | Converted to a snapshot or delta envelope with a hash. | Unverified until real capture |
+| `highlighted` | Structure is inspected without storing values. | `notObserved` for facts |
+| `gep_internal`, `game_info`, `match_info` | Requested without chat. | Awaiting real callback |
+| `chat` | Never registered or persisted. | Unsupported |
+| Rank, configuration, and mods | Accepted when present in an envelope. | `NotObserved` until compared with Arsenal |
+| Upgrades | Attributed by `ownerInstanceId` when present. | Coverage depends on real capture |
+| `contextId` | Optional, validated, persisted, and never inferred. | `null` when absent; contexts are not cross-compared |
 
-| diagnóstico de callbacks GEP | Heartbeat preserva estado sanitizado, features suportadas, contagem por feature e último evento | F284 (sintético); callback real ainda pendente | evidência de transporte, não de completude |
+## Transport and retention
 
-## Envelope e retenção
+The local transport uses `schemaVersion`, `sessionId`, `eventId`, `sequence`, optional
+`contextId`, `captureMode`, `completeness`, `contentHash`, and private raw data with
+short retention. The `.ready.json` marker contains only the filename, byte count, and
+SHA-256; it never contains inventory, a username, or a token. Import requires explicit
+consent and is idempotent.
 
-O transporte local usa `schemaVersion`, `sessionId`, `eventId`, `sequence`,
-`contextId` opcional, `captureMode`, `completeness`, `contentHash` e raw privado com retenção curta. O
-marker `.ready.json` contém apenas nome, tamanho e SHA-256; não contém inventário,
-username ou token. A importação exige consentimento explícito e é idempotente.
+`captureMode=snapshot` may represent complete inventory only when its completeness
+supports that claim. A `captureMode=delta` records a change; it neither replaces nor
+compares as a complete snapshot. MCP returns `context_mismatch` when both compared
+revisions have different known contexts.
 
-`captureMode=snapshot` pode ser projetado como inventário completo somente com a
-completude apropriada; `captureMode=delta` é tratado como evidência de mudança e
-não substitui nem é comparado com um snapshot completo. O MCP retorna
-`context_mismatch` quando duas revisões conhecidas pertencem a contextos distintos.
+## Real-capture runbook
 
-## Gate que ainda falta
+1. Confirm that Overwolf is signed in and the account is permitted to load unpacked
+   extensions.
+2. Run `./scripts/Build-Collector.ps1`, then open **Development options → Load
+   unpacked extension** in Overwolf and select `artifacts/collector-overwolf`.
+3. Open **My Frame Collector Dev** and start in-memory capture. Before launching the
+   game, expect `waitingForGame`.
+4. Launch Warframe. Confirm transition through `registering` and
+   `waitingForInventory`, a fresh heartbeat, and valid markers.
+5. Log in and open the Arsenal. Export only the sanitized structure report first.
+   Do not copy raw inventory into an issue, pull request, or LLM conversation.
+6. After explicit consent, create a raw capture in a controlled local directory and
+   validate its marker with:
 
-Para promover qualquer campo a fato observado, executar a extensão no Overwolf
-com Warframe aberto, capturar pelo menos um snapshot, comparar com o Arsenal e
-registrar `OVERWOLF_COLLECTOR_READY=1`, heartbeat válido e marker aceito. Até lá,
-o MCP deve preservar `NotObserved`/`unverified` e não calcular builds completas,
-polaridades, shards, Helminth ou Incarnon.
+   ```powershell
+   dotnet run --project MyFrame.Collector.Probe -- --marker "C:\path\to\capture.ready.json"
+   ```
+
+7. Compare a sample with the Arsenal, repeat after an inventory change, and remove the
+   raw capture after local verification. Record only sanitized counts and conclusions.
+
+## Current release gate
+
+The unpacked collector has not yet been loaded in Overwolf. The latest preflight state
+was `heartbeatFresh=false` with `validMarkers=0`; the required action is to load the
+unpacked extension. Therefore, synthetic tests and package validation are not evidence
+of real capture. Until this gate passes, inventory remains `unverified` and the app and
+MCP must not claim complete builds, polarities, shards, Helminth, or Incarnon coverage.

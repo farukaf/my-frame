@@ -24,13 +24,13 @@ try {
     $stderr = Join-Path $temp 'stderr.log'
     $process = Start-Process -FilePath $npx -ArgumentList $args -WorkingDirectory (Split-Path $server) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     if ($process.ExitCode -ne 0) {
-        throw "MCP Inspector falhou com exit code $($process.ExitCode): $(Get-Content -Raw $stderr)"
+        throw "MCP Inspector failed with exit code $($process.ExitCode): $(Get-Content -Raw $stderr)"
     }
 
     $payload = Get-Content -Raw $stdout | ConvertFrom-Json
     if ($payload.error) { throw "Inspector retornou erro: $($payload.error.message)" }
     $tools = @($payload.result.tools)
-    if ($tools.Count -eq 0) { throw 'Inspector não retornou ferramentas.' }
+    if ($tools.Count -eq 0) { throw 'Inspector did not return tools.' }
     $warningText = Get-Content -Raw $stderr
     $warningCount = ([regex]::Matches($warningText, '(?m)^Warning: tool ')).Count
     $errorCount = ([regex]::Matches($warningText, '(?m)^Error: ')).Count

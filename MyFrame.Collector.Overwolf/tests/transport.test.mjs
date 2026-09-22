@@ -14,7 +14,7 @@ test("Native producer framing interoperates with the real .NET probe and rejects
   const artifacts = resolve(repo, "artifacts");
   await mkdir(artifacts, { recursive: true });
   const directory = await mkdtemp(join(artifacts, "collector-interop-"));
-  const capture = await createCapture({ Suits: [{ Name: "synthetic-ação", Rank: 3 }] },
+  const capture = await createCapture({ Suits: [{ Name: "private-synthetic-value", Rank: 3 }] },
     crypto.randomUUID(), 1, "2026-09-12T12:00:00Z");
   const bodyPath = join(directory, capture.fileName);
   const markerPath = join(directory, capture.markerName);
@@ -39,12 +39,12 @@ test("Native producer framing interoperates with the real .NET probe and rejects
   assert.equal(result.payloadRootObject, true);
   assert.equal(result.publishable, false);
   assert.equal(result.completeness, "unverified");
-  assert.equal(valid.stdout.includes("synthetic-ação"), false);
+  assert.equal(valid.stdout.includes("private-synthetic-value"), false);
   await writeFile(bodyPath, capture.body + " ", "utf8");
   const invalid = run();
   assert.ifError(invalid.error);
   assert.equal(invalid.status, 1);
   assert.equal(invalid.stdout, "");
-  assert.equal(invalid.stderr.includes("synthetic-ação"), false);
+  assert.equal(invalid.stderr.includes("private-synthetic-value"), false);
   // Tiny synthetic artifacts intentionally retained under ignored artifacts/ for audit.
 });

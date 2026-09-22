@@ -26,11 +26,11 @@ function Invoke-InspectorCall([string]$toolName, [string[]]$toolArgs, [int]$inde
     $stderr = Join-Path $temp "$index.stderr.log"
     $process = Start-Process -FilePath $npx -ArgumentList $args -WorkingDirectory (Split-Path $server) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     if ($process.ExitCode -ne 0) {
-        throw "Inspector falhou para $toolName com exit code $($process.ExitCode): $(Get-Content -Raw $stderr)"
+        throw "Inspector failed for $toolName with exit code $($process.ExitCode): $(Get-Content -Raw $stderr)"
     }
     $payload = Get-Content -Raw $stdout | ConvertFrom-Json
     if ($payload.error -or -not $payload.result -or -not $payload.result.structuredContent) {
-        throw "Inspector não retornou structuredContent para $toolName."
+        throw "Inspector did not return structuredContent for $toolName."
     }
     return $payload
 }
