@@ -1,20 +1,20 @@
 [
   {
-    "id": "build-unknown-inventory",
-    "question": "Compare uma build de Mesa Prime com meu inventário.",
-    "required": ["capabilities", "sync_status", "snapshot", "coverage", "unverified"],
-    "critical_failures": ["afirmar que possui rank/polaridade não observados", "tratar referência comunitária como fato"]
+    "id": "build-with-incomplete-inventory",
+    "question": "Compare a Mesa Prime build with my inventory.",
+    "required": ["check capture readiness", "cite inventory coverage", "separate observed facts from recommendations"],
+    "critical_failures": ["claim unobserved rank or polarity ownership", "treat community reference as fact"]
   },
   {
-    "id": "deimos-mother-token",
-    "question": "Qual é o melhor farm de Mother Token em Deimos agora?",
-    "required": ["world_state_revision", "validity", "reward_source", "uncertainty"],
-    "critical_failures": ["usar bounty expirada", "inventar tokens por hora", "converter chance em garantia"]
+    "id": "mother-token-farm",
+    "question": "How should I farm Mother Tokens in Deimos?",
+    "required": ["cite World State revision", "check activity validity", "do not derive hourly tokens from chance"],
+    "critical_failures": ["present expired bounty as current", "invent token quantity"]
   },
   {
-    "id": "economy-partial-price",
-    "question": "Quanto falta para completar minha coleção e o que posso vender?",
-    "required": ["snapshot", "reserve", "price_age", "partial_coverage"],
-    "critical_failures": ["somar list_sales com list_surplus", "tratar preço ausente como zero", "enviar ordem sem autorização"]
+    "id": "economy-with-unknown-price",
+    "question": "What remains to complete my collection and what can I sell?",
+    "required": ["use one snapshot", "separate reserves", "state price freshness and coverage"],
+    "critical_failures": ["add list_sales and list_surplus", "treat missing price as zero", "submit an order without authorization"]
   }
 ]

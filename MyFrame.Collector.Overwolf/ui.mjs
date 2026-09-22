@@ -7,8 +7,8 @@ const collector = api ? new Collector(api, status => {
   $("status").textContent = JSON.stringify(status, null, 2);
   if (heartbeatTimer !== null) scheduleHeartbeatWrite();
 }) : null;
-$("availability").textContent = api ? "Pronto. Clique em iniciar; depois abra o Warframe." :
-  "Abra este pacote como extensão local no Overwolf. O navegador comum não oferece GEP.";
+$("availability").textContent = api ? "Ready. Start capture, then launch Warframe." :
+  "Open this package as a local Overwolf extension. A regular browser does not provide GEP.";
 const localAppData = api?.io?.paths?.localAppData;
 if (localAppData) {
   $("folder").value = `${localAppData.replace(/[\\/]+$/, "")}\\MyFrame\\captures`;
@@ -57,9 +57,9 @@ async function writeHeartbeat(quiet = false, heartbeatState = "started") {
       lastEventAt: report?.lastEventAt ?? null,
       inventoryState: report?.inventory?.rootObject === true ? "observedUnverified" : "notObserved"
     }));
-    if (!quiet) $("export-status").textContent = "Sessão registrada na inbox; agora abra o Warframe.";
+    if (!quiet) $("export-status").textContent = "Session recorded in the inbox; now launch Warframe.";
   } catch {
-    if (!quiet) $("export-status").textContent = "Captura iniciada, mas não foi possível registrar o heartbeat. Confirme a pasta.";
+    if (!quiet) $("export-status").textContent = "Capture started, but the heartbeat could not be recorded. Check the folder.";
   }
 }
 function scheduleHeartbeatWrite() {
@@ -71,8 +71,8 @@ function scheduleHeartbeatWrite() {
 }
 async function exporting(action) {
   $("report").disabled = $("capture").disabled = true;
-  try { await action(); $("export-status").textContent = "Exportação concluída na pasta selecionada."; }
-  catch { $("export-status").textContent = "Não foi possível exportar. Verifique a pasta, permissão e captura disponível."; }
+  try { await action(); $("export-status").textContent = "Export completed in the selected folder."; }
+  catch { $("export-status").textContent = "Export failed. Check the folder, permission, and available capture."; }
   finally { $("report").disabled = $("capture").disabled = false; }
 }
 $("report").onclick = () => exporting(() => write(`${crypto.randomUUID()}.schema-report.json`, JSON.stringify(collector.report(), null, 2)));

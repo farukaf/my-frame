@@ -287,7 +287,7 @@ public sealed class SyncDatabaseTests
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
         await using var db = new SyncDatabase(path);
-        var records = new[] { new PublicExportRecord("/Lotus/Test", "Lâmina", "Melee", null, new Dictionary<string, string>()) };
+        var records = new[] { new PublicExportRecord("/Lotus/Test", "Blade", "Melee", null, new Dictionary<string, string>()) };
         var result = await db.PublishCatalogAsync(new SyncBatch("public-export", "hash", "[]", 1), records);
         var stored = await db.GetPublicExportItemsAsync("public-export");
         Assert.False(result.AlreadyPublished);
