@@ -58,7 +58,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE INDEX IF NOT EXISTS ix_public_export_components_unique_name ON public_export_components(unique_name);
             CREATE TABLE IF NOT EXISTS public_export_relics(revision_id TEXT NOT NULL REFERENCES source_revisions(revision_id), reward_unique_name TEXT NOT NULL, ordinal INTEGER NOT NULL, relic_name TEXT NOT NULL, rarity TEXT NOT NULL, chance REAL NOT NULL, vaulted INTEGER NOT NULL, reward_name TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, reward_unique_name, ordinal));
             CREATE INDEX IF NOT EXISTS ix_public_export_relics_relic_name ON public_export_relics(relic_name);
-            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot');
+            CREATE TABLE IF NOT EXISTS inventory_revisions(revision_id TEXT PRIMARY KEY REFERENCES source_revisions(revision_id), session_id TEXT NOT NULL, event_id TEXT NOT NULL, sequence INTEGER NOT NULL, completeness TEXT NOT NULL, capture_mode TEXT NOT NULL DEFAULT 'snapshot', context_id TEXT);
             CREATE TABLE IF NOT EXISTS inventory_equipment(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), instance_id TEXT NOT NULL, type_id TEXT, rank INTEGER, config_json TEXT, rank_state INTEGER NOT NULL, config_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, instance_id));
             CREATE TABLE IF NOT EXISTS inventory_stackables(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, type_id TEXT, quantity INTEGER, quantity_state INTEGER NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
             CREATE TABLE IF NOT EXISTS inventory_unknown(revision_id TEXT NOT NULL REFERENCES inventory_revisions(revision_id), ordinal INTEGER NOT NULL, kind TEXT NOT NULL, reason_code TEXT NOT NULL, raw_json TEXT NOT NULL, PRIMARY KEY(revision_id, ordinal));
@@ -73,6 +73,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "public_export_items", "aliases_json", "TEXT NOT NULL DEFAULT '{}'");
         await EnsureColumnAsync(connection, "inventory_revisions", "capture_mode", "TEXT NOT NULL DEFAULT 'snapshot'");
+        await EnsureColumnAsync(connection, "inventory_revisions", "context_id", "TEXT");
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES ($version, $at);";
         command.Parameters.AddWithValue("$version", SchemaVersion);
@@ -450,6 +451,7 @@ public sealed class SyncDatabase : IAsyncDisposable
                     (Path: "uniqueName", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.UniqueName))),
                     (Path: "name", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Name))),
                     (Path: "aliases", Observed: records.Any(record => record.Aliases.Count > 0)),
+                    (Path: "localizedNames", Observed: records.Any(record => record.Aliases.Keys.Any(key => !string.Equals(key, "en", StringComparison.OrdinalIgnoreCase)))),
                     (Path: "category", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Category))),
                     (Path: "description", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.Description))),
                     (Path: "rawJson", Observed: records.Any(record => !string.IsNullOrWhiteSpace(record.RawJson))),
@@ -457,7 +459,9 @@ public sealed class SyncDatabase : IAsyncDisposable
                     (Path: "relics", Observed: records.Any(record => HasJsonArray(record.RawJson, "relics"))),
                     (Path: "marketIdentity", Observed: records.Any(record => HasJsonProperties(record.RawJson, "marketId", "marketSlug"))),
                     (Path: "imageName", Observed: records.Any(record => HasJsonString(record.RawJson, "imageName", "image_name"))),
-                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category")))
+                    (Path: "productCategory", Observed: records.Any(record => HasJsonString(record.RawJson, "productCategory", "product_category"))),
+                    (Path: "technicalMetadata", Observed: records.Any(record => HasAnyJsonProperty(record.RawJson,
+                        "masterable", "masterableType", "prime", "tradable", "vaulted", "itemType")))
                 };
                 foreach (var field in catalogFields)
                     await CommandAsync(connection, transaction, "INSERT INTO coverage(source_id, field_path, state, observed_at, detail) VALUES ('public-export', $field, $state, $at, $detail);", cancellationToken,
@@ -466,7 +470,7 @@ public sealed class SyncDatabase : IAsyncDisposable
             }
             if (inventory is { } data)
             {
-                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode) VALUES ($revision, $session, $event, $sequence, $completeness, $mode);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode));
+                await CommandAsync(connection, transaction, "INSERT INTO inventory_revisions(revision_id, session_id, event_id, sequence, completeness, capture_mode, context_id) VALUES ($revision, $session, $event, $sequence, $completeness, $mode, $context);", cancellationToken, ("$revision", revisionId), ("$session", data.Envelope.SessionId.ToString("D")), ("$event", data.Envelope.EventId.ToString("D")), ("$sequence", data.Envelope.Sequence), ("$completeness", data.Envelope.Completeness), ("$mode", data.Envelope.CaptureMode), ("$context", (object?)data.Envelope.ContextId ?? DBNull.Value));
                 foreach (var equipment in data.Projection.Equipment)
                     await CommandAsync(connection, transaction, "INSERT INTO inventory_equipment(revision_id, instance_id, type_id, rank, config_json, rank_state, config_state, raw_json) VALUES ($revision, $instance, $type, $rank, $config, $rankState, $configState, $raw);", cancellationToken, ("$revision", revisionId), ("$instance", equipment.InstanceId), ("$type", (object?)equipment.TypeId ?? DBNull.Value), ("$rank", (object?)equipment.Rank ?? DBNull.Value), ("$config", (object?)equipment.ConfigJson ?? DBNull.Value), ("$rankState", (int)equipment.RankState), ("$configState", (int)equipment.ConfigState), ("$raw", equipment.RawJson));
                 for (var index = 0; index < data.Projection.Stackables.Count; index++)
@@ -565,6 +569,11 @@ public sealed class SyncDatabase : IAsyncDisposable
         properties.All(property => root.TryGetProperty(property, out var value) &&
             value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()));
 
+    private static bool HasAnyJsonProperty(string? rawJson, params string[] properties) =>
+        !string.IsNullOrWhiteSpace(rawJson) && TryParseJson(rawJson, out var root) &&
+        properties.Any(property => root.TryGetProperty(property, out var value) &&
+            value.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined);
+
     private static bool TryParseJson(string rawJson, out JsonElement root)
     {
         try
@@ -587,7 +596,7 @@ public sealed class SyncDatabase : IAsyncDisposable
         await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT ir.capture_mode, ir.completeness, ir.sequence
+            SELECT ir.capture_mode, ir.completeness, ir.sequence, ir.context_id
             FROM inventory_revisions ir
             JOIN source_revisions r ON r.revision_id=ir.revision_id
             WHERE r.source_id='overwolf-inventory' AND r.state='active'
@@ -595,7 +604,89 @@ public sealed class SyncDatabase : IAsyncDisposable
             """;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
-        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2));
+        return new InventoryRevisionStatus(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetString(3));
+    }
+
+    public async Task<IReadOnlyList<InventoryRevisionSummary>> GetInventoryRevisionSummariesAsync(
+        int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path)) return [];
+        limit = Math.Clamp(limit, 1, 100);
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
+                   ir.capture_mode, r.retrieved_at, ir.context_id
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
+            ORDER BY r.retrieved_at DESC, ir.sequence DESC, r.revision_id DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit", limit);
+        var result = new List<InventoryRevisionSummary>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+                reader.GetString(3), reader.GetString(4), DateTimeOffset.Parse(reader.GetString(5)),
+                reader.IsDBNull(6) ? null : reader.GetString(6)));
+        return result;
+    }
+
+    public async Task<InventoryRevisionData?> GetInventoryRevisionDataAsync(
+        string revisionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revisionId) || !File.Exists(_path)) return null;
+        await using var connection = await OpenAsync(SqliteOpenMode.ReadOnly, cancellationToken);
+        await using var summaryCommand = connection.CreateCommand();
+        summaryCommand.CommandText = """
+            SELECT r.revision_id, r.content_hash, ir.sequence, ir.completeness,
+                   ir.capture_mode, r.retrieved_at, ir.context_id
+            FROM inventory_revisions ir
+            JOIN source_revisions r ON r.revision_id=ir.revision_id
+            WHERE r.source_id='overwolf-inventory' AND r.state IN ('active','retained')
+              AND r.revision_id=$revision LIMIT 1;
+            """;
+        summaryCommand.Parameters.AddWithValue("$revision", revisionId);
+        await using var summaryReader = await summaryCommand.ExecuteReaderAsync(cancellationToken);
+        if (!await summaryReader.ReadAsync(cancellationToken)) return null;
+        var summary = new InventoryRevisionSummary(summaryReader.GetString(0), summaryReader.GetString(1),
+            summaryReader.GetInt64(2), summaryReader.GetString(3), summaryReader.GetString(4),
+            DateTimeOffset.Parse(summaryReader.GetString(5)), summaryReader.IsDBNull(6) ? null : summaryReader.GetString(6));
+        var equipment = new List<InventoryEquipmentRecord>();
+        await using (var equipmentCommand = connection.CreateCommand())
+        {
+            equipmentCommand.CommandText = "SELECT instance_id, type_id, rank, config_json, rank_state, config_state, raw_json FROM inventory_equipment WHERE revision_id=$revision ORDER BY instance_id;";
+            equipmentCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await equipmentCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                equipment.Add(new(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetInt32(2), reader.IsDBNull(3) ? null : reader.GetString(3),
+                    (InventoryFieldState)reader.GetInt32(4), (InventoryFieldState)reader.GetInt32(5), reader.GetString(6)));
+        }
+        var stackables = new List<InventoryStackableRecord>();
+        await using (var stackableCommand = connection.CreateCommand())
+        {
+            stackableCommand.CommandText = "SELECT type_id, quantity, quantity_state, raw_json FROM inventory_stackables WHERE revision_id=$revision ORDER BY ordinal;";
+            stackableCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await stackableCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                stackables.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetInt32(1), (InventoryFieldState)reader.GetInt32(2), reader.GetString(3)));
+        }
+        var upgrades = new List<InventoryUpgradeRecord>();
+        await using (var upgradeCommand = connection.CreateCommand())
+        {
+            upgradeCommand.CommandText = "SELECT owner_instance_id, source_field, upgrade_id, rank, raw_json FROM inventory_upgrades WHERE revision_id=$revision ORDER BY ordinal;";
+            upgradeCommand.Parameters.AddWithValue("$revision", revisionId);
+            await using var reader = await upgradeCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                upgrades.Add(new(reader.IsDBNull(0) ? null : reader.GetString(0), reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                    reader.GetString(4)));
+        }
+        return new(summary, equipment, stackables, upgrades);
     }
 
     public async Task<IReadOnlyList<SyncRunSummary>> GetRecentRunsAsync(

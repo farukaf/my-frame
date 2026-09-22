@@ -12,7 +12,12 @@ Contrato comum:
 5. tratar `isError`, `problem`, `coverage`, `sources` e frescor antes de usar os dados;
 6. repetir `snapshotId` e seguir todos os `nextCursor` necessários;
 7. separar fatos observados, cálculos determinísticos, referência comunitária e hipótese;
-8. citar fonte/revisão e declarar o que falta confirmar.
+8. citar fonte/revisão e declarar o que falta confirmar. Para referências, use
+   `search_references` e então `get_reference_section`; nunca faça fetch de URL
+   ou caminho local pelo MCP.
+9. quando a pergunta pedir mudanças de inventário, chamar `get_inventory_history`
+   e depois `get_inventory_changes` usando revisões compatíveis; se o estado for
+   `partial` ou `insufficient_history`, declarar que a comparação não é completa.
 
 Se `get_capture_inbox_status.state` não for `ready`, ou se `heartbeatFresh` for
 falso/`validMarkers` for zero, o inventário não deve ser descrito como captura
@@ -25,6 +30,11 @@ Quando houver um `itemId` estável, `get_acquisition` consolida componentes,
 relíquias e bounties ativas; seu `state` e as revisões ainda precisam ser
 verificados antes de recomendar uma atividade.
 
-Skills disponíveis: `warframe-builds`, `warframe-farm` (v4, World State com
+Quando a pergunta for sobre catálogo, receita, relíquias ou metadados sem posse
+do jogador, use `get_public_export_item` por uniqueName, nome ou alias; ele não
+exige inventário. Use `get_item` apenas quando a resposta precisar combinar
+catálogo com posse, loadout ou recomendações.
+
+Skills disponíveis: `warframe-builds`, `warframe-farm` (v5, World State com
 revisão/cobertura/procedência), `warframe-economy` (v2, mercado com procedência)
-e `warframe-research` (v1, referências importadas com atribuição).
+e `warframe-research` (v2, referências importadas com atribuição e detalhe).

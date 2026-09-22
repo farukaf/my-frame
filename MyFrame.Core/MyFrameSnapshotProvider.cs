@@ -349,6 +349,11 @@ public sealed class MyFrameSnapshotProvider : IMyFrameSnapshotProvider, IDisposa
         sources["orders"] = marketState is null ? new("missing", null) :
             new(ordersValid ? "valid" : "unverified", marketState.RetrievedAt);
         warnings.Add(new("SYNC_DATABASE_PARTIAL", "Inventory and catalog came from My Frame SQLite; catalog components and player progression fields are not observed yet."));
+        var captureStatus = await CollectorCaptureStatusProbe.ReadAsync(
+            MyFrameStoragePaths.CollectorCaptureDirectory, cancellationToken).ConfigureAwait(false);
+        if (captureStatus.State is not "ready")
+            warnings.Add(new("INVENTORY_CAPTURE_UNVERIFIED",
+                $"SQLite inventory is retained, but the Overwolf capture is not ready ({captureStatus.State}); current possession requires confirmation in the game."));
         var recommendations = _engine.Evaluate(inventory, synchronized.Catalog, quotes, orders, effectiveSettings.RecommendationSettings);
         return new(Guid.NewGuid().ToString("N"), now, now, inventory, synchronized.Catalog, recommendations,
             account, orders, quotes, effectiveSettings, sources, warnings, false, ordersValid, now + TimeSpan.FromSeconds(30));

@@ -152,6 +152,12 @@ public sealed class WorldStateClient(HttpClient httpClient, bool allowCommunityF
     private async Task<(WorldStateSnapshot Snapshot, SyncBatch Batch)> FetchEndpointAsync(Uri endpoint, CancellationToken cancellationToken)
     {
         using var response = await SyncHttp.GetAsync(httpClient, endpoint, cancellationToken);
+        // HttpClient may follow redirects. Keep a configured endpoint from
+        // silently moving to another host or scheme before publishing data.
+        var finalUri = response.RequestMessage?.RequestUri ?? endpoint;
+        if (finalUri.Scheme != endpoint.Scheme ||
+            !finalUri.Host.Equals(endpoint.Host, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("WORLDSTATE_REDIRECT_UNSUPPORTED");
         if (response.StatusCode != HttpStatusCode.OK) throw new HttpRequestException($"WORLDSTATE_HTTP_{(int)response.StatusCode}");
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         if (bytes.Length == 0 || bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("WORLDSTATE_TOO_LARGE");

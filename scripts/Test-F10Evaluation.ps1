@@ -61,7 +61,10 @@ foreach ($file in $resultFiles) {
 }
 
 $missing = @($cases | Where-Object { -not $byId.ContainsKey([string]$_.id) })
-if ($missing.Count -gt 0) { throw "Resultados ausentes: $($missing.id -join ', ')" }
+if ($missing.Count -gt 0) {
+    Write-Output "RESULTS_MISSING=$($missing.id -join ',')"
+    throw "Resultados ausentes: $($missing.id -join ', ')"
+}
 
 Write-Output "CASES_OK=$($cases.Count)"
 Write-Output "RESULTS_OK=$($byId.Count)"

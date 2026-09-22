@@ -126,6 +126,18 @@ public sealed class WorldStateTests
     }
 
     [Fact]
+    public async Task ClientRejectsRedirectToDifferentWorldStateHost()
+    {
+        const string json = "{\"syndicateMissions\":[]}";
+        using var client = new HttpClient(new RedirectedWorldStateHandler(json));
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            new WorldStateClient(client).FetchAsync(new Uri(WorldStateClient.DefaultUrl)));
+
+        Assert.Equal("WORLDSTATE_REDIRECT_UNSUPPORTED", error.Message);
+    }
+
+    [Fact]
     public async Task HostPublishesFetchedWorldStateRevision()
     {
         const string json = "{\"timestamp\":\"2026-09-13T12:00:00Z\",\"syndicateMissions\":[{\"id\":\"deimos-1\",\"syndicate\":\"Entrati\",\"jobs\":[{\"id\":\"job-1\",\"type\":\"Sample bounty\",\"rewardPoolDrops\":[{\"item\":\"Endo\",\"chance\":50,\"count\":100,\"rarity\":\"Common\"}]}]}] }";
@@ -280,6 +292,16 @@ public sealed class WorldStateTests
                 Content = new StringContent("{")
             });
         }
+    }
+
+    private sealed class RedirectedWorldStateHandler(string payload) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://example.com/worldState.php"),
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+            });
     }
 
     private sealed class ThrowingHandler : HttpMessageHandler

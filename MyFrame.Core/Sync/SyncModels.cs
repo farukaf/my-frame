@@ -38,4 +38,20 @@ public sealed record SyncRunSummary(
 public sealed record InventoryRevisionStatus(
     string CaptureMode,
     string Completeness,
-    long Sequence);
+    long Sequence,
+    string? ContextId = null);
+
+public sealed record InventoryRevisionSummary(
+    string RevisionId,
+    string ContentHash,
+    long Sequence,
+    string Completeness,
+    string CaptureMode,
+    DateTimeOffset RetrievedAt,
+    string? ContextId = null);
+
+public sealed record InventoryRevisionData(
+    InventoryRevisionSummary Summary,
+    IReadOnlyList<InventoryEquipmentRecord> Equipment,
+    IReadOnlyList<InventoryStackableRecord> Stackables,
+    IReadOnlyList<InventoryUpgradeRecord>? Upgrades = null);

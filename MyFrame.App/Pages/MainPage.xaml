@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="MyFrame.App.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:MyFrame.App.Components"
+    Shell.NavBarIsVisible="False" BackgroundColor="#0B0E14">
+    <Grid ColumnDefinitions="220,*" RowDefinitions="*">
+        <components:Sidebar Grid.Column="0" BindingContext="{Binding}" />
+        <Grid Grid.Column="1" RowDefinitions="Auto,*" Padding="28,22" RowSpacing="18">
+            <components:PageHeader Grid.Row="0" BindingContext="{Binding}" />
+            <Grid Grid.Row="1">
+                <components:Dashboard BindingContext="{Binding Dashboard}" />
+                <components:Collection BindingContext="{Binding Collection}" />
+                <components:Farm BindingContext="{Binding Farm}" />
+                <components:Relics BindingContext="{Binding Relics}" />
+                <components:Sales BindingContext="{Binding Sales}" />
+                <components:Surplus BindingContext="{Binding Surplus}" />
+                <components:SyncStatus BindingContext="{Binding SyncStatus}" />
+                <components:Settings BindingContext="{Binding Settings}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</ContentPage>

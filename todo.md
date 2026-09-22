@@ -24,8 +24,26 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F2: validar backup/reabertura e serialização do escritor em testes concorrentes.
 - [x] F2: implementar migrations, revisões, publicação, retenção e lifecycle do SyncHost ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
 - [x] F2: entregar página inicial de status com tentativas, erros e ação corretiva ([evidências F141](docs/validacoes/2026-09-13-f141.md)).
-- [ ] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame.
-- [ ] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas.
+- [x] F3: sincronizar Public Export e enriquecimentos atribuídos, sem catálogo AlecaFrame ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
+- [x] F3: normalizar identidade PT/EN, categorias, receitas e definições técnicas confirmadas ([evidências F198–F214](docs/validacoes/2026-09-14-f220.md)).
+- [x] F276: expor cobertura Public Export para nomes localizados e metadados técnicos ([evidências](docs/validacoes/2026-09-14-f276.md)).
+- [x] F277: incluir estado, revisão e parser na resposta MCP de cobertura ([evidências](docs/validacoes/2026-09-14-f277.md)).
+- [x] F278: distribuir 0.0.25 e validar `get_source_coverage` no Codex e Claude ([evidências](docs/validacoes/2026-09-14-f278.md)).
+- [x] F279: validar snapshot Public Export local empacotado via SyncHost → SQLite → MCP ([evidências](docs/validacoes/2026-09-14-f279.md)).
+- [x] F280: retornar metadados técnicos, receitas e relíquias na busca Public Export ([evidências](docs/validacoes/2026-09-14-f280.md)).
+- [x] F281: validar distribuição 0.0.26 e smoke stdio do catálogo rico ([evidências](docs/validacoes/2026-09-14-f281.md)).
+- [x] F282: consultar item Public Export sem exigir inventário Overwolf ([evidências](docs/validacoes/2026-09-14-f282.md)).
+- [x] F283: alinhar skills para escolher consulta catalog-only ou contextual ([evidências](docs/validacoes/2026-09-14-f283.md)).
+- [x] F284: registrar diagnóstico sanitizado de callbacks GEP no heartbeat ([evidências](docs/validacoes/2026-09-14-f284.md)).
+- [x] F285: expor diagnóstico de callbacks no get_capture_inbox_status ([evidências](docs/validacoes/2026-09-14-f285.md)).
+- [x] F286: atualizar heartbeat de callbacks GEP com debounce reativo ([evidências](docs/validacoes/2026-09-14-f286.md)).
+- [x] F287: marcar heartbeat como stopped ao encerrar o coletor ([evidências](docs/validacoes/2026-09-14-f287.md)).
+- [x] F288: aceitar productCategory e identidade canônica nas consultas Public Export ([evidências](docs/validacoes/2026-09-14-f288.md)).
+- [x] F289: normalizar identidade e recompensas no get_acquisition ([evidências](docs/validacoes/2026-09-14-f289.md)).
+- [x] F290: alinhar filtros de recompensa em bounties, atividades e aquisição ([evidências](docs/validacoes/2026-09-14-f290.md)).
+- [x] F291: testar diagnóstico GEP completo do heartbeat até o MCP ([evidências](docs/validacoes/2026-09-14-f291.md)).
+- [x] F292: exibir diagnóstico sanitizado GEP na página de status ([evidências](docs/validacoes/2026-09-14-f292.md)).
+- [x] F293: distribuir 0.0.27 e revalidar gates offline/external preflight ([evidências](docs/validacoes/2026-09-14-f293.md)).
 - [x] F3: criar parser seguro do índice/documento Public Export e contrato de decoder LZMA.
 - [x] F3: integrar decoder LZMA-Alone com limite de saída e teste HTTP → parser.
 - [x] F3: adaptar o índice real `arquivo.json!00_<tag>` e registrar a evidência de 16 entradas.
@@ -39,14 +57,14 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F8: expor capacidades e status de sincronização somente leitura no MCP.
 - [ ] F4: preservar instâncias, mods/ranks/configs comprovados e cobertura por campo.
 - [ ] F4: validar contextos, deltas e conferência manual com o jogo.
-- [ ] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão.
+- [x] F5: integrar World State, drops, aquisição, bounties e mecânicas com revisão ([evidências F182–F219](docs/validacoes/2026-09-14-f220.md)).
 - [x] F6: migrar settings/caches com rollback ([F113](docs/validacoes/2026-09-13-f113.md), [F114](docs/validacoes/2026-09-13-f114.md)).
-- [ ] F6: resolver autenticação WFM independente.
+- [x] F6: resolver autenticação WFM independente ([evidências F116–F118/F168](docs/validacoes/2026-09-13-f168.md)).
 - [x] F6: comprovar instalação limpa sem AlecaFrame nem caches legados ([F115](docs/validacoes/2026-09-13-f115.md)).
 - [ ] F7: comprovar acesso permitido, licença e ingestão Wiki e Overframe separadamente.
-- [ ] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado.
-- [ ] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes.
-- [ ] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede.
+- [x] F7: oferecer referências/builds offline com autoria, revisão e conteúdo não confiável isolado ([evidências F156–F160/F248](docs/validacoes/2026-09-14-f248.md)).
+- [x] F8: preservar tools atuais e adicionar consultas de domínio, capacidades e lotes ([evidências F121/F220](docs/validacoes/2026-09-13-f121.md)).
+- [x] F8: validar erros, snapshots, limites, paridade UI e clientes reais sem escrita/rede ([evidências F121/F304](docs/validacoes/2026-09-13-f121.md)).
 - [x] F9: criar skills de builds, farm/progressão e economia baseadas nos dados disponíveis ([skills](skills/README.md), [evidências](docs/validacoes/2026-09-13-f9.md)).
 - [x] F10: definir casos e protocolo reproduzível de avaliação antes/depois ([fixtures](docs/avaliacao/f10-cases.json), [protocolo](docs/avaliacao/2026-09-13-f10.md)).
 - [x] F11: exibir status de sincronização SQLite em página somente leitura ([evidências](docs/validacoes/2026-09-13-f11.md)).
@@ -272,6 +290,72 @@ do aceite; dependência externa bloqueada não equivale a conclusão.
 - [x] F234: adicionar verificador local do contrato das skills ([evidências](docs/validacoes/2026-09-14-f234.md)).
 - [x] F235: publicar distribuição 0.0.15 e validar upgrade side-by-side ([evidências](docs/validacoes/2026-09-14-f235.md)).
 - [x] F236: executar smoke read-only no MCP distribuído ([evidências](docs/validacoes/2026-09-14-f236.md)).
+- [x] F237: executar smoke real Codex/Claude no MCP 0.0.15 ([evidências](docs/validacoes/2026-09-14-f237.md)).
+- [x] F238: corrigir roteamento/instalação das skills após smoke Mother Token ([evidências](docs/validacoes/2026-09-14-f238.md)).
+- [x] F239: reconciliar checklist de clientes reais e gate F1 ([evidências](docs/validacoes/2026-09-14-f239.md)).
+- [x] F240: incluir contrato comum no pacote instalável das skills ([evidências](docs/validacoes/2026-09-14-f240.md)).
+- [x] F241: atualizar dashboard após importação de captura ([evidências](docs/validacoes/2026-09-14-f241.md)).
+- [x] F242: publicar 0.0.16 e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f242.md)).
+- [x] F243: sinalizar inventário SQLite sem captura Overwolf pronta ([evidências](docs/validacoes/2026-09-14-f243.md)).
+- [x] F244: testar warning de captura não verificada no snapshot ([evidências](docs/validacoes/2026-09-14-f244.md)).
+- [x] F245: publicar 0.0.17, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f245.md)).
+- [x] F246: repetir smoke real Codex/Claude contra o MCP 0.0.17 ([evidências](docs/validacoes/2026-09-14-f246.md)).
+- [x] F247: adicionar espera explícita e sem falso positivo para o gate F1 ([evidências](docs/validacoes/2026-09-14-f247.md)).
+- [x] F248: adicionar ingestão de URL permitida para referências Wiki/Overframe no SyncHost ([evidências](docs/validacoes/2026-09-14-f248.md)).
+- [x] F249: publicar 0.0.18, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f249.md)).
+- [x] F250: testar endpoint real da Wiki e registrar bloqueio de conectividade ([evidências](docs/validacoes/2026-09-14-f250.md)).
+- [x] F251: adicionar detalhe de seção atribuída para referências no MCP ([evidências](docs/validacoes/2026-09-14-f251.md)).
+- [x] F252: atualizar skills para consultar detalhe de referência com atribuição ([evidências](docs/validacoes/2026-09-14-f252.md)).
+- [x] F253: executar regressão Core/MCP após detalhe de referências ([evidências](docs/validacoes/2026-09-14-f253.md)).
+- [x] F254: publicar 0.0.19, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f254.md)).
+- [x] F255: executar smoke real de get_reference_section em Codex e Claude ([evidências](docs/validacoes/2026-09-14-f255.md)).
+- [x] F256: revalidar matriz F10 e registrar estado dos gates externos ([evidências](docs/validacoes/2026-09-14-f256.md)).
+- [x] F257: expor cobertura de documentos e atribuição para referências no MCP ([evidências](docs/validacoes/2026-09-14-f257.md)).
+- [x] F258: publicar 0.0.20, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f258.md)).
+- [x] F259: expor histórico sanitizado de revisões do inventário no MCP ([evidências](docs/validacoes/2026-09-14-f259.md)).
+- [x] F260: publicar 0.0.21, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f260.md)).
+- [x] F261: adicionar comparação segura de snapshots e proteção contra deltas incompletas ([evidências](docs/validacoes/2026-09-14-f261.md)).
+- [x] F262: publicar 0.0.22, validar upgrade/read-only e atualizar clientes MCP ([evidências](docs/validacoes/2026-09-14-f262.md)).
+- [x] F263: adicionar teste de regressão para comparação de snapshots, com execução pendente no CI por falha do workload resolver local ([evidências](docs/validacoes/2026-09-14-f263.md)).
+- [x] F264: tornar o preflight Overwolf independente da versão do pacote e emitir ação manual precisa em timeout ([evidências](docs/validacoes/2026-09-14-f264.md)).
+- [x] F265: sanitizar códigos de erro do probe Public Export e testar ausência de detalhes de transporte ([evidências](docs/validacoes/2026-09-14-f265.md)).
+- [x] F266: publicar 0.0.23, validar probe empacotado, upgrade SQLite e gate read-only ([evidências](docs/validacoes/2026-09-14-f266.md)).
+- [x] F267: sanitizar falhas de ingestão Wiki/Overframe e validar ausência de escrita/rede no gate ([evidências](docs/validacoes/2026-09-14-f267.md)).
+- [x] F268: publicar 0.0.24 e validar referência empacotada, upgrade SQLite e gate read-only ([evidências](docs/validacoes/2026-09-14-f268.md)).
+- [x] F269: selecionar automaticamente o pacote mais recente no smoke de referências ([evidências](docs/validacoes/2026-09-14-f269.md)).
+- [x] F270: selecionar automaticamente o pacote mais recente no smoke econômico ([evidências](docs/validacoes/2026-09-14-f270.md)).
+- [x] F271: atualizar e verificar Codex/Claude contra o MCP distribuído 0.0.24 ([evidências](docs/validacoes/2026-09-14-f271.md)).
+- [x] F272: executar smoke real Codex/Claude no MCP 0.0.24 com ferramenta read-only ([evidências](docs/validacoes/2026-09-14-f272.md)).
+- [x] F273: orientar skills sobre histórico/diferenças de inventário e estados parciais ([evidências](docs/validacoes/2026-09-14-f273.md)).
+- [x] F274: validar get_inventory_changes em Codex e Claude reais ([evidências](docs/validacoes/2026-09-14-f274.md)).
+- [x] F275: documentar o fluxo oficial unpacked/whitelist do Overwolf e o bloqueio externo atual da F1 ([evidências](docs/validacoes/2026-09-14-f275.md)).
+- [x] F294: rejeitar redirecionamentos e respostas não-JSON na sincronização Wiki/Overframe ([evidências](docs/validacoes/2026-09-14-f294.md)).
+- [x] F295: aceitar media types JSON estruturados na sincronização de referências ([evidências](docs/validacoes/2026-09-14-f295.md)).
+- [x] F296: tornar o preflight Overwolf acionável com caminhos e próxima ação ([evidências](docs/validacoes/2026-09-14-f296.md)).
+- [x] F297: impedir redirect cross-host no sincronizador World State ([evidências](docs/validacoes/2026-09-14-f297.md)).
+- [x] F298: distribuir 0.0.28 com hardening World State e validar upgrade/read-only ([evidências](docs/validacoes/2026-09-14-f298.md)).
+- [x] F299: corrigir verificador World State no Windows PowerShell e separar erro de ambiente ([evidências](docs/validacoes/2026-09-14-f299.md)).
+- [x] F300: expor parserVersion e revisão da fonte nas consultas World State ([evidências](docs/validacoes/2026-09-14-f300.md)).
+- [x] F301: alinhar skills à procedência World State oficial, comunitária e fixture ([evidências](docs/validacoes/2026-09-14-f301.md)).
+- [x] F302: alinhar README de skills e gate à versão vigente 5 ([evidências](docs/validacoes/2026-09-14-f302.md)).
+- [x] F303: tornar ausência do baseline F10 explícita e acionável ([evidências](docs/validacoes/2026-09-14-f303.md)).
+- [x] F304: executar regressão sequencial Core/MCP após F303 ([evidências](docs/validacoes/2026-09-14-f304.md)).
+- [x] F305: revalidar pacote e testes Node do coletor antes da homologação F1 ([evidências](docs/validacoes/2026-09-14-f305.md)).
+- [x] F306: cobrir procedência World State no MCP com publicação SQLite real ([evidências](docs/validacoes/2026-09-14-f306.md)).
+- [x] F307: propagar parserVersion World State para get_acquisition ([evidências](docs/validacoes/2026-09-14-f307.md)).
+- [x] F308: testar procedência World State no caminho de aquisição ([evidências](docs/validacoes/2026-09-14-f308.md)).
+- [x] F309: distribuir 0.0.29 com procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f309.md)).
+- [x] F310: habilitar cobertura do source warframe-market no MCP ([evidências](docs/validacoes/2026-09-14-f310.md)).
+- [x] F311: alinhar documentação e schema textual de get_source_coverage ([evidências](docs/validacoes/2026-09-14-f311.md)).
+- [x] F312: documentar procedência World State e aquisição no MCP.md ([evidências](docs/validacoes/2026-09-14-f312.md)).
+- [x] F313: normalizar IDs de fonte no get_source_coverage ([evidências](docs/validacoes/2026-09-14-f313.md)).
+- [x] F314: instruir skill de farm sobre procedência no get_acquisition ([evidências](docs/validacoes/2026-09-14-f314.md)).
+- [x] F315: executar runbook e polling real do coletor Overwolf ([evidências](docs/validacoes/2026-09-14-f315.md)).
+- [x] F316: fortalecer teste de normalização com fonte populada ([evidências](docs/validacoes/2026-09-14-f316.md)).
+- [x] F317: reconciliar checklist F6 com a implementação WFM independente ([evidências](docs/validacoes/2026-09-14-f317.md)).
+- [x] F318: reconciliar entregas offline F7 e contrato F8 no checklist ([evidências](docs/validacoes/2026-09-14-f318.md)).
+- [x] F319: reconciliar marcos implementados F3/F5 no checklist ([evidências](docs/validacoes/2026-09-14-f319.md)).
+- [x] F320: distribuir 0.0.30 com cobertura de fontes canônica ([evidências](docs/validacoes/2026-09-14-f320.md)).
 - [ ] F10: executar avaliação antes/depois, com fontes, incerteza e zero falhas críticas.
 - [x] F10: executar desempenho, segurança, falhas, instalação, upgrade e restore ([evidências consolidadas F129](docs/validacoes/2026-09-13-f129.md)).
 - [ ] F10: cumprir distribuição Overwolf e publicar runbook/cobertura/documentação atualizados.
@@ -341,8 +425,25 @@ para a nova matriz e continuam abertas até validação.
 - [x] Demonstrar ausência de escrita e rede no processo MCP, inclusive setup e falhas ([F100](docs/validacoes/2026-09-13-f100.md), [F111](docs/validacoes/2026-09-13-f111.md)).
 - [x] Testar app e MCP lendo os mesmos arquivos/cache ao mesmo tempo ([F119](docs/validacoes/2026-09-13-f119.md)).
 - [x] Validar o protocolo com MCP Inspector ([F106–F108](docs/validacoes/2026-09-13-f108.md)).
-- [ ] Executar smoke tests reais em Codex e Claude no Windows.
+- [x] Executar smoke tests reais em Codex e Claude no Windows ([evidências](docs/validacoes/2026-09-14-f237.md)).
 - [x] Executar restore, build, publicação e suíte completa antes da entrega.
 - [x] F2: fundação SQLite com staging, publicação transacional, idempotência e status
 - [x] F2: lifecycle mínimo do SyncHost e registro de falhas sem perder revisão ativa
 - [ ] F2: conectar publicação SQLite ao fluxo real do coletor após homologação GEP F1
+- [x] F321: expor cobertura real do Warframe Market a partir do SQLite (`quotes`, `orders`, `account`, `marketItems`)
+- [x] F322: preservar upgrades/mods nas revisões SQLite e nas diferenças de inventário
+- [x] F323: cobrir mudanças de mods no contrato MCP de diferenças de inventário
+- [x] F324: detectar alterações de configuração de equipamento nas diferenças MCP
+- [x] F325: transportar contexto opcional das capturas para revisões e histórico MCP
+- [x] F326: alinhar MCP, documentação e skill ao contexto e às diferenças de mods/configuração
+- [x] F327: restaurar dependências e executar suíte MCP completa (30 testes)
+- [x] F328: distribuir 0.0.31 com contexto de inventário e validar upgrade/read-only
+- [x] F329: rejeitar comparações MCP entre contextos de inventário diferentes
+- [x] F330: distribuir 0.0.32 com isolamento de contexto e validar upgrade/read-only
+- [x] F331: reconciliar evidências históricas da suíte MCP após restauração autorizada
+- [x] F332: documentar `context_mismatch` no MCP e skill de farm
+- [x] F333: executar regressão integrada atual do coletor, Core e MCP
+- [x] F334: auditar logs locais e separar ausência do coletor de logs AlecaFrame
+- [x] F335: alinhar contrato central do coletor a contextId, snapshots e deltas
+- [x] F336: expor observedAt por campo na cobertura do Warframe Market
+- [x] F337: distribuir 0.0.33 com frescor do Market e validar upgrade/read-only

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="MyFrame.App.Components.PageHeader"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+        <VerticalStackLayout Spacing="2">
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Smart inventory" Style="{DynamicResource Title}" />
+                <Button Text="↗" Command="{Binding OpenWikiCommand}" ToolTipProperties.Text="Open Warframe Wiki" BackgroundColor="Transparent" TextColor="#7DE2D1" FontSize="19" Padding="4,0" />
+            </HorizontalStackLayout>
+            <Label Text="Collection, farming, relics, and the value of your extras in one place." TextColor="#8995A8" />
+        </VerticalStackLayout>
+        <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">
+            <HorizontalStackLayout IsVisible="{Binding Sales.IsVisible}" Spacing="8">
+                <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8" ToolTipProperties.Text="Ducats the rows currently listed would return">
+                    <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                        <Label Text="ESTIMATE" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                        <Label Text="{Binding Sales.FilteredDucatsEstimate}" TextColor="#F3C969" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                        <Image Source="ducats.svg" WidthRequest="17" HeightRequest="17" />
+                    </HorizontalStackLayout>
+                </Border>
+                <Border Padding="9,6" BackgroundColor="#151A23" Stroke="#303B50" StrokeShape="RoundRectangle 8">
+                    <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                        <Label Text="KEEP PRIME SETS" TextColor="#AEB8C8" FontSize="10" VerticalOptions="Center" />
+                        <Border Padding="6,2" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding GlobalStatus.ActivePrimeSetReserveEnabled}" Value="True"><Setter Property="BackgroundColor" Value="#173F35" /></DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding GlobalStatus.ActivePrimeSetReserveEnabled}" Value="False"><Setter Property="BackgroundColor" Value="#3A2328" /></DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="{Binding GlobalStatus.ActivePrimeSetReserveText}" FontFamily="OpenSansSemibold" FontSize="10" />
+                        </Border>
+                    </HorizontalStackLayout>
+                </Border>
+            </HorizontalStackLayout>
+            <Border IsVisible="{Binding Surplus.IsVisible}" Padding="9,6" BackgroundColor="#151A23"
+                    Stroke="#303B50" StrokeShape="RoundRectangle 8" VerticalOptions="Center"
+                    ToolTipProperties.Text="Copies you no longer need, across the rows currently listed">
+                <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                    <Label Text="SURPLUS" TextColor="#8995A8" FontSize="9" VerticalOptions="Center" />
+                    <Label Text="{Binding Surplus.Summary}" TextColor="#F3C969"
+                           FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+            <ActivityIndicator Grid.Column="1" IsRunning="{Binding GlobalStatus.IsBusy}" IsVisible="{Binding GlobalStatus.IsBusy}" Color="#7DE2D1" />
+            <Button AutomationId="RefreshButton" Grid.Column="2" Text="Refresh now" Command="{Binding RefreshCommand}" BackgroundColor="#167C70" TextColor="White" />
+        </Grid>
+    </Grid>
+</ContentView>
