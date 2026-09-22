@@ -645,9 +645,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     [Fact]
     public async Task RealStdioServerListsAndCallsStructuredCapabilities()
     {
-        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        var server = ResolveMcpServerPath();
         Assert.True(File.Exists(server), $"Server was not built at {server}");
         using var data = new TemporaryFolder();
         await using (var database = new SyncDatabase(Path.Combine(data.Path, "data.db")))
@@ -810,9 +808,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     [Fact]
     public async Task ActiveMcpServerReopensMigratedLegacyDatabase()
     {
-        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        var server = ResolveMcpServerPath();
         Assert.True(File.Exists(server), $"Server was not built at {server}");
 
         using var data = new TemporaryFolder();
@@ -855,9 +851,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     [Fact]
     public async Task TwoRealStdioServersServeConcurrentCallsWithinBudget()
     {
-        var server = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER") ??
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyFrame.Mcp", "bin", "Debug", "net10.0", "win-x64", "MyFrame.Mcp.exe"));
+        var server = ResolveMcpServerPath();
         Assert.True(File.Exists(server), $"Server was not built at {server}");
 
         using var firstData = new TemporaryFolder();
@@ -975,6 +969,16 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
                     Walk(item, $"{path}[{index++}]", matches);
             }
         }
+    }
+
+    private static string ResolveMcpServerPath()
+    {
+        var configuredPath = Environment.GetEnvironmentVariable("MYFRAME_MCP_TEST_SERVER");
+        if (!string.IsNullOrWhiteSpace(configuredPath)) return configuredPath;
+
+        var configuration = Directory.GetParent(AppContext.BaseDirectory)?.Parent?.Name ?? "Debug";
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+            "..", "..", "..", "..", "MyFrame.Mcp", "bin", configuration, "net10.0", "win-x64", "MyFrame.Mcp.exe"));
     }
 
     private static MyFrameQueryService Service(IMyFrameSnapshotProvider provider)
