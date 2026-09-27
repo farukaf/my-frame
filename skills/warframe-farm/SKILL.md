@@ -10,8 +10,11 @@ metadata:
 ## Preconditions
 
 - Follow the shared contract and fix the `snapshotId`, time, and platform.
-- Record World State revision and parser version before recommending activity.
-- Require ready capture before calculating a personal deficit.
+- Call `get_capture_inbox_status` and require `state=ready`, `heartbeatFresh=true`, and
+  `validMarkers>0` before calculating a personal deficit; otherwise label it `unverified`.
+- Record World State `activeRevisionId`, `parserVersion`, and `worldStateParserVersion`
+  before recommending activity. Distinguish `worldstate-1` from
+  `worldstate-community-1`.
 - Use bounties only when their activation and expiry include the query time.
 
 ## Procedure

@@ -4,7 +4,7 @@ using MyFrame.Core.Sync;
 
 namespace MyFrame.Core.Tests;
 
-public sealed class OverframeReferenceTests
+public sealed class OverframeBuildSearchTests
 {
     [Fact]
     public async Task SynchronizerUsesRobotsSitemapDeterministicParserAndSqliteTtl()
@@ -19,7 +19,7 @@ public sealed class OverframeReferenceTests
         });
         using var client = new HttpClient(handler);
         var store = new OverframeCacheStore(Path.Combine(directory.Path, "data.db"));
-        var synchronizer = new OverframeReferenceSynchronizer(client, store);
+        var synchronizer = new OverframeBuildSearchSynchronizer(client, store);
 
         var first = await synchronizer.SyncAsync(OverframeEntityType.Item, "Haalvu",
             new(2, TimeSpan.Zero, TimeSpan.FromHours(8)));
@@ -36,8 +36,8 @@ public sealed class OverframeReferenceTests
         Assert.Equal("item:haalvu", cached.CacheKey);
         Assert.Equal(TimeSpan.FromHours(8), cached.ExpiresAt - cached.FetchedAt);
         using var payload = JsonDocument.Parse(cached.PayloadJson);
-        Assert.Equal("Haalvu", payload.RootElement.GetProperty("name").GetString());
-        Assert.Equal("Example build", payload.RootElement.GetProperty("popularBuilds")[0].GetProperty("name").GetString());
+        Assert.Equal("Haalvu", payload.RootElement.GetProperty("sourceName").GetString());
+        Assert.Equal("Example build", payload.RootElement.GetProperty("builds")[0].GetProperty("title").GetString());
         Assert.False(payload.RootElement.GetProperty("trustedForFacts").GetBoolean());
     }
 
@@ -46,8 +46,8 @@ public sealed class OverframeReferenceTests
     {
         Assert.Equal("mod:serration", OverframeCacheKey.Create(OverframeEntityType.Mod, " Serration "));
         Assert.Equal(OverframeEntityType.Warframe, OverframeCacheKey.ParseType("warframe"));
-        Assert.True(OverframeReferenceSynchronizer.RobotsAllows("User-agent: *\nDisallow: /api/", "/items/mods/1/serration/"));
-        Assert.False(OverframeReferenceSynchronizer.RobotsAllows("User-agent: *\nDisallow: /api/", "/api/items"));
+        Assert.True(OverframeBuildSearchSynchronizer.RobotsAllows("User-agent: *\nDisallow: /api/", "/items/mods/1/serration/"));
+        Assert.False(OverframeBuildSearchSynchronizer.RobotsAllows("User-agent: *\nDisallow: /api/", "/api/items"));
         Assert.Throws<ArgumentOutOfRangeException>(() => new OverframeSyncOptions(0).Validate());
         Assert.Equal(TimeSpan.FromMilliseconds(800), new OverframeSyncOptions().EffectiveRequestDelay);
         Assert.Equal(TimeSpan.FromHours(8), new OverframeSyncOptions().EffectiveTimeToLive);
@@ -67,7 +67,7 @@ public sealed class OverframeReferenceTests
         using var client = new HttpClient(handler);
         var store = new OverframeCacheStore(Path.Combine(directory.Path, "data.db"));
 
-        var result = await new OverframeReferenceSynchronizer(client, store).SyncAsync(
+        var result = await new OverframeBuildSearchSynchronizer(client, store).SyncAsync(
             OverframeEntityType.Warframe, "Nova", new(2, TimeSpan.Zero, TimeSpan.FromHours(8)));
         var cached = await store.GetAsync(OverframeEntityType.Warframe, "Nova", readOnly: true);
 
@@ -75,9 +75,9 @@ public sealed class OverframeReferenceTests
         Assert.Equal("warframe:nova", result.CacheKey);
         Assert.NotNull(cached);
         using var payload = JsonDocument.Parse(cached.PayloadJson);
-        Assert.Equal("Warframe", payload.RootElement.GetProperty("type").GetString());
-        Assert.Equal("Nova", payload.RootElement.GetProperty("name").GetString());
-        Assert.Equal("Speed Nova", payload.RootElement.GetProperty("popularBuilds")[0].GetProperty("name").GetString());
+        Assert.Equal("Warframe", payload.RootElement.GetProperty("searchType").GetString());
+        Assert.Equal("Nova", payload.RootElement.GetProperty("sourceName").GetString());
+        Assert.Equal("Speed Nova", payload.RootElement.GetProperty("builds")[0].GetProperty("title").GetString());
     }
 
     private static HttpResponseMessage Text(string value, string mediaType = "text/plain") =>

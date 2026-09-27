@@ -147,7 +147,7 @@ public sealed class SyncDatabaseTests
     {
         var path = Path.Combine(Path.GetTempPath(), $"myframe-{Guid.NewGuid():N}.db");
         await using var db = new SyncDatabase(path);
-        var batch = new SyncBatch("wiki", "same", "{}", 1);
+        var batch = new SyncBatch("fixture", "same", "{}", 1);
         var first = await db.PublishAsync(batch);
         var second = await db.PublishAsync(batch);
         Assert.False(first.AlreadyPublished);

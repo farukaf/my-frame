@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $source = Join-Path $repository 'skills'
-$skillNames = @('warframe-builds', 'warframe-farm', 'warframe-economy', 'warframe-research')
+$skillNames = @('warframe-builds', 'warframe-farm', 'warframe-economy')
 if ([string]::IsNullOrWhiteSpace($DestinationRoot)) {
     $home = [Environment]::GetFolderPath('UserProfile')
     $codexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { Join-Path $home '.codex' } else { $env:CODEX_HOME }

@@ -27,26 +27,26 @@ public sealed record OverframeSyncOptions(int Workers = 2, TimeSpan? RequestDela
 }
 
 public sealed record OverframeCacheEntry(string CacheKey, OverframeEntityType EntityType,
-    string CanonicalTerm, string DisplayName, Uri SourceUrl, string PayloadJson, string ContentHash,
+    string CanonicalQuery, string DisplayName, Uri SourceUrl, string PayloadJson, string ContentHash,
     string ParserVersion, DateTimeOffset FetchedAt, DateTimeOffset ExpiresAt,
     string? ETag = null, string? LastModified = null)
 {
     public bool IsFresh(DateTimeOffset now) => ExpiresAt > now;
 }
 
-public sealed record OverframeSyncResult(string State, string CacheKey, int SitemapMatches,
+public sealed record OverframeBuildSearchSyncResult(string State, string CacheKey, int SitemapMatches,
     int PagesFetched, OverframeCacheEntry? Entry);
 
 public static class OverframeCacheKey
 {
-    public static string Create(OverframeEntityType type, string term) =>
-        $"{type.ToString().ToLowerInvariant()}:{CanonicalTerm(term)}";
+    public static string Create(OverframeEntityType type, string query) =>
+        $"{type.ToString().ToLowerInvariant()}:{CanonicalQuery(query)}";
 
-    public static string CanonicalTerm(string term)
+    public static string CanonicalQuery(string query)
     {
-        if (string.IsNullOrWhiteSpace(term) || term.Length > 200)
-            throw new ArgumentException("A specific term from 1 to 200 characters is required.", nameof(term));
-        return PublicExportIdentity.Canonicalize(term.Trim());
+        if (string.IsNullOrWhiteSpace(query) || query.Length > 200)
+            throw new ArgumentException("A search query from 1 to 200 characters is required.", nameof(query));
+        return PublicExportIdentity.Canonicalize(query.Trim());
     }
 
     public static OverframeEntityType ParseType(string value) => value?.Trim().ToLowerInvariant() switch
@@ -75,7 +75,7 @@ public sealed class OverframeCacheStore(string databasePath)
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public async Task<OverframeCacheEntry?> GetAsync(OverframeEntityType type, string term,
+    public async Task<OverframeCacheEntry?> GetAsync(OverframeEntityType type, string query,
         bool readOnly = false, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(_databasePath)) return null;
@@ -90,7 +90,7 @@ public sealed class OverframeCacheStore(string databasePath)
                    content_hash, parser_version, fetched_at, expires_at, etag, last_modified
             FROM overframe_cache WHERE cache_key=$key LIMIT 1;
             """;
-        command.Parameters.AddWithValue("$key", OverframeCacheKey.Create(type, term));
+        command.Parameters.AddWithValue("$key", OverframeCacheKey.Create(type, query));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken) ? Read(reader) : null;
     }
@@ -115,7 +115,7 @@ public sealed class OverframeCacheStore(string databasePath)
             """;
             command.Parameters.AddWithValue("$key", entry.CacheKey);
             command.Parameters.AddWithValue("$type", entry.EntityType.ToString().ToLowerInvariant());
-            command.Parameters.AddWithValue("$term", entry.CanonicalTerm);
+            command.Parameters.AddWithValue("$term", entry.CanonicalQuery);
             command.Parameters.AddWithValue("$name", entry.DisplayName);
             command.Parameters.AddWithValue("$url", entry.SourceUrl.AbsoluteUri);
             command.Parameters.AddWithValue("$payload", entry.PayloadJson);
@@ -152,30 +152,29 @@ public sealed class OverframeCacheStore(string databasePath)
 
 public static partial class OverframePageParser
 {
-    public const string ParserVersion = "overframe-html-1";
+    public const string ParserVersion = "overframe-build-list-1";
     public const int MaximumPageBytes = 4 * 1024 * 1024;
 
-    public static OverframeCacheEntry Parse(OverframeEntityType type, string requestedTerm, Uri sourceUrl,
+    public static OverframeCacheEntry Parse(OverframeEntityType type, string query, Uri sourceUrl,
         string html, DateTimeOffset fetchedAt, TimeSpan ttl, string? etag = null, string? lastModified = null)
     {
         if (Encoding.UTF8.GetByteCount(html) is <= 0 or > MaximumPageBytes)
             throw new InvalidDataException("OVERFRAME_PAGE_SIZE_INVALID");
         var heading = MatchValue(HeadingRegex(), html) ?? throw new InvalidDataException("OVERFRAME_TITLE_MISSING");
         var name = Clean(heading);
-        var description = Clean(MatchValue(DescriptionRegex(), html) ?? "");
         var builds = BuildRegex().Matches(html).Select(match => new
         {
-            name = Clean(match.Groups[2].Value),
+            title = Clean(match.Groups[2].Value),
             url = new Uri(sourceUrl, WebUtility.HtmlDecode(match.Groups[1].Value)).AbsoluteUri
-        }).Where(value => value.name.Length > 0).DistinctBy(value => value.url).Take(50).ToArray();
+        }).Where(value => value.title.Length > 0).DistinctBy(value => value.url).Take(50).ToArray();
         var payload = JsonSerializer.Serialize(new
         {
-            type = type.ToString(), name, description, sourceUrl = sourceUrl.AbsoluteUri,
-            popularBuilds = builds, trustedForFacts = false
+            searchType = type.ToString(), query, sourceName = name,
+            sourceUrl = sourceUrl.AbsoluteUri, builds, trustedForFacts = false
         });
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))).ToLowerInvariant();
-        return new(OverframeCacheKey.Create(type, requestedTerm), type,
-            OverframeCacheKey.CanonicalTerm(requestedTerm), name, sourceUrl, payload, hash,
+        return new(OverframeCacheKey.Create(type, query), type,
+            OverframeCacheKey.CanonicalQuery(query), name, sourceUrl, payload, hash,
             ParserVersion, fetchedAt, fetchedAt + ttl, etag, lastModified);
     }
 
@@ -186,29 +185,28 @@ public static partial class OverframePageParser
 
     [GeneratedRegex("<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex HeadingRegex();
-    [GeneratedRegex("<meta[^>]+name=[\"']description[\"'][^>]+content=[\"'](.*?)[\"']", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
-    private static partial Regex DescriptionRegex();
     [GeneratedRegex("<a[^>]+href=[\"']([^\"']*/build/[^\"']*)[\"'][^>]*>(.*?)</a>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex BuildRegex();
     [GeneratedRegex("<[^>]+>", RegexOptions.Singleline)]
     private static partial Regex TagRegex();
 }
 
-public sealed class OverframeReferenceSynchronizer(HttpClient client, OverframeCacheStore cache,
+public sealed class OverframeBuildSearchSynchronizer(HttpClient client, OverframeCacheStore cache,
     TimeProvider? timeProvider = null)
 {
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private static readonly Uri RobotsUri = new("https://overframe.gg/robots.txt");
     private static readonly Uri SitemapUri = new("https://overframe.gg/sitemap.xml");
 
-    public async Task<OverframeSyncResult> SyncAsync(OverframeEntityType type, string term,
+    public async Task<OverframeBuildSearchSyncResult> SyncAsync(OverframeEntityType type, string query,
         OverframeSyncOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= new(); options.Validate();
-        var key = OverframeCacheKey.Create(type, term);
+        var key = OverframeCacheKey.Create(type, query);
         var now = _timeProvider.GetUtcNow();
-        var existing = await cache.GetAsync(type, term, cancellationToken: cancellationToken);
-        if (existing?.IsFresh(now) == true) return new("cached", key, 1, 0, existing);
+        var existing = await cache.GetAsync(type, query, cancellationToken: cancellationToken);
+        if (existing?.IsFresh(now) == true && existing.ParserVersion == OverframePageParser.ParserVersion)
+            return new("cached", key, 1, 0, existing);
 
         var limiter = new SharedRequestLimiter(options.EffectiveRequestDelay, _timeProvider);
         var robots = await GetStringAsync(RobotsUri, limiter, cancellationToken);
@@ -221,7 +219,7 @@ public sealed class OverframeReferenceSynchronizer(HttpClient client, OverframeC
             .ToList();
         foreach (var nestedSitemap in nested)
             indexedPages.AddRange(ParseSitemap(await GetStringAsync(nestedSitemap, limiter, cancellationToken)));
-        var matches = indexedPages.Where(uri => Matches(type, term, uri)).Distinct().Take(20).ToArray();
+        var matches = indexedPages.Where(uri => Matches(type, query, uri)).Distinct().Take(20).ToArray();
         if (matches.Length == 0) return new("not_found", key, 0, 0, null);
 
         var results = new List<OverframeCacheEntry>();
@@ -231,7 +229,7 @@ public sealed class OverframeReferenceSynchronizer(HttpClient client, OverframeC
         }, async (uri, token) =>
         {
             var html = await GetStringAsync(uri, limiter, token);
-            var entry = OverframePageParser.Parse(type, term, uri, html, _timeProvider.GetUtcNow(),
+            var entry = OverframePageParser.Parse(type, query, uri, html, _timeProvider.GetUtcNow(),
                 options.EffectiveTimeToLive);
             await cache.UpsertAsync(entry, token);
             lock (results) results.Add(entry);
@@ -268,13 +266,13 @@ public sealed class OverframeReferenceSynchronizer(HttpClient client, OverframeC
         return true;
     }
 
-    private static bool Matches(OverframeEntityType type, string term, Uri uri)
+    private static bool Matches(OverframeEntityType type, string query, Uri uri)
     {
         if (!RobotsAllows("User-agent: *\nDisallow: /api/\nDisallow: /Lotus/\nDisallow: /app/\nDisallow: /overwolf/\nDisallow: /user/\nDisallow: /search/\nDisallow: /account/", uri.AbsolutePath)) return false;
         var prefix = type == OverframeEntityType.Mod ? "/items/mods/" : "/items/arsenal/";
         if (!uri.AbsolutePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return false;
         var slug = uri.AbsolutePath.TrimEnd('/').Split('/').LastOrDefault() ?? "";
-        return PublicExportIdentity.Equivalent(slug.Replace('-', ' '), term);
+        return PublicExportIdentity.Equivalent(slug.Replace('-', ' '), query);
     }
 
     private async Task<string> GetStringAsync(Uri uri, SharedRequestLimiter limiter,
@@ -282,7 +280,7 @@ public sealed class OverframeReferenceSynchronizer(HttpClient client, OverframeC
     {
         await limiter.WaitAsync(cancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        request.Headers.UserAgent.ParseAdd("MyFrame.Sync/1.0 (+local-reference-cache)");
+        request.Headers.UserAgent.ParseAdd("MyFrame.Sync/1.0 (+local-build-list-cache)");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         var final = response.RequestMessage?.RequestUri;
         if (final is null || final.Scheme != Uri.UriSchemeHttps ||

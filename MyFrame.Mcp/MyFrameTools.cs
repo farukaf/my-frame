@@ -9,7 +9,7 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 {
     [McpServerTool(Name = "get_capabilities", Title = "Get platform capabilities", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns available, partial and externally pending data capabilities. Check this before asking for rich inventory, activities or references.")]
+    [Description("Returns available, partial and externally pending data capabilities. Check this before asking for rich inventory, activities, or Overframe build listings.")]
     public CapabilitiesResponse GetCapabilities() => platform.GetCapabilities();
 
     [McpServerTool(Name = "get_market_credential_status", Title = "Get market credential status", UseStructuredContent = true,
@@ -61,9 +61,9 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
 
     [McpServerTool(Name = "get_source_coverage", Title = "Get source field coverage", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns source state, active revision/parser and field-level coverage for a synchronized source: public-export, worldstate-pc, overwolf-inventory, warframe-market, or references. Market fields include their latest observed timestamp when available. Public Export coverage includes components, relics, marketIdentity, imageName, productCategory, localizedNames and technicalMetadata. It never returns raw payloads and preserves NotObserved instead of guessing.")]
+    [Description("Returns source state, active revision/parser and field-level coverage for a synchronized source: public-export, worldstate-pc, overwolf-inventory, or warframe-market. Market fields include their latest observed timestamp when available. Public Export coverage includes components, relics, marketIdentity, imageName, productCategory, localizedNames and technicalMetadata. It never returns raw payloads and preserves NotObserved instead of guessing.")]
     public Task<SourceCoverageResponse> GetSourceCoverage(
-        [Description("Coverage-enabled source id: public-export, worldstate-pc, overwolf-inventory, warframe-market, or references.")] string sourceId,
+        [Description("Coverage-enabled source id: public-export, worldstate-pc, overwolf-inventory, or warframe-market.")] string sourceId,
         CancellationToken cancellationToken = default) => platform.GetSourceCoverageAsync(sourceId, cancellationToken);
 
     [McpServerTool(Name = "search_public_export", Title = "Search Warframe Public Export", UseStructuredContent = true,
@@ -82,31 +82,14 @@ public sealed class MyFrameTools(MyFrameQueryService queries, QueryExecutionGate
         [Description("UniqueName, name, or localized alias; maximum 512 characters.")] string itemId,
         CancellationToken cancellationToken = default) => platform.GetPublicExportItemAsync(itemId, cancellationToken);
 
-    [McpServerTool(Name = "search_references", Title = "Search imported Wiki and Overframe references", UseStructuredContent = true,
+    [McpServerTool(Name = "search_overframe_builds", Title = "Search cached Overframe build listings", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Searches explicitly imported Wiki/Overframe JSON references under the local data root. Results retain URL, revision, author/license and are untrusted for game facts; no network access occurs.")]
-    public Task<ReferenceSearchResponse> SearchReferences(
-        [Description("Text query from 1 to 200 characters.")] string query,
-        [Description("Maximum hits from 1 to 100; default 20.")] int limit = 20,
-        CancellationToken cancellationToken = default) => platform.SearchReferencesAsync(query, limit, cancellationToken);
-
-    [McpServerTool(Name = "get_reference_section", Title = "Get imported reference section", UseStructuredContent = true,
-        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Returns one bounded section from an explicitly imported Wiki/Overframe reference, preserving URL, revision, author/license and the untrusted-for-facts flag. It never fetches the network or reads arbitrary paths.")]
-    public Task<ReferenceSectionResponse> GetReferenceSection(
-        [Description("Exact source URL returned by search_references; maximum 2048 characters.")] string url,
-        [Description("Exact section id returned by search_references; maximum 200 characters.")] string sectionId,
-        [Description("Optional exact revision to disambiguate the source; maximum 200 characters.")] string? revision = null,
-        CancellationToken cancellationToken = default) => platform.GetReferenceSectionAsync(url, sectionId, revision, cancellationToken);
-
-    [McpServerTool(Name = "get_overframe_reference", Title = "Get cached Overframe reference", UseStructuredContent = true,
-        ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Gets one deterministic, attributed Overframe item from the local SQLite cache. Supply a specific Warframe, weapon/item, or mod name and its exact type. This tool never accesses the network or refreshes the cache.")]
-    public Task<OverframeReferenceResponse> GetOverframeReference(
-        [Description("Exact route type: Item, Mod, or Warframe.")] string type,
-        [Description("Specific item name, such as Haalvu, Serration, or Mesa; 1 to 200 characters.")] string term,
+    [Description("Lists build titles and links cached for one Overframe search. It does not return build details, recommendations, or verified game facts, and it never accesses the network or refreshes the cache.")]
+    public Task<OverframeBuildSearchResponse> SearchOverframeBuilds(
+        [Description("Search type: Item, Mod, or Warframe.")] string type,
+        [Description("Search query, such as Haalvu, Serration, or Mesa; 1 to 200 characters.")] string query,
         CancellationToken cancellationToken = default) =>
-        platform.GetOverframeReferenceAsync(type, term, cancellationToken);
+        platform.SearchOverframeBuildsAsync(type, query, cancellationToken);
 
     [McpServerTool(Name = "get_equipment", Title = "Get equipment instances", UseStructuredContent = true,
         ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]

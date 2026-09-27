@@ -4,10 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
         <VerticalStackLayout Spacing="2">
-            <HorizontalStackLayout Spacing="10">
-                <Label Text="Smart inventory" Style="{DynamicResource Title}" />
-                <Button Text="↗" Command="{Binding OpenWikiCommand}" ToolTipProperties.Text="Open Warframe Wiki" BackgroundColor="Transparent" TextColor="#7DE2D1" FontSize="19" Padding="4,0" />
-            </HorizontalStackLayout>
+            <Label Text="Smart inventory" Style="{DynamicResource Title}" />
             <Label Text="Collection, farming, relics, and the value of your extras in one place." TextColor="#8995A8" />
         </VerticalStackLayout>
         <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" VerticalOptions="Center">

@@ -54,7 +54,6 @@ public sealed class AppCompositionTests
         Assert.Contains("AddSingleton<MainPage>", source);
         Assert.Contains("AddSingleton<ISettingsStore>(preferences)", source);
         Assert.Contains("AddSingleton<IFolderPicker, MauiFolderPicker>", source);
-        Assert.Contains("AddSingleton<IExternalBrowser, MauiExternalBrowser>", source);
     }
 
     [Fact]

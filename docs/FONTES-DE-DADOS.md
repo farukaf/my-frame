@@ -6,8 +6,7 @@
 | Public Export | Item catalog, recipes, relics, technical metadata | Preserve revision and field coverage. |
 | World State | Bounties, cycles, and attributed rewards | Check state, parser version, revision, and expiry. |
 | Warframe.Market | Public prices and optional private account state | Credentials never enter MCP or logs. |
-| Wiki | Attributed reference material | Disabled or fixture-only until permission and licensing pass. |
-| Overframe public item pages | Attributed build reference cache | Sync only `/items/` URLs allowed by `robots.txt`; local structured cache remains untrusted for facts. |
+| Overframe public item pages | Build listing search | Cache build titles and links only; never present listing data as build details or verified facts. |
 | AlecaFrame | Optional legacy import | Read-only migration compatibility only. |
 
 No source may turn missing data into a known zero. Source state, coverage, freshness,
@@ -18,11 +17,12 @@ provider. Defaults are two workers, a shared 800 ms delay between requests to th
 and an eight-hour SQLite TTL. `--workers`, `--delay-ms`, and `--ttl-hours` override these
 values. The MCP process remains offline and read-only.
 
-Refresh one exact cache key with:
+Refresh one typed build search with:
 
 ```powershell
-dotnet run --project MyFrame.Sync -- --overframe-reference --type Item --term Haalvu
+dotnet run --project MyFrame.Sync -- --overframe-builds --type Item --query Haalvu
 ```
 
 Cloudflare or another access challenge is reported as `OVERFRAME_ACCESS_BLOCKED`; the
-sync process does not attempt to bypass it and the MCP does not substitute missing data.
+sync process does not attempt to bypass it. The MCP lists only cached build titles and
+links and does not substitute missing data or fetch build details.
