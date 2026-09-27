@@ -16,7 +16,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(IDashboardService service, ILogger<MainViewModel> logger,
         IAlecaFramePath alecaPath, AlecaFrameDirectorySettings directorySettings,
         LocalSettings localSettings, ISettingsStore preferences, IFolderPicker folderPicker,
-        IExternalBrowser externalBrowser, SyncStatusReader syncStatusReader,
+        SyncStatusReader syncStatusReader,
         CollectorCaptureInboxService collectorCaptureInbox, CollectorCaptureInboxWatcher collectorCaptureWatcher,
         WorldStateSyncService worldStateSync, MarketCredentialService marketCredentials,
         PublicExportSyncService publicExportSync)
@@ -24,7 +24,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _service = service; _logger = logger; _alecaPath = alecaPath;
         Dashboard = new(); Collection = new(); Farm = new(); Relics = new(); Surplus = new();
         var settings = new DashboardSettingsState(localSettings);
-        GlobalStatus = new(); ExternalBrowser = externalBrowser;
+        GlobalStatus = new();
         Sales = new(settings);
         SyncStatus = new(syncStatusReader, collectorCaptureInbox, collectorCaptureWatcher, worldStateSync,
             publicExportSync, logger);
@@ -46,7 +46,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public SettingsViewModel Settings { get; }
     public SyncStatusViewModel SyncStatus { get; }
     public GlobalStatusViewModel GlobalStatus { get; }
-    private IExternalBrowser ExternalBrowser { get; }
     [ObservableProperty] public partial string CurrentSection { get; set; } = "Dashboard";
 
     public async Task InitializeAsync()
@@ -109,9 +108,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Settings.IsVisible = section == "Settings";
         SyncStatus.IsVisible = section == "SyncStatus";
     }
-
-    [RelayCommand]
-    private Task OpenWikiAsync() => ExternalBrowser.OpenAsync("https://wiki.warframe.com/");
 
     private RecommendationSettings CurrentSettings() => new((int)Sales.DucatsPerPlatinum, Settings.UnvaultedPrimeSetsToReserve);
     private void OnSnapshotUpdated(object? sender, DashboardSnapshot snapshot) => MainThread.BeginInvokeOnMainThread(() => Apply(snapshot));

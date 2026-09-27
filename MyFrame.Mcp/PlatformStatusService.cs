@@ -51,15 +51,12 @@ public sealed record PublicExportSearchResponse(DateTimeOffset ServedAt, string 
 public sealed record PublicExportItemResponse(DateTimeOffset ServedAt, string State,
     string? ActiveRevisionId, string? ParserVersion, IReadOnlyDictionary<string, string> Coverage,
     PublicExportItemDto? Item);
-public sealed record ReferenceSearchHitDto(string Kind, string Title, string SectionId,
-    string? SectionTitle, string Snippet, double Score, string Url, string Revision,
-    string? License, string? Author, bool TrustedForFacts);
-public sealed record ReferenceSearchResponse(DateTimeOffset ServedAt, string State,
-    int Documents, int RejectedDocuments, IReadOnlyList<ReferenceSearchHitDto> Hits);
-public sealed record ReferenceSectionResponse(DateTimeOffset ServedAt, string State,
-    int Documents, int RejectedDocuments, string? Kind, string? Title, string? Url,
-    string? Revision, string? License, string? Author, bool TrustedForFacts,
-    string? SectionId, string? SectionTitle, string? Content, bool ContentTruncated);
+public sealed record OverframeBuildDto(string Title, string Url);
+public sealed record OverframeBuildSearchResponse(DateTimeOffset ServedAt, string State,
+    string SearchType, string Query, string? SourceName, string? SourceUrl,
+    IReadOnlyList<OverframeBuildDto> Builds, DateTimeOffset? FetchedAt,
+    DateTimeOffset? ExpiresAt, string? ContentHash, string? ParserVersion,
+    bool TrustedForFacts = false);
 public sealed record InventoryEquipmentDto(string InstanceId, string? TypeId, int? Rank,
     string? ConfigJson, string RankState, string ConfigState);
 public sealed record InventoryEquipmentResponse(IReadOnlyList<InventoryEquipmentDto> Items);
@@ -85,7 +82,7 @@ public sealed record WorldStateResponse(DateTimeOffset ServedAt, string State, D
 public sealed class PlatformStatusService
 {
     private readonly IMarketTokenStore _marketTokenStore;
-    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references"];
+    private static readonly string[] SourceIds = ["overwolf-inventory", "public-export", "worldstate-pc", "warframe-market"];
     public PlatformStatusService(IMarketTokenStore? marketTokenStore = null) =>
         _marketTokenStore = marketTokenStore ?? new FileMarketTokenStore(MyFrameStoragePaths.MarketTokenPath);
 
@@ -96,7 +93,7 @@ public sealed class PlatformStatusService
         new("worldstate", "available", "World State adapter supports bounties, cycles, validity and attributed rewards."),
         new("market.public", "available", "Public market queries do not require a credential."),
         new("market.private", "optional", "Account/orders require an independent market credential."),
-        new("references.wiki_overframe", "import_only", "References require an explicitly permitted, attributed import and remain untrusted for facts."),
+        new("builds.overframe", "listing_only", "Cached Overframe searches expose build titles and links only; MCP never fetches build details or refreshes the cache."),
         new("mcp.domain", "partial", "Current MCP tools remain available; rich inventory/catalog/activity tools are being added incrementally.")
     ]);
 
@@ -114,21 +111,6 @@ public sealed class PlatformStatusService
         foreach (var sourceId in SourceIds)
         {
             var status = await database.GetStatusAsync(sourceId, cancellationToken);
-            if (sourceId == "references" && status is null)
-            {
-                var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
-                long count = 0, rejected = 0;
-                if (Directory.Exists(directory))
-                    foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
-                    {
-                        try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); count++; }
-                        catch (InvalidDataException) { rejected++; }
-                        catch (JsonException) { rejected++; }
-                    }
-                values.Add(new(sourceId, count == 0 ? "not_initialized" : rejected == 0 ? "available" : "partial", null, null, null,
-                    null, count == 0 ? null : "reference-file-1", count, rejected));
-                continue;
-            }
             values.Add(status is null
                 ? new(sourceId, "not_initialized", null, null, null, null, null, 0, 0)
                 : new(sourceId, status.LastRunState ?? "unknown", status.LastRunState, status.LastRunAt,
@@ -285,37 +267,9 @@ public sealed class PlatformStatusService
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId.Length > 100)
             throw new ArgumentException("sourceId must contain 1 to 100 characters.", nameof(sourceId));
         var normalizedSourceId = sourceId.Trim().ToLowerInvariant();
-        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "warframe-market", "references" };
+        var allowed = new[] { "overwolf-inventory", "public-export", "worldstate-pc", "warframe-market" };
         if (!allowed.Contains(normalizedSourceId, StringComparer.Ordinal))
             throw new ArgumentException("sourceId is not a coverage-enabled source.", nameof(sourceId));
-        if (normalizedSourceId == "references")
-        {
-            var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
-            var accepted = 0;
-            var rejected = 0;
-            if (Directory.Exists(directory))
-                foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    try { _ = ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path)); accepted++; }
-                    catch (InvalidDataException) { rejected++; }
-                    catch (JsonException) { rejected++; }
-                }
-            var state = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
-            var attribution = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
-            var sections = accepted > 0 ? InventoryFieldState.Known : InventoryFieldState.NotObserved;
-            var rejectedState = rejected > 0 ? InventoryFieldState.Invalid : InventoryFieldState.NotObserved;
-            var values = new Dictionary<string, InventoryFieldState>(StringComparer.Ordinal)
-            {
-                ["documents"] = state,
-                ["attribution"] = attribution,
-                ["sections"] = sections,
-                ["rejectedDocuments"] = rejectedState
-            };
-            return new(values.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new SourceCoverageDto(normalizedSourceId, pair.Key, pair.Value.ToString())).ToArray(),
-                DateTimeOffset.UtcNow, rejected > 0 ? "partial" : accepted > 0 ? "available" : "not_initialized");
-        }
         if (normalizedSourceId == "warframe-market")
         {
             var market = new SqliteMarketStore(MyFrameStoragePaths.DataDatabasePath,
@@ -413,80 +367,33 @@ public sealed class PlatformStatusService
             item.Vaulted, item.MarketId, item.MarketSlug, item.ItemType, item.Components, item.Relics);
     }
 
-    public Task<ReferenceSearchResponse> SearchReferencesAsync(
-        string query, int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<OverframeBuildSearchResponse> SearchOverframeBuildsAsync(
+        string type, string query, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("query is required.", nameof(query));
-        if (query.Length > 200) throw new ArgumentException("query is limited to 200 characters.", nameof(query));
-        if (limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(limit));
-        cancellationToken.ThrowIfCancellationRequested();
-        var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
-        if (!Directory.Exists(directory))
-            return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, "not_initialized", 0, 0, []));
-
-        var documents = new List<ReferenceDocument>();
-        var rejected = 0;
-        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            try { documents.Add(ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path))); }
-            catch (InvalidDataException) { rejected++; }
-            catch (JsonException) { rejected++; }
-        }
-        var hits = ReferenceSearch.Search(documents, query.Trim(), limit);
-        var result = hits.Select(hit =>
-        {
-            var document = documents.First(value => value.Url == hit.SourceUrl && value.Revision == hit.Revision);
-            return new ReferenceSearchHitDto(document.Kind.ToString(), document.Title, hit.SectionId,
-                hit.Title, hit.Snippet, hit.Score, hit.SourceUrl.ToString(), hit.Revision,
-                document.License, document.Author, document.IsTrustedForFacts);
-        }).ToArray();
-        var state = documents.Count == 0 ? "empty" : rejected == 0 ? "available" : "partial";
-        return Task.FromResult(new ReferenceSearchResponse(DateTimeOffset.UtcNow, state, documents.Count, rejected, result));
-    }
-
-    public Task<ReferenceSectionResponse> GetReferenceSectionAsync(
-        string url, string sectionId, string? revision = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(url) || url.Length > 2048)
-            throw new ArgumentException("url is required and limited to 2048 characters.", nameof(url));
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var sourceUri))
-            throw new ArgumentException("url must be an absolute URL.", nameof(url));
-        if (string.IsNullOrWhiteSpace(sectionId) || sectionId.Length > 200)
-            throw new ArgumentException("sectionId is required and limited to 200 characters.", nameof(sectionId));
-        if (revision?.Length > 200) throw new ArgumentException("revision is limited to 200 characters.", nameof(revision));
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var directory = Path.Combine(MyFrameStoragePaths.RootDirectory, "references");
-        if (!Directory.Exists(directory))
-            return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "not_initialized", 0, 0,
-                null, null, null, null, null, null, false, null, null, null, false));
-
-        var documents = new List<ReferenceDocument>();
-        var rejected = 0;
-        foreach (var path in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            try { documents.Add(ReferenceDocumentParser.Parse(File.ReadAllText(path), File.GetLastWriteTimeUtc(path))); }
-            catch (InvalidDataException) { rejected++; }
-            catch (JsonException) { rejected++; }
-        }
-
-        var document = documents.FirstOrDefault(value =>
-            string.Equals(value.Url.AbsoluteUri, sourceUri.AbsoluteUri, StringComparison.OrdinalIgnoreCase) &&
-            (revision is null || string.Equals(value.Revision, revision, StringComparison.Ordinal)));
-        var section = document?.Sections.FirstOrDefault(value => string.Equals(value.Id, sectionId, StringComparison.Ordinal));
-        if (document is null || section is null)
-            return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "not_found", documents.Count, rejected,
-                null, null, null, null, null, null, false, null, null, null, false));
-
-        const int maxContent = 20_000;
-        var truncated = section.Content.Length > maxContent;
-        var content = truncated ? section.Content[..maxContent] : section.Content;
-        return Task.FromResult(new ReferenceSectionResponse(DateTimeOffset.UtcNow, "available", documents.Count, rejected,
-            document.Kind.ToString(), document.Title, document.Url.ToString(), document.Revision,
-            document.License, document.Author, document.IsTrustedForFacts, section.Id, section.Title, content, truncated));
+        var entityType = OverframeCacheKey.ParseType(type);
+        var canonicalQuery = OverframeCacheKey.CanonicalQuery(query);
+        var store = new OverframeCacheStore(MyFrameStoragePaths.DataDatabasePath);
+        var entry = await store.GetAsync(entityType, query, readOnly: true, cancellationToken);
+        if (entry is null)
+            return new(DateTimeOffset.UtcNow, File.Exists(MyFrameStoragePaths.DataDatabasePath)
+                ? "not_cached" : "not_initialized", entityType.ToString(), canonicalQuery,
+                null, null, [], null, null, null, null);
+        if (entry.ParserVersion != OverframePageParser.ParserVersion)
+            return new(DateTimeOffset.UtcNow, "unsupported_cache", entry.EntityType.ToString(),
+                entry.CanonicalQuery, entry.DisplayName, entry.SourceUrl.AbsoluteUri, [],
+                entry.FetchedAt, entry.ExpiresAt, entry.ContentHash, entry.ParserVersion);
+        using var payload = JsonDocument.Parse(entry.PayloadJson);
+        var now = DateTimeOffset.UtcNow;
+        var builds = payload.RootElement.GetProperty("builds").EnumerateArray()
+            .Select(value => new OverframeBuildDto(
+                value.GetProperty("title").GetString() ?? string.Empty,
+                value.GetProperty("url").GetString() ?? string.Empty))
+            .Where(value => value.Title.Length > 0 && value.Url.Length > 0)
+            .ToArray();
+        return new(now, entry.IsFresh(now) ? "available" : "stale",
+            entry.EntityType.ToString(), entry.CanonicalQuery, entry.DisplayName,
+            entry.SourceUrl.AbsoluteUri, builds, entry.FetchedAt, entry.ExpiresAt,
+            entry.ContentHash, entry.ParserVersion);
     }
 
     private static bool Contains(string? value, string text) =>

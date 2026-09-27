@@ -166,13 +166,6 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
             Assert.Equal("not_initialized", response.State);
             Assert.Null(response.ActiveRevisionId);
             Assert.Null(response.ParserVersion);
-
-            var references = Path.Combine(root, "references");
-            Directory.CreateDirectory(references);
-            await File.WriteAllTextAsync(Path.Combine(references, "reference.json"),
-                "{\"kind\":\"wiki\",\"url\":\"https://wiki.warframe.com/w/Test\",\"title\":\"Test\",\"revision\":\"r1\",\"sections\":[{\"id\":\"overview\",\"content\":\"Test\"}]} ");
-            var referenceCoverage = await new PlatformStatusService().GetSourceCoverageAsync(" REFERENCES ");
-            Assert.Contains(referenceCoverage.Items, item => item.SourceId == "references" && item.FieldPath == "documents");
         }
         finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
     }
@@ -313,47 +306,37 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public async Task ReferenceSearchReadsOnlyValidatedLocalDocumentsAndPreservesAttribution()
+    public async Task OverframeToolListsCachedBuildsWithoutRefreshingNetwork()
     {
         var previous = Environment.GetEnvironmentVariable("MYFRAME_DATA_ROOT");
-        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-references-{Guid.NewGuid():N}");
+        var root = Path.Combine(Path.GetTempPath(), $"myframe-mcp-overframe-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
         try
         {
             Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", root);
-            Directory.CreateDirectory(Path.Combine(root, "references"));
-            File.WriteAllText(Path.Combine(root, "references", "build.json"), "{\"kind\":\"overframe\",\"url\":\"https://overframe.gg/build/123\",\"title\":\"Test build\",\"revision\":\"r1\",\"license\":\"community\",\"author\":\"tester\",\"sections\":[{\"id\":\"mods\",\"title\":\"Mods\",\"content\":\"Use Serration for fire rate.\"}]}");
-            File.WriteAllText(Path.Combine(root, "references", "rejected.json"), "{\"kind\":\"wiki\",\"url\":\"https://example.com/not-allowed\",\"title\":\"bad\",\"revision\":\"r1\",\"sections\":[]}");
+            var now = DateTimeOffset.UtcNow;
+            var store = new OverframeCacheStore(Path.Combine(root, "data.db"));
+            await store.UpsertAsync(new("item:haalvu", OverframeEntityType.Item, "haalvu", "Haalvu",
+                new Uri("https://overframe.gg/items/arsenal/8015/haalvu/"),
+                "{\"searchType\":\"Item\",\"query\":\"Haalvu\",\"sourceName\":\"Haalvu\",\"sourceUrl\":\"https://overframe.gg/items/arsenal/8015/haalvu/\",\"builds\":[{\"title\":\"Example build\",\"url\":\"https://overframe.gg/build/123/haalvu/example/\"}],\"trustedForFacts\":false}", "hash",
+                OverframePageParser.ParserVersion, now, now.AddHours(8)));
 
-            var response = await new PlatformStatusService().SearchReferencesAsync("fire rate");
+            var response = await new PlatformStatusService().SearchOverframeBuildsAsync("Item", "Haalvu");
+            var missing = await new PlatformStatusService().SearchOverframeBuildsAsync("Mod", "Haalvu");
 
-            Assert.Equal("partial", response.State);
-            Assert.Equal(1, response.Documents);
-            Assert.Equal(1, response.RejectedDocuments);
-            var hit = Assert.Single(response.Hits);
-            Assert.Equal("Overframe", hit.Kind);
-            Assert.Equal("community", hit.License);
-            Assert.Equal("tester", hit.Author);
-            Assert.False(hit.TrustedForFacts);
-            var section = await new PlatformStatusService().GetReferenceSectionAsync(hit.Url, hit.SectionId, hit.Revision);
-            Assert.Equal("available", section.State);
-            Assert.Equal("Use Serration for fire rate.", section.Content);
-            Assert.Equal("community", section.License);
-            Assert.False(section.TrustedForFacts);
-            var status = await new PlatformStatusService().GetSyncStatusAsync();
-            var referenceStatus = Assert.Single(status.Sources, value => value.SourceId == "references");
-            Assert.Equal("partial", referenceStatus.State);
-            Assert.Equal("reference-file-1", referenceStatus.ParserVersion);
-            Assert.Equal(1, referenceStatus.AcceptedRecords);
-            Assert.Equal(1, referenceStatus.RejectedRecords);
-            var coverage = await new PlatformStatusService().GetSourceCoverageAsync("references");
-            Assert.Equal("partial", coverage.State);
-            Assert.NotNull(coverage.ServedAt);
-            Assert.Null(coverage.ActiveRevisionId);
-            Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "documents").State);
-            Assert.Equal("Known", Assert.Single(coverage.Items, value => value.FieldPath == "attribution").State);
-            Assert.Equal("Invalid", Assert.Single(coverage.Items, value => value.FieldPath == "rejectedDocuments").State);
+            Assert.Equal("available", response.State);
+            Assert.Equal("haalvu", response.Query);
+            Assert.Equal("Haalvu", response.SourceName);
+            Assert.Equal("Example build", Assert.Single(response.Builds).Title);
+            Assert.False(response.TrustedForFacts);
+            Assert.Equal("not_cached", missing.State);
+            Assert.Empty(missing.Builds);
         }
-        finally { Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous); }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MYFRAME_DATA_ROOT", previous);
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
     }
 
     [Fact]
@@ -372,7 +355,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var methods = typeof(MyFrameTools).GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Select(method => (Method: method, Attribute: method.GetCustomAttribute<McpServerToolAttribute>()))
             .Where(x => x.Attribute is not null).ToArray();
-        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_changes", "get_inventory_coverage", "get_inventory_history", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_public_export_item", "get_reference_section", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_public_export", "search_references" };
+        var expected = new[] { "get_acquisition", "get_activity", "get_bounties", "get_capabilities", "get_capture_inbox_status", "get_equipment", "get_inventory_changes", "get_inventory_coverage", "get_inventory_history", "get_item", "get_loadout", "get_market_credential_status", "get_mods", "get_overview", "get_public_export_item", "get_source_coverage", "get_sync_history", "get_sync_status", "get_world_state", "list_collection", "list_farm", "list_relics", "list_sales", "list_surplus", "search_inventory", "search_overframe_builds", "search_public_export" };
 
         Assert.Equal(expected, methods.Select(x => x.Attribute!.Name).Order(StringComparer.Ordinal));
         Assert.All(methods, value =>
@@ -733,7 +716,7 @@ public sealed class McpFeatureTests(ITestOutputHelper output)
         var unavailable = await client.CallToolAsync("search_inventory",
             new Dictionary<string, object?>());
 
-        Assert.Equal(28, tools.Count);
+        Assert.Equal(27, tools.Count);
         Assert.All(tools, tool =>
         {
             Assert.Equal(JsonValueKind.Object, tool.ProtocolTool.InputSchema.ValueKind);

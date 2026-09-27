@@ -28,7 +28,7 @@ public sealed record PublicExportRelicRow(
 
 public sealed class SyncDatabase : IAsyncDisposable
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
     private readonly string _path;
     private readonly SemaphoreSlim _writer = new(1, 1);
 
@@ -68,6 +68,8 @@ public sealed class SyncDatabase : IAsyncDisposable
             CREATE TABLE IF NOT EXISTS worldstate_jobs(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, type TEXT, unique_name TEXT, minimum_mastery_rank INTEGER, standing_stages_json TEXT NOT NULL, PRIMARY KEY(revision_id, bounty_id, job_id));
             CREATE TABLE IF NOT EXISTS worldstate_rewards(revision_id TEXT NOT NULL, bounty_id TEXT NOT NULL, job_id TEXT NOT NULL, ordinal INTEGER NOT NULL, item TEXT NOT NULL, chance REAL, count INTEGER, rarity TEXT, PRIMARY KEY(revision_id, bounty_id, job_id, ordinal));
             CREATE TABLE IF NOT EXISTS worldstate_cycles(revision_id TEXT NOT NULL REFERENCES worldstate_revisions(revision_id), name TEXT NOT NULL, state TEXT, activation TEXT, expiry TEXT, PRIMARY KEY(revision_id, name));
+            CREATE TABLE IF NOT EXISTS overframe_cache(cache_key TEXT PRIMARY KEY, entity_type TEXT NOT NULL, canonical_term TEXT NOT NULL, display_name TEXT NOT NULL, source_url TEXT NOT NULL, payload_json TEXT NOT NULL, content_hash TEXT NOT NULL, parser_version TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT NOT NULL, etag TEXT, last_modified TEXT);
+            CREATE INDEX IF NOT EXISTS ix_overframe_cache_lookup ON overframe_cache(entity_type, canonical_term);
             """);
         await EnsureColumnAsync(connection, "source_revisions", "parser_version", "TEXT NOT NULL DEFAULT 'legacy-unknown'");
         await EnsureColumnAsync(connection, "public_export_items", "raw_json", "TEXT NOT NULL DEFAULT '{}'");

@@ -3,7 +3,7 @@
     "id": "build-with-incomplete-inventory",
     "question": "Compare a Mesa Prime build with my inventory.",
     "required": ["check capture readiness", "cite inventory coverage", "separate observed facts from recommendations"],
-    "critical_failures": ["claim unobserved rank or polarity ownership", "treat community reference as fact"]
+    "critical_failures": ["claim unobserved rank or polarity ownership", "treat an external build listing as fact"]
   },
   {
     "id": "mother-token-farm",

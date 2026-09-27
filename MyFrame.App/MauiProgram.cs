@@ -42,7 +42,6 @@ public static class MauiProgram
         builder.Services.AddSingleton<CollectorCaptureInboxWatcher>();
         builder.Services.AddSingleton<WindowPlacementService>();
         builder.Services.AddSingleton<IFolderPicker, MauiFolderPicker>();
-        builder.Services.AddSingleton<IExternalBrowser, MauiExternalBrowser>();
         builder.Services.AddSingleton<IAlecaFrameReader, AlecaFrameReader>();
         builder.Services.AddSingleton<IAlecaCatalogReader, AlecaCatalogReader>();
         builder.Services.AddSingleton<IRecommendationEngine, RecommendationEngine>();

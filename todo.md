@@ -28,14 +28,7 @@ Runbook and current blocker: [collector contract](docs/COLETOR-OVERWOLF.md).
 This gate depends on section 1. Synthetic producer-to-probe and persistence coverage
 already pass; they do not replace real-game validation.
 
-## 3. Approve community reference sources
-
-- [ ] Confirm permitted access, licensing, attribution, and retention for the Warframe
-  Wiki ingestion path.
-- [ ] Confirm the same independently for Overframe and validate one real ingestion.
-- [ ] Keep either source disabled or fixture-only until its own gate passes.
-
-## 4. Final acceptance and release readiness
+## 3. Final acceptance and release readiness
 
 - [ ] Run the F10 before/after evaluation with cited sources, explicit uncertainty,
   and no critical failures.

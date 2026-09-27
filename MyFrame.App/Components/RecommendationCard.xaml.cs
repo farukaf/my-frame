@@ -48,8 +48,6 @@ public partial class RecommendationCard : ContentView
         };
         var close = new Button { Text = "Close", BackgroundColor = Color.FromArgb("#20283A"), TextColor = Colors.White };
         close.Clicked += async (_, _) => await page.Navigation.PopModalAsync();
-        var wiki = new Button { Text = "Open Wiki ↗", BackgroundColor = Color.FromArgb("#167C70"), TextColor = Colors.White };
-        wiki.Clicked += async (_, _) => await Browser.Default.OpenAsync(WikiUrl(Title), BrowserLaunchMode.SystemPreferred);
         var market = new Button { Text = "Open Warframe.Market ↗", BackgroundColor = Color.FromArgb("#7D3CFF"), TextColor = Colors.White,
             IsVisible = !string.IsNullOrWhiteSpace(MarketSlug) };
         market.Clicked += async (_, _) => await Browser.Default.OpenAsync($"https://warframe.market/items/{Uri.EscapeDataString(MarketSlug)}", BrowserLaunchMode.SystemPreferred);
@@ -71,7 +69,7 @@ public partial class RecommendationCard : ContentView
             content.Children.Add(new Label { Text = "Components", TextColor = Color.FromArgb("#F4F7FB"), FontSize = 18, FontAttributes = FontAttributes.Bold });
             content.Children.Add(BuildComponents(Components));
         }
-        content.Children.Add(new HorizontalStackLayout { Spacing = 10, Children = { wiki, market, close } });
+        content.Children.Add(new HorizontalStackLayout { Spacing = 10, Children = { market, close } });
         page.Content = new ScrollView { Content = content };
         await Navigation.PushModalAsync(page);
     }
@@ -146,9 +144,6 @@ public partial class RecommendationCard : ContentView
         Text = $"{heading}\n{(string.IsNullOrWhiteSpace(value) ? "—" : value)}",
         TextColor = Color.FromArgb("#AEB8C8"), LineBreakMode = LineBreakMode.WordWrap
     };
-
-    private static string WikiUrl(string title) =>
-        $"https://wiki.warframe.com/w/{Uri.EscapeDataString(title.Replace(' ', '_'))}";
 
     private static BindableProperty Property(string name, Type type, Type owner, object defaultValue) =>
         BindableProperty.Create(name, type, owner, defaultValue);

@@ -10,17 +10,17 @@ The local data platform is implemented and has a validated Windows `0.0.33`
 distribution. It includes:
 
 - SQLite-backed revisions for inventory, official catalog data, World State,
-  Warframe.Market data, and attributed reference content;
+  Warframe.Market data, and cached Overframe build listings;
 - a native Overwolf collector package, inbox transport, probes, and diagnostics;
 - a Windows app for source status, synchronization, and capture import;
 - a read-only `stdio` MCP server with source coverage, provenance, inventory history,
-  acquisition, market, and reference queries; and
-- versioned skills for build, farm, economy, and research workflows.
+  acquisition, market, and cached Overframe build-listing queries; and
+- versioned skills for build, farm, and economy workflows.
 
 The remaining release blocker is real-game validation of the unpacked Overwolf
 collector. Synthetic collector and persistence tests pass, but no fresh My Frame
-heartbeat or valid real capture has yet been accepted. Community-source licensing and
-the final F10 evaluation also remain open. See the [delivery checklist](todo.md).
+heartbeat or valid real capture has yet been accepted. The final F10 evaluation also
+remains open. See the [delivery checklist](todo.md).
 
 ## Components
 
@@ -53,7 +53,7 @@ the SQLite read path do not require AlecaFrame.
   architecture rationale. Its phase-status prose is historical; use the checklist for
   current status.
 - [Validation matrix](docs/VALIDACAO-PLATAFORMA.md): detailed acceptance criteria.
-- [Data-source research](docs/FONTES-DE-DADOS.md): source provenance and constraints.
+- [Data sources](docs/FONTES-DE-DADOS.md): source provenance and constraints.
 - [Skills](skills/README.md): installable LLM workflows and grounding rules.
 
 `docs/PLANO.md`, `docs/ARQUITETURA.md`, and `docs/REGRAS-E-VALIDACAO.md` describe the

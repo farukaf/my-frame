@@ -45,16 +45,18 @@ diagnostics go to standard error.
 - `get_activity`
 - `get_acquisition`
 
-### Recommendations and references
+### Recommendations and build listings
 
 - `list_collection`
 - `list_farm`
 - `list_relics`
 - `list_sales`
 - `list_surplus`
-- `search_references`
-- `get_reference_section`
+- `search_overframe_builds`
 
 Inventory change comparison returns `context_mismatch` and no items when both revisions
-have different known contexts. Community references are attributed, untrusted content.
+have different known contexts. `search_overframe_builds` requires a query and an exact
+`Item`, `Mod`, or `Warframe` type. It returns only cached Overframe build titles and
+links. Refreshes run through `MyFrame.Sync --overframe-builds`, never through MCP; build
+details are outside the supported contract and listing data is not trusted for facts.
 The server never returns raw payloads, credentials, or arbitrary local files.
