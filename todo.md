@@ -8,13 +8,12 @@ synthetic regression passed; MCP read-only and side-by-side upgrade gates passed
 
 ## 1. Validate real Overwolf capture
 
-- [ ] Load the unpacked My Frame extension in Overwolf and confirm a fresh heartbeat
-  and valid markers while Warframe is running.
+- [ ] Start the unpacked My Frame collector with Warframe running and confirm a fresh
+  heartbeat and valid markers.
 - [ ] Capture inventory without reading AlecaFrame and compare it manually with the
   in-game Arsenal.
 - [ ] Document the observed schema and field coverage, including instances, ranks,
   configurations, mods, snapshot/delta behavior, and `contextId`.
-- [ ] Record the supported Overwolf distribution path and approval requirements.
 
 Runbook and current blocker: [collector contract](docs/COLETOR-OVERWOLF.md).
 
@@ -32,8 +31,8 @@ already pass; they do not replace real-game validation.
 
 - [ ] Run the F10 before/after evaluation with cited sources, explicit uncertainty,
   and no critical failures.
-- [ ] Complete the Overwolf distribution gate and update the runbook, field coverage,
-  compatibility notes, and user-facing setup documentation.
+- [ ] Deploy the approved collector through the Overwolf testing channel and update
+  field coverage, compatibility notes, and user-facing setup documentation.
 - [ ] Run the full build, test, package, read-only, clean-install, upgrade, and restore
   gates on the release candidate.
 

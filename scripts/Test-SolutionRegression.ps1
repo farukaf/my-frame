@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $projects = @(
+    (Join-Path $root 'MyFrame.App.Tests\MyFrame.App.Tests.csproj'),
     (Join-Path $root 'MyFrame.Core.Tests\MyFrame.Core.Tests.csproj'),
     (Join-Path $root 'MyFrame.Mcp.Tests\MyFrame.Mcp.Tests.csproj')
 )

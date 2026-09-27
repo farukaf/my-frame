@@ -79,9 +79,10 @@ Node.js for collector tests.
 ```powershell
 dotnet restore MyFrame.slnx
 dotnet build MyFrame.slnx
+dotnet test MyFrame.App.Tests/MyFrame.App.Tests.csproj
 dotnet test MyFrame.Core.Tests/MyFrame.Core.Tests.csproj
 dotnet test MyFrame.Mcp.Tests/MyFrame.Mcp.Tests.csproj
-node --test --test-isolation=none MyFrame.Collector.Overwolf/tests/*.test.mjs
+./scripts/Test-CollectorRegression.ps1
 dotnet run --project MyFrame.App/MyFrame.App.csproj -f net10.0-windows10.0.19041.0
 ```
 

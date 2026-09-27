@@ -51,10 +51,37 @@ revisions have different known contexts.
 7. Compare a sample with the Arsenal, repeat after an inventory change, and remove the
    raw capture after local verification. Record only sanitized counts and conclusions.
 
+## Distribution path and approvals
+
+The supported development path is the unpacked package at
+`artifacts/collector-overwolf`. Overwolf requires the signed-in account to be
+whitelisted as a developer before it can load or run an unpacked or unreleased app.
+Use **Settings → About → Development options → Load unpacked extension** and select
+that package directory.
+
+The supported external distribution path is Overwolf's testing channel followed by
+its production channel, not a separately hosted collector download. Access requires
+submitting the app to Overwolf, passing its QA review, and receiving Developer Console
+access. Before submission, validate game compliance, first-run experience, general
+user experience, any advertising requirements, and the unique manifest name. A public
+release additionally requires the account's release-channel permissions.
+
+Overwolf approval has been received. Deployment to an Overwolf release channel has
+not started, so approval is complete but rollout and real-game validation remain open.
+
+Official references:
+
+- [Development environment and account whitelisting](https://dev.overwolf.com/ow-native/getting-started/onboarding-resources/setting-up-dev-environment/)
+- [Loading an unpacked extension](https://dev.overwolf.com/ow-native/getting-started/onboarding-resources/basic-sample-app/)
+- [Submission and pre-submission checklist](https://dev.overwolf.com/ow-native/getting-started/release-your-app/)
+- [Developer Console access and release channels](https://dev.overwolf.com/ow-native/developers-console/the-developers-console/)
+
 ## Current release gate
 
-The unpacked collector has not yet been loaded in Overwolf. The latest preflight state
-was `heartbeatFresh=false` with `validMarkers=0`; the required action is to load the
-unpacked extension. Therefore, synthetic tests and package validation are not evidence
-of real capture. Until this gate passes, inventory remains `unverified` and the app and
-MCP must not claim complete builds, polarities, shards, Helminth, or Incarnon coverage.
+Approval and unpacked-extension load evidence now exist, but the latest preflight still
+had `heartbeatFresh=false`, `validMarkers=0`, and no running Warframe process. The
+required action is to deploy the approved collector, start capture, launch Warframe,
+and wait for a fresh heartbeat and marker. Therefore, approval, synthetic tests,
+package validation, and extension-load evidence are not evidence of real capture.
+Until this gate passes, inventory remains `unverified` and the app and MCP must not
+claim complete builds, polarities, shards, Helminth, or Incarnon coverage.
